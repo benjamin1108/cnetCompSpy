@@ -14,15 +14,15 @@ import shutil
 # 添加项目根目录到路径
 sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 
-from crawlers.common.crawler_manager import CrawlerManager
-from ai_analyzer.analyzer import AIAnalyzer
+from src.crawlers.common.crawler_manager import CrawlerManager
+from src.ai_analyzer.analyzer import AIAnalyzer
 
 # 配置日志
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler("cnetCompSpy.log"),
+        logging.FileHandler(os.path.join(os.path.dirname(os.path.dirname(__file__)), "cnetCompSpy.log")),
         logging.StreamHandler()
     ]
 )
@@ -69,9 +69,12 @@ def load_config() -> Dict[str, Any]:
     """加载配置"""
     config = DEFAULT_CONFIG.copy()
     try:
+        # 获取项目根目录路径
+        base_dir = os.path.dirname(os.path.dirname(__file__))
+        
         # 优先尝试加载yaml配置
-        config_path_yaml = 'config.yaml'
-        config_path_json = 'config.json'
+        config_path_yaml = os.path.join(base_dir, 'config.yaml')
+        config_path_json = os.path.join(base_dir, 'config.json')
         
         if os.path.exists(config_path_yaml):
             with open(config_path_yaml, 'r', encoding='utf-8') as f:
@@ -100,7 +103,11 @@ def parse_arguments() -> argparse.Namespace:
 
 def ensure_directories():
     """确保必要的目录存在"""
-    for dir_path in ['data', 'data/raw', 'data/analysis']:
+    # 获取项目根目录
+    base_dir = os.path.dirname(os.path.dirname(__file__))
+    
+    for dir_name in ['data', 'data/raw', 'data/analysis']:
+        dir_path = os.path.join(base_dir, dir_name)
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
             logger.info(f"创建目录: {dir_path}")
@@ -149,8 +156,11 @@ def clean_data_directories():
     """清理所有数据目录"""
     logger.info("开始清理数据目录...")
     
+    # 获取项目根目录
+    base_dir = os.path.dirname(os.path.dirname(__file__))
+    
     # 清理raw目录
-    raw_dir = 'data/raw'
+    raw_dir = os.path.join(base_dir, 'data/raw')
     if os.path.exists(raw_dir):
         for item in os.listdir(raw_dir):
             item_path = os.path.join(raw_dir, item)
@@ -162,7 +172,7 @@ def clean_data_directories():
                 logger.info(f"删除文件: {item_path}")
     
     # 清理analysis目录
-    analysis_dir = 'data/analysis'
+    analysis_dir = os.path.join(base_dir, 'data/analysis')
     if os.path.exists(analysis_dir):
         for item in os.listdir(analysis_dir):
             item_path = os.path.join(analysis_dir, item)
@@ -197,7 +207,9 @@ def test_main(vendor: str = None):
             config['sources'][vendor_name][source_type]['test_mode'] = True
     
     # 保存临时配置
-    with open('config.test.yaml', 'w') as f:
+    base_dir = os.path.dirname(os.path.dirname(__file__))
+    config_test_path = os.path.join(base_dir, 'config.test.yaml')
+    with open(config_test_path, 'w') as f:
         yaml.dump(config, f)
     
     # 执行爬虫 - 使用测试模式，限制为1篇文章

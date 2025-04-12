@@ -43,8 +43,9 @@ class BaseCrawler(ABC):
         self.headers = self.crawler_config.get('headers', {})
         self.driver = None
         
-        # 创建保存目录
-        self.output_dir = os.path.join('data', 'raw', vendor, source_type)
+        # 创建保存目录，使用相对于项目根目录的路径
+        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+        self.output_dir = os.path.join(base_dir, 'data', 'raw', vendor, source_type)
         os.makedirs(self.output_dir, exist_ok=True)
     
     def _init_driver(self) -> None:
@@ -56,13 +57,14 @@ class BaseCrawler(ABC):
         chrome_options.add_argument('--disable-gpu')
         
         try:
-            # 获取ChromeDriver路径
-            chromedriver_path = os.path.join('drivers', 'chromedriver')
+            # 获取ChromeDriver路径，使用相对于当前脚本的路径
+            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+            chromedriver_path = os.path.join(base_dir, 'drivers', 'chromedriver')
             if platform.system().lower() == 'windows':
                 chromedriver_path += '.exe'
             
             # 尝试使用已安装的chrome-headless-shell
-            config_path = os.path.join('drivers', 'webdriver_config.json')
+            config_path = os.path.join(base_dir, 'drivers', 'webdriver_config.json')
             if os.path.exists(config_path):
                 with open(config_path, 'r') as f:
                     config = json.load(f)

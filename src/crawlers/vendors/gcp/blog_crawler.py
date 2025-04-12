@@ -17,7 +17,7 @@ import html2text
 # 添加项目根目录到路径
 sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))))
 
-from crawlers.common.base_crawler import BaseCrawler
+from src.crawlers.common.base_crawler import BaseCrawler
 
 logger = logging.getLogger(__name__)
 
