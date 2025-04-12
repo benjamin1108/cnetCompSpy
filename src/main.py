@@ -11,11 +11,11 @@ import yaml
 from typing import Dict, Any, List
 import shutil
 
-from src.crawlers.common.crawler_manager import CrawlerManager
-from src.ai_analyzer.analyzer import AIAnalyzer
-
-# 添加当前目录到路径
+# 添加项目根目录到路径
 sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
+
+from crawlers.common.crawler_manager import CrawlerManager
+from ai_analyzer.analyzer import AIAnalyzer
 
 # 配置日志
 logging.basicConfig(

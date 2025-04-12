@@ -40,7 +40,7 @@ class CrawlerManager:
         """
         try:
             # 尝试加载特定爬虫类 (e.g., AwsBlogCrawler)
-            module_name = f"src.crawlers.vendors.{vendor}.{source_type}_crawler"
+            module_name = f"crawlers.vendors.{vendor}.{source_type}_crawler"
             class_name = f"{vendor.capitalize()}{source_type.capitalize()}Crawler"
             
             module = importlib.import_module(module_name)
@@ -53,7 +53,7 @@ class CrawlerManager:
             
             # 加载通用爬虫类
             try:
-                module_name = f"src.crawlers.vendors.{vendor}.generic_crawler"
+                module_name = f"crawlers.vendors.{vendor}.generic_crawler"
                 class_name = f"{vendor.capitalize()}GenericCrawler"
                 
                 module = importlib.import_module(module_name)
