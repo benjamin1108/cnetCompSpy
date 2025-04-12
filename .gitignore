@@ -1,0 +1,94 @@
+# 虚拟环境
+venv/
+env/
+ENV/
+.venv/
+.env/
+virtualenv/
+
+# Python编译文件
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 数据目录 - 避免提交爬取的数据和分析结果
+data/
+raw/
+analysis/
+
+# 驱动程序 - 每个平台应该自己下载适合自己的驱动
+drivers/
+
+# 日志文件
+*.log
+logs/
+*_server.log
+*CompSpy.log
+
+# 配置文件 - 避免提交包含敏感信息的配置
+config.yaml
+config.json
+config.test.yaml
+.env
+.env.local
+.env.*.local
+
+# 但需要保留配置示例
+!config.examples/
+
+# 临时文件
+temp/
+tmp/
+.tmp/
+.temp/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+.directory
+desktop.ini
+
+# IDE文件
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-workspace
+*.sublime-project
+.atom/
+.komodotools/
+.netbeans/
+nbproject/
+.~lock.*
+
+# 其他
+.coverage
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+.pytest_cache/
+.coverage.*
+coverage.xml
+*.cover 
