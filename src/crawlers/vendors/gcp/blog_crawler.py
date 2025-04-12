@@ -448,20 +448,21 @@ class GcpBlogCrawler(BaseCrawler):
         soup = BeautifulSoup(html, 'lxml')
         
         # 提取发布日期
-        pub_date = self._extract_article_date_enhanced(soup, html)
+        pub_date = self._extract_article_date_enhanced(soup, html, url)
         
         # 提取文章内容
         article_content = self._extract_article_content(soup)
         
         return article_content, pub_date
     
-    def _extract_article_date_enhanced(self, soup: BeautifulSoup, html: str) -> str:
+    def _extract_article_date_enhanced(self, soup: BeautifulSoup, html: str, url: str = None) -> str:
         """
         增强版的文章日期提取，使用多种方式尝试获取日期
         
         Args:
             soup: BeautifulSoup对象
             html: 原始HTML
+            url: 文章URL（可选）
             
         Returns:
             日期字符串（YYYY_MM_DD格式）
@@ -519,16 +520,17 @@ class GcpBlogCrawler(BaseCrawler):
                 logger.debug(f"解析标准日期出错: {e}")
         
         # 3. 从URL中尝试提取日期
-        url_date_match = re.search(r'/(\d{4})/(\d{1,2})/', url)
-        if url_date_match:
-            try:
-                year, month = url_date_match.groups()
-                # 如果URL中只有年月，日设为1
-                parsed_date = datetime.datetime(int(year), int(month), 1)
-                logger.info(f"从URL中提取到年月: {parsed_date.strftime(date_format)}")
-                return parsed_date.strftime(date_format)
-            except ValueError as e:
-                logger.debug(f"解析URL日期出错: {e}")
+        if url:
+            url_date_match = re.search(r'/(\d{4})/(\d{1,2})/', url)
+            if url_date_match:
+                try:
+                    year, month = url_date_match.groups()
+                    # 如果URL中只有年月，日设为1
+                    parsed_date = datetime.datetime(int(year), int(month), 1)
+                    logger.info(f"从URL中提取到年月: {parsed_date.strftime(date_format)}")
+                    return parsed_date.strftime(date_format)
+                except ValueError as e:
+                    logger.debug(f"解析URL日期出错: {e}")
         
         # 4. 如果所有方法都失败，使用当前日期
         logger.warning(f"未找到日期，使用当前日期")

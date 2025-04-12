@@ -248,20 +248,21 @@ class AzureBlogCrawler(BaseCrawler):
         soup = BeautifulSoup(html, 'lxml')
         
         # 提取发布日期
-        pub_date = self._extract_publish_date(soup, list_date)
+        pub_date = self._extract_publish_date(soup, list_date, url)
         
         # 找到文章主体
         article_content = self._locate_and_extract_content(soup, url)
         
         return article_content, pub_date
     
-    def _extract_publish_date(self, soup: BeautifulSoup, list_date: Optional[str]) -> str:
+    def _extract_publish_date(self, soup: BeautifulSoup, list_date: Optional[str], url: str = None) -> str:
         """
         从文章页面提取发布日期
         
         Args:
             soup: BeautifulSoup对象
             list_date: 从列表页获取的日期（可能为None）
+            url: 文章URL（可选）
             
         Returns:
             发布日期字符串 (YYYY_MM_DD格式)
@@ -316,15 +317,16 @@ class AzureBlogCrawler(BaseCrawler):
             return list_date
         
         # 如果还是找不到日期，从URL中寻找可能的日期模式
-        url_date_match = re.search(r'/(\d{4})/(\d{1,2})/(\d{1,2})/', url)
-        if url_date_match:
-            try:
-                year, month, day = url_date_match.groups()
-                parsed_date = datetime.datetime(int(year), int(month), int(day))
-                logger.info(f"从URL提取到日期: {parsed_date.strftime(date_format)}")
-                return parsed_date.strftime(date_format)
-            except (ValueError, TypeError) as e:
-                logger.debug(f"从URL提取日期出错: {e}")
+        if url:
+            url_date_match = re.search(r'/(\d{4})/(\d{1,2})/(\d{1,2})/', url)
+            if url_date_match:
+                try:
+                    year, month, day = url_date_match.groups()
+                    parsed_date = datetime.datetime(int(year), int(month), int(day))
+                    logger.info(f"从URL提取到日期: {parsed_date.strftime(date_format)}")
+                    return parsed_date.strftime(date_format)
+                except (ValueError, TypeError) as e:
+                    logger.debug(f"从URL提取日期出错: {e}")
         
         # 如果所有方法都失败，使用当前日期
         logger.warning("未找到发布日期，使用当前日期")

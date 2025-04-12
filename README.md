@@ -141,6 +141,49 @@ cloud-comp-spy/
    python -m src.main --mode test --vendor aws        # 测试模式仅处理AWS数据
    ```
 
+## Web服务器
+
+项目提供了一个Web界面，用于浏览和查看爬取及分析的结果。服务器可以独立于主程序运行，方便部署和使用。
+
+### 启动Web服务器
+
+```bash
+# 基本启动命令（默认在127.0.0.1:5000上运行）
+python -m src.web_server.run
+
+# 自定义主机和端口
+python -m src.web_server.run --host 0.0.0.0 --port 8080
+
+# 启用调试模式
+python -m src.web_server.run --debug
+
+# 指定数据目录
+python -m src.web_server.run --data-dir /path/to/data
+
+# 调整日志级别
+python -m src.web_server.run --log-level DEBUG
+```
+
+### 命令行参数说明
+
+- `--host`：服务器监听的主机地址，默认为`127.0.0.1`（仅本机访问）
+- `--port`：服务器端口，默认为`5000`
+- `--data-dir`：数据目录路径，默认为项目根目录下的`data`目录
+- `--debug`：启用调试模式，便于开发和排错
+- `--log-level`：日志级别，可选值为DEBUG、INFO、WARNING、ERROR、CRITICAL
+
+### 使用说明
+
+服务器启动后，可以通过浏览器访问相应地址（如`http://127.0.0.1:5000`）来浏览和查看：
+
+1. 按云厂商分类的文章列表
+2. 原始爬取内容
+3. AI分析结果
+4. 支持全文检索功能
+5. 支持按日期、厂商、主题等过滤
+
+**提示**：如果需要允许其他设备通过网络访问，请使用`--host 0.0.0.0`参数启动服务器。
+
 ## 配置说明
 
 ### 配置文件系统

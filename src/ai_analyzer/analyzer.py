@@ -12,6 +12,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
 import yaml
 from copy import deepcopy
+import re
 
 # 添加项目根目录到路径
 sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
@@ -629,6 +630,7 @@ class AIAnalyzer:
             result = api._parse_response(response.json())
             logger.debug(f"解析后的响应长度: {len(result)} 字符")
             
+            # 返回原始结果，不进行任何格式化
             logger.info(f"{task_type} 响应接收完成，总长度: {len(result)} 字符")
             return result
             
