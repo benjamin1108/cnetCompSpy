@@ -266,34 +266,47 @@ class AIAnalyzer:
                     payload = request_data["payload"].copy()
                     payload["stream"] = True
                     
-                    logger.debug("启动流式请求")
+                    logger.debug(f"[{time.strftime('%H:%M:%S')}] 启动流式请求")
+                    start_time = time.time()
+                    
                     response = requests.post(
                         request_data["url"],
                         headers=request_data["headers"],
                         json=payload,
                         stream=True,
-                        timeout=60
+                        timeout=300  # 增加超时时间到5分钟
                     )
                     
                     if response.status_code != 200:
-                        logger.error(f"流式API调用失败: {response.status_code} - {response.text}")
+                        logger.error(f"[{time.strftime('%H:%M:%S')}] 流式API调用失败: {response.status_code} - {response.text}")
                         return f"API调用失败: {response.status_code}"
                     
                     # 收集流式响应
-                    logger.debug("开始接收流式响应")
+                    logger.debug(f"[{time.strftime('%H:%M:%S')}] 开始接收流式响应")
                     collected_content = []
+                    last_heartbeat = time.time()
+                    token_count = 0
+                    heartbeat_interval = 5  # 每5秒输出一次心跳
+                    
                     for line in response.iter_lines():
+                        # 定期发送心跳
+                        current_time = time.time()
+                        if current_time - last_heartbeat > heartbeat_interval:
+                            elapsed = current_time - start_time
+                            tokens_per_sec = token_count / elapsed if elapsed > 0 else 0
+                            logger.info(f"[{time.strftime('%H:%M:%S')}] 流式响应进行中... 已接收: {token_count} 个字符，平均速率: {tokens_per_sec:.2f} 字符/秒")
+                            last_heartbeat = current_time
+                            
                         if line:
                             # 去除data: 前缀
                             line_text = line.decode('utf-8')
-                            logger.debug(f"收到流式数据片段: {line_text[:50]}...")
                             
                             if line_text.startswith('data: '):
                                 line_text = line_text[6:]
                             
                             # 跳过[DONE]消息
                             if line_text.strip() == '[DONE]':
-                                logger.debug("收到流式传输结束标记")
+                                logger.debug(f"[{time.strftime('%H:%M:%S')}] 收到流式传输结束标记")
                                 continue
                             
                             try:
@@ -301,29 +314,45 @@ class AIAnalyzer:
                                 chunk = json.loads(line_text)
                                 
                                 # 从不同模型提供商的响应中提取内容
+                                content = ""
                                 if self.provider in ["aliyun_compatible_full", "aliyun_compatible", "openai"]:
                                     if 'choices' in chunk and len(chunk['choices']) > 0:
                                         if 'delta' in chunk['choices'][0] and 'content' in chunk['choices'][0]['delta']:
                                             content = chunk['choices'][0]['delta']['content']
                                             collected_content.append(content)
-                                            logger.debug(f"提取内容: {content[:20]}...")
                                 elif self.provider == "aliyun":
                                     if 'output' in chunk and 'choices' in chunk['output'] and len(chunk['output']['choices']) > 0:
                                         if 'delta' in chunk['output']['choices'][0] and 'content' in chunk['output']['choices'][0]['delta']:
                                             content = chunk['output']['choices'][0]['delta']['content']
                                             collected_content.append(content)
-                                            logger.debug(f"提取内容: {content[:20]}...")
+                                
+                                if content:
+                                    token_count += len(content)
+                                    # 每收到100个字符记录一次
+                                    if token_count % 100 == 0:
+                                        elapsed = time.time() - start_time
+                                        tokens_per_sec = token_count / elapsed if elapsed > 0 else 0
+                                        logger.debug(f"[{time.strftime('%H:%M:%S')}] 已接收 {token_count} 字符，进行中...")
+                                
                             except json.JSONDecodeError:
-                                logger.warning(f"无法解析JSON: {line_text}")
+                                logger.warning(f"[{time.strftime('%H:%M:%S')}] 无法解析JSON: {line_text[:50]}...")
                                 continue
                     
                     # 合并所有内容
                     result = ''.join(collected_content)
-                    logger.info(f"流式响应接收完成，总长度: {len(result)} 字符")
+                    total_time = time.time() - start_time
+                    tokens_per_sec = len(result) / total_time if total_time > 0 else 0
+                    
+                    logger.info(f"[{time.strftime('%H:%M:%S')}] 流式响应接收完成，总长度: {len(result)} 字符，耗时: {total_time:.2f}秒")
+                    logger.info(f"[{time.strftime('%H:%M:%S')}] 平均处理速度: {tokens_per_sec:.2f} 字符/秒")
+                    
+                    if len(result) > 50:
+                        logger.debug(f"[{time.strftime('%H:%M:%S')}] 响应前50个字符: {result[:50]}...")
+                    
                     return result
                     
                 except Exception as e:
-                    logger.error(f"流式API调用异常: {str(e)}")
+                    logger.error(f"[{time.strftime('%H:%M:%S')}] 流式API调用异常: {str(e)}")
                     logger.exception("详细错误信息:")
                     return f"流式API调用异常: {str(e)}"
             
@@ -470,15 +499,10 @@ class AIAnalyzer:
             full_content = []
             
             # 添加标题和元数据
-            full_content.extend([
-                f"# 分析: {metadata.get('title', '未知标题')}\n",
-                f"原始链接: {metadata.get('original_url', '')}\n",
-                f"爬取时间: {metadata.get('crawl_time', '')}\n",
-                f"厂商: {metadata.get('vendor', '')}\n",
-                f"类型: {metadata.get('type', '')}\n",
-                f"分析时间: {time.strftime('%Y-%m-%d %H:%M:%S')}\n",
-                "---\n\n"
-            ])
+            # full_content.extend([
+            #     f"# 分析: {metadata.get('title', '未知标题')}\n",
+            #     "---\n\n"
+            # ])
             
             # 依次执行所有分析任务，但不写入文件，只保存到内存
             for i, task in enumerate(self.tasks):
@@ -496,14 +520,16 @@ class AIAnalyzer:
                 logger.debug(f"完整提示词长度: {len(full_prompt)} 字符")
                 
                 # 添加任务标题到内容
-                full_content.append(f"## {task_type.capitalize()}\n\n")
+                #full_content.append(f"## {task_type.capitalize()}\n\n")
                 
                 # 调用AI模型 - 获取结果但不写入文件
                 logger.info(f"开始调用AI模型进行 {task_type} 分析...")
+                logger.info(f"[{time.strftime('%H:%M:%S')}] 正在发送请求至API服务器...")
                 start_time = time.time()
                 result = self._analyze_content(full_prompt, task_type)
                 end_time = time.time()
                 logger.info(f"AI模型调用完成，耗时: {end_time - start_time:.2f} 秒")
+                logger.info(f"[{time.strftime('%H:%M:%S')}] 已接收{len(result)}字符的响应")
                 
                 # 添加结果到内容字符串
                 full_content.append(f"{result}\n\n")
@@ -511,11 +537,11 @@ class AIAnalyzer:
                 # 保存结果到内存中 - 用于返回
                 analysis_results[task_type] = result
             
-            # 最后添加原始内容链接
-            full_content.extend([
-                f"## 原始内容\n\n",
-                f"[查看原始文档]({os.path.relpath(file_path, self.analysis_dir)})\n\n"
-            ])
+            # # 最后添加原始内容链接
+            # full_content.extend([
+            #     f"## 原始内容\n\n",
+            #     f"[查看原始文档]({os.path.relpath(file_path, self.analysis_dir)})\n\n"
+            # ])
             
             # 一次性写入整个文件
             logger.info(f"一次性写入分析结果到文件: {md_path}")
@@ -608,17 +634,24 @@ class AIAnalyzer:
         # 使用非流式请求获取完整内容
         try:
             # 准备请求数据
+            logger.debug(f"[{time.strftime('%H:%M:%S')}] 正在构建请求数据...")
             request_data = api._build_request_data(prompt)
             
             # 使用普通请求
-            logger.info(f"使用普通请求调用 {api.provider} API")
+            logger.info(f"[{time.strftime('%H:%M:%S')}] 使用普通请求调用 {api.provider} API")
+            logger.info(f"[{time.strftime('%H:%M:%S')}] 目标URL: {request_data['url'][:50]}...")
+            logger.info(f"[{time.strftime('%H:%M:%S')}] 开始发送请求，等待API响应...")
             
+            request_start = time.time()
             response = requests.post(
                 request_data["url"],
                 headers=request_data["headers"],
                 json=request_data["payload"],
                 timeout=180  # 增加超时时间
             )
+            request_time = time.time() - request_start
+            
+            logger.info(f"[{time.strftime('%H:%M:%S')}] 收到API响应，耗时: {request_time:.2f}秒")
             
             if response.status_code != 200:
                 error_msg = f"API调用失败: {response.status_code} - {response.text}"
@@ -626,17 +659,26 @@ class AIAnalyzer:
                 return error_msg
             
             # 解析结果
-            logger.debug(f"API调用成功: 状态码 {response.status_code}")
+            logger.debug(f"[{time.strftime('%H:%M:%S')}] API调用成功: 状态码 {response.status_code}")
+            logger.debug(f"[{time.strftime('%H:%M:%S')}] 响应大小: {len(response.text)} 字节")
+            logger.debug(f"[{time.strftime('%H:%M:%S')}] 开始解析响应...")
+            
+            parse_start = time.time()
             result = api._parse_response(response.json())
+            parse_time = time.time() - parse_start
+            
+            logger.debug(f"[{time.strftime('%H:%M:%S')}] 响应解析完成，耗时: {parse_time:.2f}秒")
             logger.debug(f"解析后的响应长度: {len(result)} 字符")
             
             # 返回原始结果，不进行任何格式化
-            logger.info(f"{task_type} 响应接收完成，总长度: {len(result)} 字符")
+            logger.info(f"[{time.strftime('%H:%M:%S')}] {task_type} 响应接收完成，总长度: {len(result)} 字符")
+            if len(result) > 50:
+                logger.debug(f"响应前50个字符预览: {result[:50]}...")
             return result
             
         except Exception as e:
             error_msg = f"API调用异常: {str(e)}"
-            logger.error(error_msg)
+            logger.error(f"[{time.strftime('%H:%M:%S')}] {error_msg}")
             logger.exception("详细错误信息:")
             return error_msg
     
