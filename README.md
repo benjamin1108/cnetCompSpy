@@ -5,11 +5,13 @@
 
 ## 功能特点
 - **多源爬虫**：支持从多个云厂商的不同信息源（博客、文档等）爬取内容
-- **智能分析**：利用AI技术对爬取的内容进行翻译、摘要等分析
+- **智能分析**：利用AI技术对爬取的内容进行翻译、摘要和竞争分析
+- **竞争情报**：通过AI分析生成竞争对手产品和战略的深度洞察
 - **格式友好**：保存为MD格式，保持原始文档的结构和风格
 - **自动化管理**：自动管理webdriver，无需用户手动下载
 - **模块化设计**：爬虫和分析可以分离运行，提高灵活性
 - **灵活配置**：可通过命令行参数和配置文件灵活控制爬取数量和测试模式
+- **统一文件格式**：使用统一的文件命名和元数据格式，便于管理和查询
 
 ## 项目结构
 ```
@@ -27,6 +29,8 @@ cloud-comp-spy/
 ├── tests/              # 测试文件
 ├── requirements.txt    # 项目依赖
 ├── setup.py            # 安装脚本（仅开发用途）
+├── config.yaml         # 基本配置文件（不包含敏感信息）
+├── config.secret.yaml  # 敏感配置文件（包含API密钥等）
 └── README.md           # 项目说明
 ```
 
@@ -63,7 +67,14 @@ cloud-comp-spy/
    - 设置必要的执行权限
    - 创建配置文件以供程序使用
 
-5. 运行程序
+5. 设置配置文件
+   创建`config.secret.yaml`文件并添加您的API密钥：
+   ```yaml
+   ai_analyzer:
+     api_key: "your-api-key-here"
+   ```
+
+6. 运行程序
 
    a. 运行爬虫、分析
    ```
@@ -131,8 +142,17 @@ cloud-comp-spy/
    ```
 
 ## 配置说明
-在`config.yaml`文件中配置爬取源和分析参数：
+
+### 配置文件系统
+
+项目使用两个YAML格式的配置文件进行配置，以提高安全性：
+- `config.yaml`：主配置文件，包含爬虫配置、数据源配置和AI分析的基本配置
+- `config.secret.yaml`：敏感配置文件，主要用于存储API密钥等敏感信息
+
+这种分离确保了敏感数据不会被意外提交到版本控制系统。
+
 ```yaml
+# 基础配置示例 (config.yaml)
 sources:
   aws:
     blog:
@@ -156,16 +176,26 @@ crawler:
   
 # AI分析配置
 ai_analyzer:
-  model: "qwen-max"                  # 使用的AI模型
-  max_tokens: 4000                   # 最大令牌数
-  temperature: 0.8                   # 温度参数
-  api_key: ""                        # API密钥（请填写您的API密钥）
-  api_base: ""                       # API基础URL（请填写您使用的模型提供商的API端点）
+  model: "${ANALYZER_MODEL}"     # 使用的AI模型
+  max_tokens: 4000      # 最大令牌数
+  temperature: 0.8      # 温度参数
+  api_base: "${API_BASE_URL}"  # API基础URL
   system_prompt: "你是一个专业的云计算技术分析师..." # 系统提示词
   tasks:
-    - type: "summary"
+    - type: "AI摘要"
       prompt: "请对此云服务商的内容进行总结..."
     # 更多任务...
+```
+
+```yaml
+# 敏感配置示例 (config.secret.yaml)
+ai_analyzer:
+  # API密钥
+  api_key: "your-api-key-here"
+  # 可以指定实际模型名称覆盖默认值
+  model: "qwen-max"
+  # API基础URL
+  api_base: "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
 ```
 
 ### 爬虫配置
@@ -235,179 +265,117 @@ crawler:
   timeout: 30            # 请求超时时间(秒)
   retry: 3               # 请求失败重试次数
   interval: 2            # 请求间隔时间(秒)
+```
+
+### AI分析功能详细说明
+
+#### 分析类型
+
+当前支持以下几种分析类型：
+
+1. **内容摘要**：提取文章的关键要点和主要内容
+2. **竞争分析**：深入分析云厂商的产品特点、市场定位和竞争策略
+3. **技术解读**：解释技术特性和创新点
+4. **战略意图解读**：分析产品发布背后的战略考量
+5. **市场预测**：基于新产品或功能预测市场趋势和竞争对手可能的反应
+
+#### AI分析配置示例
+
+```yaml
+ai_analyzer:
+  # 基础配置
+  model: "${ANALYZER_MODEL}"  # 使用的AI模型
+  max_tokens: 4000      # 最大令牌数
+  temperature: 0.8      # 温度参数
   
-  # 浏览器设置
-  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-  headers:               # 自定义请求头
-    Accept-Language: "en-US,en;q=0.9"
-    DNT: "1"
-  
-  # Selenium设置
-  selenium:
-    headless: true       # 无头模式(不显示浏览器窗口)
-    wait_time: 10        # 等待元素加载的时间(秒)
-    window_size:         # 浏览器窗口大小
-      width: 1920
-      height: 1080
+  # 分析任务
+  tasks:
+    - type: "AI摘要"
+      prompt: "请对此云服务商的博客内容进行专业摘要，提取关键技术点和主要公告。"
+      
+    - type: "竞争分析"
+      prompt: "作为一名云计算竞争分析专家，请对这篇博客进行详细的竞争分析，包括：
+        1. 概述：简要总结此博客所描述的产品/功能及其主要卖点
+        2. 关键技术洞察：技术特性的独特之处
+        3. 竞争对手对比：与AWS、Azure和GCP同类产品的详细对比
+        4. 市场影响分析：此产品对市场竞争格局的影响
+        5. 战略意图解读：推测该厂商发布这一产品/功能的战略考量
+        6. 市场预测：预测市场和客户的反应以及竞争对手的可能回应
+        7. 建议策略：给其他云厂商的应对建议"
     
-  # 代理设置(可选)
-  proxy:
-    enabled: false
-    http: "http://proxy.example.com:8080"
-    https: "https://proxy.example.com:8080"
-    
-  # 过滤设置
-  filters:
-    min_content_length: 1000  # 最小内容长度(字符数)
-    date_range:               # 日期范围
-      start: "2023-01-01"
-      end: "2023-12-31"
-    keywords:                 # 关键词过滤(包含这些关键词的文章才会被保存)
-      - "网络"
-      - "安全"
-      - "架构"
+    - type: "中文翻译"
+      prompt: "请将以下英文内容翻译成流畅、专业的中文，保留原文的技术术语准确性："
+      language: "zh"
+      condition: "language != 'zh'"  # 条件：仅当原文不是中文时执行
 ```
 
-### AI分析器配置
-AI分析器支持多种不同的大语言模型提供商，包括OpenAI、阿里云通义千问、Azure OpenAI、百度文心一言和讯飞星火等。
+#### 文件命名规范
 
-1. **基础配置**:
-   - `model`: 要使用的模型名称，根据您选择的提供商而定
-   - `max_tokens`: 生成的最大token数量
-   - `temperature`: 生成文本的创造性/随机性，0.0-1.0之间
-   
-2. **API配置**:
-   - `api_key`: 您的API密钥，需要从模型提供商处获取
-   - `api_base`: API的基础URL，根据您使用的模型提供商而定
-   
-3. **提示词配置**:
-   - `system_prompt`: 系统级提示词，定义AI助手的角色和行为
-   - `tasks`: 分析任务列表，每个任务包含类型和提示词
+为了便于管理和检索，本项目对爬取的内容和分析结果采用统一的文件命名规范：
 
-查看 [model_configuration.md](docs/model_configuration.md) 获取不同模型提供商的详细配置示例。
+1. **原始爬取文件**：
+   ```
+   YYYY_MM_DD_<url_hash>.md
+   ```
+   例如：`2025_04_08_af122aaf.md`
 
-如果未提供API密钥或API基础URL，系统将自动使用模拟模式，返回预设的响应而不是实际调用AI模型。
+2. **分析结果文件**：
+   ```
+   <原文件名>_<分析类型>.md
+   ```
+   例如：`2025_04_08_af122aaf_竞争分析.md`
 
-### 不同大模型提供商的配置示例
+#### 元数据格式
 
-#### OpenAI
-```yaml
-ai_analyzer:
-  model: "gpt-4"
-  max_tokens: 4000
-  temperature: 0.7
-  api_key: "sk-..."  # OpenAI API密钥
-  api_base: "https://api.openai.com/v1"  # OpenAI API端点
-```
+每个生成的文件都包含标准化的元数据头部：
 
-#### 阿里云通义千问
-```yaml
-ai_analyzer:
-  model: "qwen-max"  # 或 qwen-plus、qwen-turbo
-  max_tokens: 4000
-  temperature: 0.7
-  api_key: "your-api-key"  # 阿里云API密钥
-  api_base: "https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation"
-```
-
-#### Azure OpenAI
-```yaml
-ai_analyzer:
-  model: "gpt-4"
-  max_tokens: 4000
-  temperature: 0.7
-  api_key: "your-api-key"  # Azure API密钥
-  api_base: "https://your-resource-name.openai.azure.com/openai/deployments/your-deployment-name"
-  api_version: "2023-05-15"  # Azure API版本
-```
-
-#### 百度文心一言
-```yaml
-ai_analyzer:
-  model: "ernie-bot-4"  # 或 ernie-bot、ernie-bot-turbo
-  max_tokens: 4000
-  temperature: 0.7
-  api_key: "your-api-key"  # 百度API密钥
-  api_secret: "your-api-secret"  # 百度API秘钥
-  api_base: "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat"
-```
-
-### 测试AI分析器
-您可以使用测试脚本来测试AI分析器的功能：
-```bash
-# 使用配置文件中的设置运行
-python test_ai.py -c config.yaml
-
-# 使用模拟模式运行（无需API密钥）
-python test_ai.py -c config.yaml --mock
-```
-
-确保在使用实际API调用时，在`config.yaml`中设置了有效的API密钥和API基础URL。
-
-### 分析流程
-1. 爬虫爬取云厂商的博客和文档内容，保存为Markdown格式
-2. AI分析器读取这些内容，使用配置的AI模型进行分析
-3. 分析结果保存为Markdown和JSON格式，便于查看和进一步处理
-
-## 输出格式与目录结构
-
-### 原始爬取数据
-爬虫爬取的原始数据保存在`data/raw/{vendor}/{source_type}/`目录中，例如：
-```
-data/raw/
-  ├── aws/
-  │   ├── blog/
-  │   │   ├── AWS_introduces_Storage_Lens_default_dashboard_settings.md
-  │   │   └── Exploring_Data_Transfer_Costs_for_AWS_Network_Load_Balancers.md
-  │   └── docs/
-  │       └── ...
-  ├── azure/
-  │   └── blog/
-  │       └── ...
-  └── ...
-```
-
-### 分析结果
-AI分析结果保存在`data/analysis/{vendor}/{source_type}/`目录中，例如：
-```
-data/analysis/
-  ├── aws/
-  │   ├── blog/
-  │   │   ├── AWS_introduces_Storage_Lens_default_dashboard_settings.md
-  │   │   └── Exploring_Data_Transfer_Costs_for_AWS_Network_Load_Balancers.md
-  │   └── docs/
-  │       └── ...
-  ├── azure/
-  │   └── blog/
-  │       └── ...
-  └── ...
-```
-
-### 分析文件格式
-分析后的Markdown文件结构如下：
 ```markdown
+# 文章标题
+
+**原始链接:** [链接URL](链接URL)
+
+**发布时间:** YYYY-MM-DD
+
+**厂商:** AWS
+
+**类型:** BLOG
+
 ---
-title: 文章标题
-original_link: 原始文章链接
-vendor: 云厂商名称
-type: 文章类型(blog/docs)
-date: 发布日期
-crawl_date: 爬取时间
+
+正文内容...
+```
+
+对于分析文件，还会包含额外的分析元数据：
+
+```markdown
+# 文章标题 - AI分析：竞争分析
+
+**原始链接:** [链接URL](链接URL)
+
+**发布时间:** YYYY-MM-DD
+
+**厂商:** AWS
+
+**类型:** BLOG
+
+**分析类型:** 竞争分析
+
+**分析时间:** YYYY-MM-DD HH:MM:SS
+
 ---
 
-## 摘要
-AI生成的摘要内容，提炼出文章的主要观点和结论。
+## AI分析结果
 
-## 翻译
-完整的中文翻译内容，保留原文的段落结构、列表和格式等。
+### 概述
+...
 
-## 分析
-AI生成的技术分析和竞争情报，包括：
-- 技术要点分析
-- 相关背景信息
-- 市场影响评估
-- 同类产品对比
-- 应用场景建议
+### 关键技术洞察
+...
+
+### 竞争对手对比
+...
+
+（更多分析内容...）
 ```
 
 ## 常见问题 (FAQ)
@@ -480,31 +448,37 @@ A: 在`config.yaml`的`ai_analyzer.tasks`部分添加新的任务类型和提示
 
 ### API密钥安全
 
-项目中的`config.yaml`文件包含API密钥等敏感信息，不应该直接提交到版本控制系统。请遵循以下安全最佳实践：
+项目中的配置文件包含API密钥等敏感信息，需要妥善管理以保证安全。请遵循以下安全最佳实践：
 
-1. **第一次设置**：
+1. **两级配置设计**：
+   - `config.yaml`：包含基本配置和环境变量占位符，可以安全地提交到版本控制系统
+   - `config.secret.yaml`：包含实际API密钥和敏感信息，不应该提交到版本控制系统
+
+2. **第一次设置**：
    ```bash
-   # 复制模板配置文件
-   cp config.examples/config.template.yaml config.yaml
+   # 克隆项目后，复制并编辑敏感配置文件
+   cp config.examples/config.secret.example.yaml config.secret.yaml
    
-   # 编辑配置文件，添加您的API密钥
-   nano config.yaml
+   # 编辑敏感配置文件，添加您的API密钥
+   nano config.secret.yaml
    ```
 
-2. **保护API密钥**：
-   - 不要在公共场所共享配置文件
-   - 不要将包含真实API密钥的配置文件提交到公共代码库
-   - 考虑使用环境变量替代配置文件中的敏感信息
+3. **保护API密钥**：
+   - 不要在公共场所共享包含敏感信息的配置文件
+   - 不要将包含真实API密钥的`config.secret.yaml`提交到代码库
+   - `config.secret.yaml`文件已经在`.gitignore`中配置为不提交
 
-3. **如果需要共享配置**：
-   - 始终使用占位符替换真实API密钥: `api_key: "YOUR_API_KEY"`
+4. **版本控制**：
+   - `config.yaml`可以提交到版本控制系统，因为它只包含基本配置和占位符
+   - `config.secret.yaml`不应该提交，它包含实际的API密钥和敏感信息
+
+5. **如果需要共享配置**：
+   - 始终使用占位符替换真实API密钥
    - 使用私有通道分享实际密钥
 
-4. **密钥轮换**：
+6. **密钥轮换**：
    - 定期更换API密钥
    - 如果怀疑密钥泄露，立即进行轮换
-
-`.gitignore`文件已配置为排除`config.yaml`，以防止意外提交。
 
 ## 许可证
 MIT

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title|default('云服务厂商竞争分析') }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <header>
+        <h1>云服务厂商竞争分析</h1>
+        <p class="subtitle">爬取的博客和文档资料</p>
+    </header>
+
+    <main>
+        <section class="vendor-list">
+            <h2>厂商列表</h2>
+            
+            {% if vendors %}
+                <div class="vendor-cards">
+                    {% for vendor in vendors %}
+                        <div class="vendor-card">
+                            <h3>
+                                <a href="{{ url_for('vendor_page', vendor=vendor.name) }}">
+                                    {{ vendor.name|upper }}
+                                </a>
+                            </h3>
+                            <div class="doc-count">
+                                <p>文档总数: <strong>{{ vendor.doc_count }}</strong></p>
+                                {% if vendor.analysis_count > 0 %}
+                                    <p>AI分析文档: <strong>{{ vendor.analysis_count }}</strong> 
+                                        <a href="{{ url_for('analysis_page', vendor=vendor.name) }}" class="badge">查看分析</a>
+                                    </p>
+                                {% endif %}
+                                <ul class="doc-types">
+                                    {% for type, count in vendor.types.items() %}
+                                        {% if count > 0 %}
+                                            <li>{{ type }}: {{ count }}</li>
+                                        {% endif %}
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="no-data">暂无厂商数据。请先运行爬虫收集数据。</p>
+            {% endif %}
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; {{ now.year }} 云服务厂商竞争分析</p>
+    </footer>
+</body>
+</html> 

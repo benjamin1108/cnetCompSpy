@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}搜索结果 - 网络间谍{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1 class="mb-4">搜索结果: "{{ query }}"</h1>
+        
+        {% if results %}
+            <div class="alert alert-info">
+                找到 {{ results|length }} 条结果
+            </div>
+            
+            <div class="list-group">
+                {% for result in results %}
+                <a href="{{ url_for('view_content', vendor=result.vendor, filename=result.filename) }}" class="list-group-item list-group-item-action">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">{{ result.title }}</h5>
+                        <small>{{ result.vendor|upper }}</small>
+                    </div>
+                    <p class="mb-1">{{ result.snippet }}</p>
+                    <small>更新于: {{ result.update_time }}</small>
+                </a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-warning">
+                没有找到与 "{{ query }}" 相关的内容
+            </div>
+            <div class="my-4">
+                <h5>建议:</h5>
+                <ul>
+                    <li>检查您的拼写</li>
+                    <li>尝试更一般性的关键词</li>
+                    <li>尝试相关的关键词</li>
+                </ul>
+            </div>
+        {% endif %}
+        
+        <div class="mt-4">
+            <a href="/" class="btn btn-outline-primary">
+                <i class="bi bi-arrow-left"></i> 返回首页
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %} 

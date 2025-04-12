@@ -6,26 +6,33 @@ import os
 import glob
 import json
 import requests
+import sys
 from typing import Dict, Any, List, Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
+import yaml
+from copy import deepcopy
 
-# 注意：这是一个mock实现，后续将替换为实际的AI模型调用
-# from langchain.llms import OpenAI
-# from langchain.prompts import PromptTemplate
+# 添加项目根目录到路径
+sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
 
 logger = logging.getLogger(__name__)
 
 class AIAnalyzer:
     """AI分析器，使用大模型分析爬取的内容"""
     
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: Dict[str, Any] = None):
         """
         初始化AI分析器
         
         Args:
-            config: 配置信息
+            config: 配置信息，如果为None，则自动加载配置文件
         """
+        # 如果未提供配置，尝试加载配置文件
+        if config is None:
+            logger.info("未提供配置，尝试加载配置文件")
+            config = self._load_config()
+        
         self.config = config
         self.ai_config = config.get('ai_analyzer', {})
         self.model_name = self.ai_config.get('model', 'gpt-4')
@@ -50,6 +57,56 @@ class AIAnalyzer:
         
         # 初始化AI模型
         self.model = self._init_model()
+    
+    def _load_config(self) -> Dict[str, Any]:
+        """加载配置文件"""
+        config = {}
+        
+        # 获取项目根目录路径
+        base_dir = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+        
+        # 加载主配置文件
+        config_path = os.path.join(base_dir, 'config.yaml')
+        if os.path.exists(config_path):
+            try:
+                with open(config_path, 'r', encoding='utf-8') as f:
+                    config = yaml.safe_load(f) or {}
+                logger.info(f"已加载主配置文件: {config_path}")
+            except Exception as e:
+                logger.error(f"加载主配置文件失败: {e}")
+        else:
+            logger.warning(f"主配置文件不存在: {config_path}")
+        
+        # 加载敏感配置文件
+        secret_config_path = os.path.join(base_dir, 'config.secret.yaml')
+        if os.path.exists(secret_config_path):
+            try:
+                with open(secret_config_path, 'r', encoding='utf-8') as f:
+                    secret_config = yaml.safe_load(f) or {}
+                
+                # 合并配置
+                config = self._merge_configs(config, secret_config)
+                logger.info(f"已加载敏感配置文件: {secret_config_path}")
+            except Exception as e:
+                logger.error(f"加载敏感配置文件失败: {e}")
+        else:
+            logger.warning(f"敏感配置文件不存在: {secret_config_path}")
+        
+        return config
+    
+    def _merge_configs(self, base_config: Dict[str, Any], override_config: Dict[str, Any]) -> Dict[str, Any]:
+        """深度合并配置字典"""
+        result = deepcopy(base_config)
+        
+        for key, value in override_config.items():
+            # 如果键存在且两个值都是字典，则递归合并
+            if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+                result[key] = self._merge_configs(result[key], value)
+            else:
+                # 否则直接覆盖或添加
+                result[key] = value
+                
+        return result
     
     def _ensure_dir_with_permissions(self, dir_path):
         """确保目录存在并设置合适的权限"""
@@ -637,17 +694,9 @@ class AIAnalyzer:
     
     def analyze_all(self) -> List[Dict[str, Any]]:
         """
-        分析所有文件
+        分析所有原始数据的别名方法
         
         Returns:
-            分析结果列表
+            List[Dict[str, Any]]: 分析结果列表
         """
-        logger.info("开始分析所有需要处理的文件")
-        results = self.run()
-        
-        # 统计分析结果
-        success_count = len([r for r in results if 'error' not in r])
-        error_count = len(results) - success_count
-        
-        logger.info(f"分析完成, 成功: {success_count}, 失败: {error_count}")
-        return results 
+        return self.run() 

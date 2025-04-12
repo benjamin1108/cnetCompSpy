@@ -10,6 +10,7 @@ import json
 import yaml
 from typing import Dict, Any, List
 import shutil
+from copy import deepcopy
 
 # 添加项目根目录到路径
 sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
@@ -65,86 +66,140 @@ DEFAULT_CONFIG = {
     }
 }
 
-def load_config() -> Dict[str, Any]:
-    """加载配置"""
-    config = DEFAULT_CONFIG.copy()
-    try:
-        # 获取项目根目录路径
-        base_dir = os.path.dirname(os.path.dirname(__file__))
+def merge_configs(base_config: Dict[str, Any], override_config: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    深度合并配置字典
+    
+    Args:
+        base_config: 基础配置字典
+        override_config: 覆盖配置字典
         
-        # 优先尝试加载yaml配置
-        config_path_yaml = os.path.join(base_dir, 'config.yaml')
-        config_path_json = os.path.join(base_dir, 'config.json')
-        
-        if os.path.exists(config_path_yaml):
-            with open(config_path_yaml, 'r', encoding='utf-8') as f:
-                config.update(yaml.safe_load(f))
-                logger.info(f"已加载YAML配置: {config_path_yaml}")
-        elif os.path.exists(config_path_json):
-            with open(config_path_json, 'r', encoding='utf-8') as f:
-                config.update(json.load(f))
-                logger.info(f"已加载JSON配置: {config_path_json}")
+    Returns:
+        Dict: 合并后的配置字典
+    """
+    result = deepcopy(base_config)
+    
+    for key, value in override_config.items():
+        # 如果键存在且两个值都是字典，则递归合并
+        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+            result[key] = merge_configs(result[key], value)
         else:
-            logger.info(f"配置文件不存在，使用默认配置")
+            # 否则直接覆盖或添加
+            result[key] = value
+            
+    return result
+
+def load_yaml_file(file_path: str) -> Dict[str, Any]:
+    """
+    加载YAML文件
+    
+    Args:
+        file_path: YAML文件路径
+        
+    Returns:
+        Dict: YAML文件内容
+    """
+    try:
+        with open(file_path, 'r', encoding='utf-8') as file:
+            return yaml.safe_load(file) or {}
+    except FileNotFoundError:
+        logger.warning(f"配置文件不存在: {file_path}")
+        return {}
     except Exception as e:
-        logger.warning(f"加载配置文件失败: {e}，使用默认配置")
+        logger.error(f"加载配置文件时出错: {e}")
+        return {}
+
+def get_config() -> Dict[str, Any]:
+    """获取合并后的配置"""
+    config = DEFAULT_CONFIG.copy()
+    
+    # 获取项目根目录路径
+    base_dir = os.path.dirname(os.path.dirname(__file__))
+    
+    # 加载主配置文件
+    config_path_yaml = os.path.join(base_dir, 'config.yaml')
+    if os.path.exists(config_path_yaml):
+        config_data = load_yaml_file(config_path_yaml)
+        config = merge_configs(config, config_data)
+        logger.info(f"已加载主配置: {config_path_yaml}")
+    else:
+        logger.warning(f"主配置文件不存在: {config_path_yaml}")
+    
+    # 加载敏感配置文件
+    secret_config_path = os.path.join(base_dir, 'config.secret.yaml')
+    if os.path.exists(secret_config_path):
+        secret_config_data = load_yaml_file(secret_config_path)
+        config = merge_configs(config, secret_config_data)
+        logger.info(f"已加载敏感配置: {secret_config_path}")
+    else:
+        logger.warning(f"敏感配置文件不存在: {secret_config_path}")
     
     return config
 
 def parse_arguments() -> argparse.Namespace:
     """解析命令行参数"""
-    parser = argparse.ArgumentParser(description='云计算网络竞品动态分析工具')
-    parser.add_argument('--mode', type=str, required=False, choices=['crawl', 'analyze', 'test'],
-                       help='运行模式: crawl(爬取数据), analyze(分析数据), test(测试模式)')
-    parser.add_argument('--vendor', type=str, help='爬取指定厂商的数据, 如aws, azure等，仅在crawl模式下有效')
-    parser.add_argument('--clean', action='store_true', help='清理所有中间文件')
-    parser.add_argument('--limit', type=int, default=0, help='爬取的文章数量限制，如设置为5则每个来源只爬取5篇，0表示使用配置文件中的默认值')
+    parser = argparse.ArgumentParser(description="云计算竞争情报爬虫")
+    parser.add_argument("--mode", choices=["crawl", "analyze", "test"], help="运行模式: crawl(爬取数据), analyze(分析数据), test(测试模式)")
+    parser.add_argument("--vendor", help="爬取指定厂商的数据, 如aws, azure等")
+    parser.add_argument("--clean", action="store_true", help="清理所有中间文件")
+    parser.add_argument("--limit", type=int, default=0, help="爬取的文章数量限制，如设置为5则每个来源只爬取5篇")
+    parser.add_argument("--config", help="指定配置文件路径")
+    
     return parser.parse_args()
 
-def ensure_directories():
-    """确保必要的目录存在"""
+def clean_data_dir():
+    """清理所有数据目录"""
+    logger.info("开始清理数据目录...")
+    
     # 获取项目根目录
     base_dir = os.path.dirname(os.path.dirname(__file__))
+    data_dir = os.path.join(base_dir, "data")
     
-    for dir_name in ['data', 'data/raw', 'data/analysis']:
-        dir_path = os.path.join(base_dir, dir_name)
-        if not os.path.exists(dir_path):
-            os.makedirs(dir_path)
-            logger.info(f"创建目录: {dir_path}")
-        
-        # 设置目录权限，确保在Windows中可访问
-        try:
-            os.chmod(dir_path, 0o777)  # 设置所有用户可读写执行
-            logger.debug(f"设置目录权限: {dir_path}")
-        except Exception as e:
-            logger.warning(f"设置目录权限失败: {e}")
+    # 清理raw目录下的各个厂商目录
+    raw_dir = os.path.join(data_dir, "raw")
+    if os.path.exists(raw_dir):
+        for vendor in ["aws", "azure", "gcp"]:
+            vendor_dir = os.path.join(raw_dir, vendor)
+            if os.path.exists(vendor_dir):
+                logger.info(f"删除目录: {vendor_dir}")
+                shutil.rmtree(vendor_dir)
+    
+    # 清理analyzed目录下的各个厂商目录
+    analysis_dir = os.path.join(data_dir, "analysis")
+    if os.path.exists(analysis_dir):
+        for vendor in ["aws", "azure", "gcp"]:
+            vendor_dir = os.path.join(analysis_dir, vendor)
+            if os.path.exists(vendor_dir):
+                logger.info(f"删除目录: {vendor_dir}")
+                shutil.rmtree(vendor_dir)
+    
+    logger.info("所有数据目录清理完成")
 
 def crawl_main(vendor: str = None, article_limit: int = 0):
     """爬取主函数"""
-    config = load_config()
+    config = get_config()
     
     # 如果指定了厂商，过滤配置
     if vendor:
         sources = config.get('sources', {})
-        if vendor not in sources:
-            logger.error(f"指定的厂商 {vendor} 不存在")
+        # 只保留指定厂商的配置
+        filtered_sources = {vendor: sources.get(vendor, {})} if vendor in sources else {}
+        # 如果厂商不存在，给出警告
+        if not filtered_sources:
+            logger.warning(f"未找到厂商 {vendor} 的配置，请检查配置文件和厂商名称")
             return
-        
-        # 过滤其他厂商
-        filtered_config = config.copy()
-        filtered_config['sources'] = {vendor: sources[vendor]}
-        config = filtered_config
-        logger.info(f"只爬取指定厂商: {vendor}")
+        config['sources'] = filtered_sources
     
-    # 如果指定了文章数量限制，更新配置
+    # 如果设置了文章数量限制，更新配置
     if article_limit > 0:
+        logger.info(f"设置每个来源的文章数量限制为: {article_limit}")
         if 'crawler' not in config:
             config['crawler'] = {}
         config['crawler']['article_limit'] = article_limit
-        logger.info(f"设置文章数量限制: {article_limit}篇")
     
-    crawler = CrawlerManager(config)
-    result = crawler.run()
+    # 创建并运行爬虫管理器
+    crawler_manager = CrawlerManager(config)
+    result = crawler_manager.run()
     
     # 记录爬取结果
     for vendor_name, vendor_results in result.items():
@@ -152,115 +207,61 @@ def crawl_main(vendor: str = None, article_limit: int = 0):
             file_count = len(files)
             logger.info(f"爬取完成: {vendor_name} {source_type}, 共 {file_count} 个文件")
 
-def clean_data_directories():
-    """清理所有数据目录"""
-    logger.info("开始清理数据目录...")
-    
-    # 获取项目根目录
-    base_dir = os.path.dirname(os.path.dirname(__file__))
-    
-    # 清理raw目录
-    raw_dir = os.path.join(base_dir, 'data/raw')
-    if os.path.exists(raw_dir):
-        for item in os.listdir(raw_dir):
-            item_path = os.path.join(raw_dir, item)
-            if os.path.isdir(item_path):
-                shutil.rmtree(item_path)
-                logger.info(f"删除目录: {item_path}")
-            else:
-                os.remove(item_path)
-                logger.info(f"删除文件: {item_path}")
-    
-    # 清理analysis目录
-    analysis_dir = os.path.join(base_dir, 'data/analysis')
-    if os.path.exists(analysis_dir):
-        for item in os.listdir(analysis_dir):
-            item_path = os.path.join(analysis_dir, item)
-            if os.path.isdir(item_path):
-                shutil.rmtree(item_path)
-                logger.info(f"删除目录: {item_path}")
-            else:
-                os.remove(item_path)
-                logger.info(f"删除文件: {item_path}")
-    
-    logger.info("所有数据目录清理完成")
-
 def test_main(vendor: str = None):
-    """测试模式：清理数据并依次执行爬虫和分析"""
-    logger.info("启动测试模式")
-    
-    # 清理所有数据
-    clean_data_directories()
-    
-    # 确保目录存在
-    ensure_directories()
+    """测试主函数"""
+    # 清理数据
+    clean_data_dir()
     
     # 加载配置并设置测试模式
-    config = load_config()
+    config = get_config()
     
     # 为所有厂商和来源设置测试模式
-    if 'sources' not in config:
-        config['sources'] = {}
-    
     for vendor_name, vendor_config in config.get('sources', {}).items():
-        for source_type, source_config in vendor_config.items():
-            config['sources'][vendor_name][source_type]['test_mode'] = True
+        for source_name, source_config in vendor_config.items():
+            source_config['test_mode'] = True
     
-    # 保存临时配置
-    base_dir = os.path.dirname(os.path.dirname(__file__))
-    config_test_path = os.path.join(base_dir, 'config.test.yaml')
-    with open(config_test_path, 'w') as f:
-        yaml.dump(config, f)
+    # 爬取
+    crawl_main(vendor)
     
-    # 执行爬虫 - 使用测试模式，限制为1篇文章
-    logger.info("开始执行爬虫 (测试模式)")
-    crawl_main(vendor, article_limit=1)
+    # 分析
+    analyze_main()
+
+def analyze_main():
+    """分析主函数"""
+    # 加载配置
+    config = get_config()
     
-    # 执行分析
-    logger.info("开始执行分析")
+    # 创建并运行AI分析器
     analyzer = AIAnalyzer(config)
-    analyzer.run()
-    
-    logger.info("测试模式执行完成")
+    analyzer.analyze_all()
 
 def main():
     """主函数"""
     # 加载配置
-    config = load_config()
+    config = get_config()
     
     # 解析命令行参数
     args = parse_arguments()
     
-    # 如果指定了清理参数，先清理数据
-    if hasattr(args, 'clean') and args.clean:
-        clean_data_directories()
-        logger.info("清理完成，程序退出")
-        return
+    # 如果指定了clean参数，清理数据目录
+    if args.clean:
+        clean_data_dir()
+        if not args.mode:
+            return
     
-    # 确保必要目录存在
-    ensure_directories()
-    
-    # 根据模式执行相应的任务
-    if not hasattr(args, 'mode') or not args.mode:
-        logger.error("必须指定运行模式")
-        print("必须指定运行模式，使用 --mode 参数指定 crawl, analyze 或 test")
-        sys.exit(1)
-        
-    mode = args.mode.lower()
-    logger.info(f"运行模式: {mode}")
-    
-    if mode == 'crawl':
+    # 根据运行模式执行相应操作
+    if args.mode == "crawl":
+        logger.info("运行模式: crawl")
         crawl_main(args.vendor, args.limit)
-    elif mode == 'analyze':
-        logger.info("开始AI分析")
-        analyzer = AIAnalyzer(config)
-        analyzer.run()
-    elif mode == 'test':
+    elif args.mode == "analyze":
+        logger.info("运行模式: analyze")
+        analyze_main()
+    elif args.mode == "test":
+        logger.info("运行模式: test")
+        logger.info("启动测试模式")
         test_main(args.vendor)
     else:
-        logger.error(f"不支持的模式: {mode}")
-        print(f"不支持的模式: {mode}")
-        sys.exit(1)
+        logger.warning("未指定运行模式，使用 --mode 参数指定运行模式")
 
 if __name__ == "__main__":
     main() 

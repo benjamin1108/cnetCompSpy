@@ -20,7 +20,7 @@ sources:
       type: "documentation"
   azure:
     blog:
-      url: "https://azure.microsoft.com/en-us/blog/"
+      url: "https://azure.microsoft.com/en-us/blog/category/networking/"
       type: "blog"
       test_mode: false
     docs:
@@ -28,28 +28,50 @@ sources:
       type: "documentation"
   gcp:
     blog:
-      url: "https://cloud.google.com/blog/"
+      url: "https://cloud.google.com/blog/products/networking"
       type: "blog"
       test_mode: false
     docs:
       url: "https://cloud.google.com/docs/"
       type: "documentation"
+  tencent:
+    blog:
+      url: "https://www.tencentcloud.com/document/product"
+      type: "blog"
+      test_mode: false
+    docs:
+      url: "https://www.tencentcloud.com/document/product"
+      type: "documentation"
+  huawei:
+    blog:
+      url: "https://www.huaweicloud.com/intl/en-us/news/"
+      type: "blog"
+      test_mode: false
+    docs:
+      url: "https://support.huaweicloud.com/intl/en-us/index.html"
+      type: "documentation"
+  volcano:
+    blog:
+      url: "https://volcano.sh/en/blog/"
+      type: "blog"
+      test_mode: false
+    docs:
+      url: "https://volcano.sh/en/docs/"
+      type: "documentation"
 
-# AI分析配置
+# AI分析基础配置
 ai_analyzer:
-  model: "YOUR_MODEL_NAME"           # 使用的AI模型名称
+  model: "qwen-max"           # 使用的AI模型名称
   max_tokens: 4000                   # 最大令牌数
   temperature: 0.8                   # 温度参数
-  api_key: "YOUR_API_KEY"            # API密钥 - 替换为您的密钥
-  api_base: "YOUR_API_BASE_URL"      # API基础URL - 替换为您的API URL
-  
-  # API基础URL参考示例:
+    # API基础URL（请选择您使用的模型服务提供商的API端点）
+  # 示例:
   # - 阿里云通义千问: "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
   # - OpenAI: "https://api.openai.com/v1"
   # - Azure OpenAI: "https://your-resource-name.openai.azure.com/openai/deployments/your-deployment-name"
-  # - 百度文心一言: "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat"
-  # - 讯飞星火: "https://spark-api.xf-yun.com/v1/chat"
-  
+  # - 百度文心一言: "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop"
+  # - 讯飞星火: "https://spark-api.xf-yun.com/v1"
+  api_base: "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions" 
   system_prompt: "你是一个专业的云计算技术分析师，擅长分析和解读各类云计算技术文档。请以简洁有力、专业清晰的风格回答问题。" # 系统提示词
   tasks:
     - type: "AI摘要"

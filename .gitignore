@@ -43,15 +43,17 @@ logs/
 *CompSpy.log
 
 # 配置文件 - 避免提交包含敏感信息的配置
-config.yaml
+# config.yaml  # 已移除 - 允许提交基本配置文件
 config.json
 config.test.yaml
+config.secret.yaml  # 保留 - 包含API密钥等敏感信息
 .env
 .env.local
 .env.*.local
 
-# 但需要保留配置示例
+# 但需要保留配置示例和基本配置
 !config.examples/
+!config.yaml  # 显式声明不忽略config.yaml
 
 # 临时文件
 temp/

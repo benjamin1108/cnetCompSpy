@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title|default('文档') }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .view-options {
+            margin: 10px 0;
+            text-align: center;
+        }
+        
+        .view-option {
+            display: inline-block;
+            padding: 8px 16px;
+            margin: 0 5px;
+            background-color: #f1f1f1;
+            border-radius: 20px;
+            color: #666;
+            text-decoration: none;
+        }
+        
+        .view-option.active {
+            background-color: #0078d4;
+            color: white;
+        }
+        
+        .ai-label {
+            display: inline-block;
+            background-color: #0078d4;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>
+            {{ title }}
+            {% if view_type == 'analysis' %}
+                <span class="ai-label">AI分析</span>
+            {% endif %}
+        </h1>
+        <div class="doc-meta">
+            {% if meta and meta.date %}
+                <span class="date">发布日期: {{ meta.date }}</span>
+            {% endif %}
+            
+            {% if meta and meta.author %}
+                <span class="author">作者: {{ meta.author }}</span>
+            {% endif %}
+        </div>
+        
+        {% if view_type == 'raw' and has_analysis %}
+            <div class="view-options">
+                <a href="{{ url_for('document_page', vendor=vendor, doc_type=doc_type, filename=filename) }}" 
+                   class="view-option active">
+                    原始文档
+                </a>
+                <a href="{{ url_for('analysis_document_page', vendor=vendor, doc_type=doc_type, filename=filename) }}" 
+                   class="view-option">
+                    AI分析
+                </a>
+            </div>
+        {% elif view_type == 'analysis' and has_raw %}
+            <div class="view-options">
+                <a href="{{ url_for('document_page', vendor=vendor, doc_type=doc_type, filename=filename) }}" 
+                   class="view-option">
+                    原始文档
+                </a>
+                <a href="{{ url_for('analysis_document_page', vendor=vendor, doc_type=doc_type, filename=filename) }}" 
+                   class="view-option active">
+                    AI分析
+                </a>
+            </div>
+        {% endif %}
+        
+        <div class="nav-links">
+            {% if view_type == 'analysis' %}
+                <a href="{{ url_for('analysis_page', vendor=vendor) }}" class="back-link">返回 {{ vendor|upper }}</a>
+            {% else %}
+                <a href="{{ url_for('vendor_page', vendor=vendor) }}" class="back-link">返回 {{ vendor|upper }}</a>
+            {% endif %}
+            <a href="{{ url_for('index') }}">返回首页</a>
+            
+            {% if view_type == 'analysis' %}
+                <a href="{{ url_for('analysis_raw_file', vendor=vendor, doc_type=doc_type, filename=filename) }}" class="download-link">
+                    下载AI分析文件
+                </a>
+            {% else %}
+                <a href="{{ url_for('raw_file', vendor=vendor, doc_type=doc_type, filename=filename) }}" class="download-link">
+                    下载原始文件
+                </a>
+            {% endif %}
+        </div>
+    </header>
+
+    <main>
+        <article class="document-content">
+            {{ content|safe }}
+        </article>
+    </main>
+
+    <footer>
+        <p>&copy; {{ now.year|default('2024') }} 云服务厂商竞争分析</p>
+        <p>
+            文档来源: {{ vendor|upper }} - {{ doc_type }}
+            {% if view_type == 'analysis' %}
+                (AI分析版本)
+            {% endif %}
+        </p>
+    </footer>
+</body>
+</html> 

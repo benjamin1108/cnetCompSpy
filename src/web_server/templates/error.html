@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>服务器错误 - 500</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .error-container {
+            text-align: center;
+            padding: 50px 20px;
+        }
+        
+        .error-code {
+            font-size: 96px;
+            font-weight: bold;
+            color: #d9534f;
+            margin: 0;
+        }
+        
+        .error-message {
+            font-size: 24px;
+            margin: 20px 0;
+        }
+        
+        .error-details {
+            margin: 20px auto;
+            max-width: 600px;
+            text-align: left;
+            background-color: #f8f8f8;
+            padding: 15px;
+            border-radius: 4px;
+            border-left: 4px solid #d9534f;
+        }
+        
+        .home-link {
+            display: inline-block;
+            margin-top: 30px;
+            padding: 10px 20px;
+            background-color: #0078d4;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+        
+        .home-link:hover {
+            background-color: #005a9e;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>服务器错误</h1>
+    </header>
+
+    <main>
+        <div class="error-container">
+            <p class="error-code">500</p>
+            <p class="error-message">抱歉，服务器遇到了问题</p>
+            
+            {% if error %}
+                <div class="error-details">
+                    <p><strong>错误详情:</strong></p>
+                    <p>{{ error }}</p>
+                </div>
+            {% endif %}
+            
+            <p>请稍后再试，或联系管理员寻求帮助</p>
+            <a href="{{ url_for('index') }}" class="home-link">返回首页</a>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; {{ now.year|default('2024') }} 云服务厂商竞争分析</p>
+    </footer>
+</body>
+</html> 

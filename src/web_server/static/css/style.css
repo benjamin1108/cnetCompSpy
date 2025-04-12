@@ -1,0 +1,438 @@
+/* 网络间谍竞争情报系统 - 主样式表 */
+
+/* 基础样式 */
+:root {
+    --primary-color: #0078d4;
+    --primary-dark: #005a9e;
+    --primary-light: #e6f2fc;
+    --secondary-color: #31456a;
+    --text-color: #333;
+    --text-light: #666;
+    --bg-color: #f9fafd;
+    --bg-light: #fff;
+    --border-color: #eaedf2;
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --transition: all 0.2s ease;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+    line-height: 1.6;
+    color: var(--text-color);
+    background-color: var(--bg-color);
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+a {
+    color: var(--primary-color);
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+a:hover {
+    text-decoration: none;
+    color: var(--primary-dark);
+}
+
+/* 布局组件 */
+header {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: white;
+    padding: 25px 20px;
+    text-align: center;
+    box-shadow: var(--shadow-md);
+}
+
+header h1 {
+    margin-bottom: 10px;
+    font-size: 28px;
+    letter-spacing: 0.5px;
+}
+
+.subtitle {
+    font-size: 16px;
+    opacity: 0.9;
+    margin-bottom: 5px;
+}
+
+.nav-links {
+    margin-top: 15px;
+    display: flex;
+    justify-content: center;
+}
+
+.nav-links a {
+    color: white;
+    margin: 0 10px;
+    padding: 6px 12px;
+    border-radius: 4px;
+    display: inline-block;
+    transition: var(--transition);
+    font-weight: 500;
+}
+
+.nav-links a:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+}
+
+.back-link::before {
+    content: "← ";
+}
+
+.view-link::before {
+    content: "👁 ";
+}
+
+main {
+    max-width: 1200px;
+    margin: 30px auto;
+    padding: 0 20px;
+}
+
+section {
+    background-color: var(--bg-light);
+    border-radius: 6px;
+    box-shadow: var(--shadow-md);
+    padding: 25px;
+    margin-bottom: 30px;
+    border: 1px solid var(--border-color);
+}
+
+section h2 {
+    font-size: 1.25rem;
+    color: var(--secondary-color);
+    display: flex;
+    align-items: center;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+}
+
+section h2:after {
+    content: "";
+    flex-grow: 1;
+    height: 1px;
+    background: linear-gradient(to right, var(--border-color) 60%, transparent);
+    margin-left: 15px;
+}
+
+footer {
+    text-align: center;
+    padding: 25px;
+    margin-top: 50px;
+    color: var(--text-light);
+    font-size: 14px;
+}
+
+/* 厂商卡片 */
+.vendor-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 25px;
+}
+
+.vendor-card {
+    background-color: var(--bg-light);
+    border-radius: 8px;
+    box-shadow: var(--shadow-sm);
+    padding: 25px;
+    transition: transform 0.3s, box-shadow 0.3s;
+    border: 1px solid var(--border-color);
+}
+
+.vendor-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-md);
+}
+
+.vendor-card h3 {
+    margin-bottom: 15px;
+    font-size: 22px;
+    color: var(--secondary-color);
+}
+
+.doc-count {
+    margin-top: 12px;
+    font-weight: 500;
+}
+
+.doc-types {
+    list-style: none;
+    margin-top: 12px;
+    padding-left: 0;
+    font-size: 14px;
+    color: var(--text-light);
+}
+
+.doc-types li {
+    display: inline-block;
+    margin-right: 10px;
+    margin-bottom: 5px;
+    background-color: #f1f1f1;
+    padding: 4px 10px;
+    border-radius: 4px;
+}
+
+/* 文档列表 */
+.doc-list {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+thead tr {
+    background-color: #f5f7fa;
+}
+
+th {
+    padding: 14px 15px;
+    text-align: left;
+    border-bottom: 2px solid var(--border-color);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+    color: var(--secondary-color);
+}
+
+td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+tbody tr {
+    transition: var(--transition);
+}
+
+tbody tr:hover {
+    background-color: #f8f9fb;
+}
+
+td.date, td.size {
+    white-space: nowrap;
+    width: 120px;
+    color: var(--text-light);
+    font-size: 0.9rem;
+}
+
+td.actions {
+    width: 80px;
+    text-align: center;
+}
+
+td.actions a {
+    display: inline-block;
+    padding: 5px 10px;
+    background-color: #f5f7fa;
+    border-radius: 4px;
+    margin: 0 2px;
+    transition: var(--transition);
+    font-size: 0.9rem;
+}
+
+td.actions a:hover {
+    background-color: var(--primary-light);
+    color: var(--primary-dark);
+}
+
+/* 文档内容 */
+.document-content {
+    background-color: var(--bg-light);
+    padding: 35px;
+    border-radius: 8px;
+    box-shadow: var(--shadow-md);
+    line-height: 1.8;
+    border: 1px solid var(--border-color);
+}
+
+.document-content h1,
+.document-content h2,
+.document-content h3,
+.document-content h4,
+.document-content h5,
+.document-content h6 {
+    margin-top: 1.8em;
+    margin-bottom: 0.8em;
+    color: var(--secondary-color);
+}
+
+.document-content h1 {
+    font-size: 28px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 12px;
+}
+
+.document-content h2 {
+    font-size: 24px;
+}
+
+.document-content h3 {
+    font-size: 20px;
+}
+
+.document-content p,
+.document-content ul,
+.document-content ol {
+    margin-bottom: 1.2em;
+}
+
+.document-content ul,
+.document-content ol {
+    padding-left: 2em;
+}
+
+.document-content code {
+    background-color: #f5f7fa;
+    padding: 3px 6px;
+    border-radius: 3px;
+    font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 0.9em;
+    color: #e83e8c;
+}
+
+.document-content pre {
+    background-color: #f5f7fa;
+    border-radius: 5px;
+    padding: 15px;
+    overflow-x: auto;
+    margin: 1.5em 0;
+    border: 1px solid #eef1f6;
+}
+
+.document-content pre code {
+    background-color: transparent;
+    padding: 0;
+    color: inherit;
+}
+
+.document-content blockquote {
+    border-left: 4px solid var(--primary-color);
+    padding: 12px 20px;
+    margin: 1.5em 0;
+    background-color: #f9fafb;
+}
+
+.document-content img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 1.5em auto;
+    border-radius: 5px;
+}
+
+.document-content table {
+    margin: 1.5em 0;
+    border: 1px solid var(--border-color);
+}
+
+.document-content th,
+.document-content td {
+    padding: 10px;
+    border: 1px solid var(--border-color);
+}
+
+.doc-meta {
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.doc-meta span {
+    display: inline-block;
+    margin-right: 20px;
+    color: var(--text-light);
+}
+
+.no-data {
+    text-align: center;
+    padding: 40px 0;
+    color: var(--text-light);
+    font-size: 1.1rem;
+}
+
+.badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background-color: var(--primary-color);
+    color: white;
+    font-size: 12px;
+    margin-left: 8px;
+    transition: var(--transition);
+}
+
+.badge:hover {
+    background-color: var(--primary-dark);
+    transform: translateY(-1px);
+}
+
+.analysis-marker {
+    background-color: #fcf8e3;
+    padding: 1px 3px;
+    border-radius: 2px;
+}
+
+.insight {
+    background-color: #f9f2f4;
+    border-left: 3px solid #c7254e;
+    padding: 15px;
+    margin: 1.5em 0;
+    border-radius: 3px;
+}
+
+.ai-summary {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.ai-summary h2 {
+    color: var(--secondary-color);
+    font-size: 1.2rem;
+    margin-top: 0;
+    border-bottom: 1px solid #e9ecef;
+    padding-bottom: 10px;
+}
+
+.ai-highlight {
+    background-color: #fdf7e3;
+    padding: 3px;
+    border-radius: 3px;
+}
+
+.view-toggle {
+    text-align: center;
+    margin: 20px 0;
+    padding: 10px;
+}
+
+@media (max-width: 768px) {
+    .vendor-cards {
+        grid-template-columns: 1fr;
+    }
+    header h1 {
+        font-size: 24px;
+    }
+    .document-content {
+        padding: 20px;
+    }
+    .nav-links a {
+        padding: 5px 8px;
+        font-size: 14px;
+    }
+} 

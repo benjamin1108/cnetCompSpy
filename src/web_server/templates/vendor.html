@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title|default(vendor + ' - 竞争分析') }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .view-options {
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .view-option {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 0 8px;
+            background-color: #f0f2f5;
+            border-radius: 4px;
+            color: #666;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+        
+        .view-option.active {
+            background-color: #fff;
+            color: #0078d4;
+            border: 1px solid #0078d4;
+            box-shadow: 0 2px 8px rgba(0, 120, 212, 0.1);
+        }
+        
+        .view-option:hover:not(.active) {
+            background-color: #e6e9ed;
+            color: #0078d4;
+            text-decoration: none;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background-color: #0078d4;
+            color: white;
+            font-size: 12px;
+            margin-left: 8px;
+            transition: all 0.2s ease;
+        }
+        
+        .badge:hover {
+            background-color: #005a9e;
+            text-decoration: none;
+        }
+        
+        /* 增加科技感的样式 */
+        body {
+            background-color: #f9fafd;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #0078d4, #0051a2);
+            padding: 25px 20px;
+        }
+        
+        section {
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            border: 1px solid #eaedf2;
+        }
+        
+        thead tr {
+            background-color: #f5f7fa;
+            color: #31456a;
+        }
+        
+        th {
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+        }
+        
+        td {
+            border-bottom: 1px solid #eef1f6;
+        }
+        
+        section h2 {
+            font-size: 1.25rem;
+            color: #31456a;
+            display: flex;
+            align-items: center;
+        }
+        
+        section h2:after {
+            content: "";
+            flex-grow: 1;
+            height: 1px;
+            background: linear-gradient(to right, #e6e9ed 60%, transparent);
+            margin-left: 15px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>{{ vendor|upper }} 竞争分析</h1>
+        <p class="subtitle">
+            {% if view_type == 'analysis' %}
+                AI分析的博客和文档资料
+            {% else %}
+                爬取的博客和文档资料
+            {% endif %}
+        </p>
+        <div class="nav-links">
+            <a href="{{ url_for('index') }}" class="back-link">返回首页</a>
+        </div>
+        
+        {% if has_analysis %}
+        <div class="view-options">
+            <a href="{{ url_for('vendor_page', vendor=vendor) }}" 
+               class="view-option {% if view_type == 'raw' %}active{% endif %}">
+                原始文档
+            </a>
+            <a href="{{ url_for('analysis_page', vendor=vendor) }}" 
+               class="view-option {% if view_type == 'analysis' %}active{% endif %}">
+                AI分析
+            </a>
+        </div>
+        {% endif %}
+    </header>
+
+    <main>
+        {% if docs %}
+            {% for doc_type, doc_list in docs.items() %}
+                {% if doc_list %}
+                    <section class="doc-section">
+                        <h2>{{ doc_type }} ({{ doc_list|length }})</h2>
+                        
+                        <div class="doc-list">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>标题</th>
+                                        <th>发布日期</th>
+                                        <th>大小</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for doc in doc_list %}
+                                        <tr>
+                                            <td>
+                                                {% if view_type == 'analysis' %}
+                                                    <a href="{{ url_for('analysis_document_page', vendor=vendor, doc_type=doc_type, filename=doc.filename) }}">
+                                                        {{ doc.title }}
+                                                    </a>
+                                                {% else %}
+                                                    <a href="{{ url_for('document_page', vendor=vendor, doc_type=doc_type, filename=doc.filename) }}">
+                                                        {{ doc.title }}
+                                                    </a>
+                                                    {% if doc.has_analysis %}
+                                                        <a href="{{ url_for('analysis_document_page', vendor=vendor, doc_type=doc_type, filename=doc.filename) }}" 
+                                                           class="badge" title="查看AI分析">AI</a>
+                                                    {% endif %}
+                                                {% endif %}
+                                            </td>
+                                            <td class="date">{{ doc.date or '未知' }}</td>
+                                            <td class="size">{{ (doc.size / 1024)|round(1) }} KB</td>
+                                            <td class="actions">
+                                                {% if view_type == 'analysis' %}
+                                                    {% if doc.has_raw %}
+                                                        <a href="{{ url_for('document_page', vendor=vendor, doc_type=doc_type, filename=doc.filename) }}" 
+                                                           class="view-link" title="查看原始文档">
+                                                            原始
+                                                        </a>
+                                                    {% endif %}
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                {% endif %}
+            {% endfor %}
+        {% else %}
+            <section class="no-data">
+                <p>该厂商暂无文档数据。</p>
+            </section>
+        {% endif %}
+    </main>
+
+    <footer>
+        <p>&copy; {{ now.year|default('2024') }} 云服务厂商竞争分析</p>
+    </footer>
+</body>
+</html> 

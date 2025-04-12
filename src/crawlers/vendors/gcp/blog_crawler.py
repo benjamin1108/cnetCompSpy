@@ -6,8 +6,11 @@ import os
 import re
 import sys
 import time
+import hashlib
+import datetime
 from typing import Dict, Any, List, Optional, Tuple
 from urllib.parse import urljoin, urlparse
+from lxml import etree
 
 from bs4 import BeautifulSoup
 import requests
@@ -89,14 +92,11 @@ class GcpBlogCrawler(BaseCrawler):
                         logger.warning(f"获取文章内容失败: {url}")
                         continue
                     
-                    # 解析文章内容
-                    article_content = self._parse_article_content(url, article_html)
-                    
-                    # 规范化文件名（仅用于文件保存，不影响内容处理）
-                    clean_title = self._format_filename(title)
+                    # 解析文章内容和日期
+                    content, pub_date = self._parse_article_content(url, article_html)
                     
                     # 保存为Markdown
-                    file_path = self.save_to_markdown(url, clean_title, article_content['content'], [])
+                    file_path = self.save_to_markdown(url, title, (content, pub_date))
                     saved_files.append(file_path)
                     logger.info(f"已保存文章: {title} -> {file_path}")
                     
@@ -359,25 +359,25 @@ class GcpBlogCrawler(BaseCrawler):
         # 1. 首先尝试获取链接的aria-label属性，这通常包含更完整的描述
         aria_label = link.get('aria-label')
         if aria_label and len(aria_label) > 5:
-            return aria_label
+            return self._clean_title(aria_label)
         
         # 2. 尝试获取链接的文本内容
         link_text = link.get_text(strip=True)
         if link_text and len(link_text) > 5:
-            return link_text
+            return self._clean_title(link_text)
         
         # 3. 查找链接周围的内容
         # 检查父元素是否为标题
         parent = link.parent
         if parent and parent.name in ['h1', 'h2', 'h3', 'h4']:
-            return parent.get_text(strip=True)
+            return self._clean_title(parent.get_text(strip=True))
         
         # 4. 查找最近的标题元素
         ancestor = link.find_parent(['div', 'section', 'article'])
         if ancestor:
             heading = ancestor.find(['h1', 'h2', 'h3', 'h4'])
             if heading:
-                return heading.get_text(strip=True)
+                return self._clean_title(heading.get_text(strip=True))
         
         # 5. 从URL中提取标题（最后的选择）
         href = link.get('href', '')
@@ -389,74 +389,150 @@ class GcpBlogCrawler(BaseCrawler):
                 # 将连字符和下划线替换为空格，并转换为标题格式
                 title_from_url = last_segment.replace('-', ' ').replace('_', ' ').title()
                 if len(title_from_url) > 3:  # 确保标题不太短
-                    return title_from_url
+                    return self._clean_title(title_from_url)
         
         # 默认标题
         return "Google Cloud Blog Article"
     
-    def _parse_article_content(self, url: str, html: str) -> Dict[str, Any]:
+    def _clean_title(self, title: str) -> str:
         """
-        从文章页面解析文章内容
+        清理标题文本，移除分类前缀和阅读时间后缀
+        
+        Args:
+            title: 原始标题文本
+            
+        Returns:
+            清理后的标题
+        """
+        # 移除分类前缀，如"Telecommunications"、"Networking"等
+        categories = [
+            "Telecommunications", 
+            "Networking", 
+            "Security", 
+            "AI & Machine Learning",
+            "Cloud", 
+            "Big Data"
+        ]
+        
+        # 尝试移除分类前缀
+        for category in categories:
+            if title.startswith(category):
+                title = title[len(category):].strip()
+        
+        # 移除"By Author • X-minute read"格式的后缀
+        author_pattern = r'\s*By\s+[\w\s\.]+\s*[•·]\s*\d+-minute read.*$'
+        title = re.sub(author_pattern, '', title, flags=re.IGNORECASE)
+        
+        # 移除"X-minute read"格式的后缀
+        read_time_pattern = r'\s*[•·]\s*\d+-minute read.*$'
+        title = re.sub(read_time_pattern, '', title, flags=re.IGNORECASE)
+        
+        # 移除"• X min read"格式的后缀
+        min_read_pattern = r'\s*[•·]\s*\d+\s*min read.*$'
+        title = re.sub(min_read_pattern, '', title, flags=re.IGNORECASE)
+        
+        # 返回清理后的标题
+        return title.strip()
+    
+    def _parse_article_content(self, url: str, html: str) -> Tuple[str, Optional[str]]:
+        """
+        从文章页面解析文章内容和发布日期
         
         Args:
             url: 文章URL
             html: 文章页面HTML
             
         Returns:
-            包含文章内容的字典
+            (文章内容, 发布日期) 元组
         """
         soup = BeautifulSoup(html, 'lxml')
         
-        # 提取文章标题 - 使用HTML结构而非类名
-        title = self._extract_article_title(soup)
+        # 提取发布日期
+        pub_date = self._extract_article_date_enhanced(soup, html)
         
-        # 提取发布日期 - 使用HTML结构而非类名
-        date = self._extract_article_date(soup)
+        # 提取文章内容
+        article_content = self._extract_article_content(soup)
         
-        # 提取作者 - 使用HTML结构而非类名
-        author = self._extract_article_author(soup)
-        
-        # 提取文章内容 - 使用HTML结构而非类名
-        content_markdown = self._extract_article_content(soup)
-        
-        # 提取标签/分类 - 使用HTML结构而非类名
-        tags = self._extract_article_tags(soup)
-        
-        # 返回完整的文章内容字典
-        return {
-            'title': title,
-            'date': date,
-            'author': author,
-            'content': content_markdown,
-            'tags': tags,
-            'url': url
-        }
+        return article_content, pub_date
     
-    def _extract_article_title(self, soup: BeautifulSoup) -> str:
+    def _extract_article_date_enhanced(self, soup: BeautifulSoup, html: str) -> str:
         """
-        提取文章标题
+        增强版的文章日期提取，使用多种方式尝试获取日期
         
         Args:
             soup: BeautifulSoup对象
+            html: 原始HTML
             
         Returns:
-            文章标题
+            日期字符串（YYYY_MM_DD格式）
         """
-        # 标题的优先级：
-        # 1. 主标题h1
-        h1 = soup.find('h1')
-        if h1:
-            return h1.get_text(strip=True)
+        date_format = "%Y_%m_%d"
         
-        # 2. 页面标题
-        title_tag = soup.find('title')
-        if title_tag:
-            title_text = title_tag.get_text(strip=True)
-            # 移除网站名称（如果存在）
-            return re.sub(r'\s*\|\s*Google Cloud.*$', '', title_text)
+        # 1. 使用特定的xpath路径提取日期
+        try:
+            html_tree = etree.HTML(html)
+            if html_tree is not None:
+                # 根据提供的xpath定位日期元素
+                date_elements = html_tree.xpath('/html/body/c-wiz/div/div/article/section[1]/div/div[3]')
+                if date_elements:
+                    date_text = date_elements[0].text_content().strip()
+                    logger.info(f"通过XPath找到日期文本: {date_text}")
+                    
+                    # 尝试解析这个日期文本
+                    # 常见的GCP日期格式如：May 16, 2023 或 Sep 28, 2022
+                    date_match = re.search(r'(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2}),?\s+(\d{4})', date_text)
+                    if date_match:
+                        month, day, year = date_match.groups()
+                        month_dict = {
+                            'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6,
+                            'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12
+                        }
+                        month_num = month_dict.get(month)
+                        if month_num:
+                            try:
+                                parsed_date = datetime.datetime(int(year), month_num, int(day))
+                                logger.info(f"成功解析XPath日期: {parsed_date.strftime(date_format)}")
+                                return parsed_date.strftime(date_format)
+                            except ValueError as e:
+                                logger.warning(f"解析XPath日期出错: {e}")
+        except Exception as e:
+            logger.warning(f"使用XPath提取日期时出错: {e}")
         
-        # 3. 默认标题
-        return "Untitled GCP Blog Post"
+        # 2. 使用标准方法提取日期
+        standard_date = self._extract_article_date(soup)
+        if standard_date:
+            try:
+                # 尝试解析标准日期
+                for date_pattern in [
+                    '%Y-%m-%d', '%Y/%m/%d', '%B %d, %Y', '%b %d, %Y',
+                    '%d %B %Y', '%d %b %Y', '%m/%d/%Y', '%d/%m/%Y'
+                ]:
+                    try:
+                        # 处理可能包含时间的日期
+                        date_part = standard_date.split('T')[0] if 'T' in standard_date else standard_date
+                        parsed_date = datetime.datetime.strptime(date_part, date_pattern)
+                        logger.info(f"通过标准方法解析日期: {parsed_date.strftime(date_format)}")
+                        return parsed_date.strftime(date_format)
+                    except ValueError:
+                        continue
+            except Exception as e:
+                logger.debug(f"解析标准日期出错: {e}")
+        
+        # 3. 从URL中尝试提取日期
+        url_date_match = re.search(r'/(\d{4})/(\d{1,2})/', url)
+        if url_date_match:
+            try:
+                year, month = url_date_match.groups()
+                # 如果URL中只有年月，日设为1
+                parsed_date = datetime.datetime(int(year), int(month), 1)
+                logger.info(f"从URL中提取到年月: {parsed_date.strftime(date_format)}")
+                return parsed_date.strftime(date_format)
+            except ValueError as e:
+                logger.debug(f"解析URL日期出错: {e}")
+        
+        # 4. 如果所有方法都失败，使用当前日期
+        logger.warning(f"未找到日期，使用当前日期")
+        return datetime.datetime.now().strftime(date_format)
     
     def _extract_article_date(self, soup: BeautifulSoup) -> Optional[str]:
         """
@@ -500,45 +576,6 @@ class GcpBlogCrawler(BaseCrawler):
             date_match = re.search(pattern, str(soup))
             if date_match:
                 return date_match.group(0)
-        
-        return None
-    
-    def _extract_article_author(self, soup: BeautifulSoup) -> Optional[str]:
-        """
-        提取文章作者
-        
-        Args:
-            soup: BeautifulSoup对象
-            
-        Returns:
-            作者名称，如果找不到则返回None
-        """
-        # 作者的优先级：
-        # 1. rel="author"属性的元素
-        author_link = soup.select_one('[rel="author"]')
-        if author_link:
-            return author_link.get_text(strip=True)
-        
-        # 2. meta标签中的作者
-        for meta_name in ['author', 'article:author', 'dc.creator']:
-            meta = soup.find('meta', attrs={'name': meta_name}) or soup.find('meta', attrs={'property': meta_name})
-            if meta and meta.get('content'):
-                return meta.get('content')
-        
-        # 3. 包含作者关键词的元素
-        author_keywords = ['author', 'by', 'written by', 'posted by']
-        for keyword in author_keywords:
-            elements = soup.find_all(text=re.compile(keyword, re.IGNORECASE))
-            for element in elements:
-                # 检查元素是否是字符串
-                if isinstance(element, str):
-                    parent = element.parent
-                    if parent:
-                        text = parent.get_text(strip=True)
-                        # 使用正则表达式提取作者名
-                        author_match = re.search(r'(?:by|author|written by|posted by)[:\s]+([^,\n]+)', text, re.IGNORECASE)
-                        if author_match:
-                            return author_match.group(1).strip()
         
         return None
     
@@ -605,56 +642,161 @@ class GcpBlogCrawler(BaseCrawler):
         
         return "无法提取文章内容。"
     
-    def _extract_article_tags(self, soup: BeautifulSoup) -> List[str]:
+    def _clean_markdown(self, markdown_content: str) -> str:
         """
-        提取文章标签
+        清理和美化Markdown内容
         
         Args:
-            soup: BeautifulSoup对象
+            markdown_content: 原始Markdown内容
             
         Returns:
-            标签列表
+            清理后的Markdown内容
         """
-        tags = []
+        # 1. 移除社交媒体分享链接 (通常出现在文章开头)
+        # 这些链接通常没有链接文本，格式为 [](<url>)
+        social_media_patterns = [
+            r'\* \[\]\(https?://(?:x|twitter)\.com/intent/tweet[^\)]+\)\s*',
+            r'\* \[\]\(https?://(?:www\.)?linkedin\.com/shareArticle[^\)]+\)\s*',
+            r'\* \[\]\(https?://(?:www\.)?facebook\.com/sharer[^\)]+\)\s*',
+            r'\* \[\]\(mailto:[^\)]+\)\s*'
+        ]
         
-        # 优先级：
-        # 1. 带有rel="tag"属性的链接
-        tag_links = soup.select('a[rel="tag"]')
-        for link in tag_links:
-            tag = link.get_text(strip=True)
-            if tag and tag not in tags:
-                tags.append(tag)
+        for pattern in social_media_patterns:
+            markdown_content = re.sub(pattern, '', markdown_content)
         
-        # 2. 常见标签容器中的链接
-        tag_containers = soup.select('.tags, .categories, .topics, .labels')
-        for container in tag_containers:
-            links = container.find_all('a')
-            for link in links:
-                tag = link.get_text(strip=True)
-                if tag and tag not in tags:
-                    tags.append(tag)
+        # 2. 移除"Related articles"部分 (通常出现在文章末尾)
+        related_articles_pattern = r'(?:#{1,6}\s*Related articles[\s\S]+)$'
+        markdown_content = re.sub(related_articles_pattern, '', markdown_content)
         
-        # 3. 带有标签相关关键词的元素
-        tag_keywords = ['tag', 'category', 'topic', 'label']
-        for keyword in tag_keywords:
-            elements = soup.find_all(text=re.compile(keyword, re.IGNORECASE))
-            for element in elements:
-                parent = element.parent
-                if parent:
-                    links = parent.find_all('a')
-                    for link in links:
-                        tag = link.get_text(strip=True)
-                        if tag and tag not in tags:
-                            tags.append(tag)
+        # 移除"Share"部分 (如果存在)
+        share_pattern = r'#{1,6}\s*Share\s*\n[\s\S]*?(?=\n#{1,6}|\Z)'
+        markdown_content = re.sub(share_pattern, '', markdown_content)
         
-        return tags
+        # 移除可能的推广块，但保留"Learn more"部分
+        promo_patterns = [
+            r'\*\*\s*Get started with Google Cloud\s*\*\*[\s\S]*?(?=\n#{1,6}|Learn more|\Z)',
+            r'\*\*\s*Try it yourself\s*\*\*[\s\S]*?(?=\n#{1,6}|Learn more|\Z)'
+        ]
+        
+        for pattern in promo_patterns:
+            markdown_content = re.sub(pattern, '', markdown_content)
+        
+        # 去除连续多个空行
+        markdown_content = re.sub(r'\n{3,}', '\n\n', markdown_content)
+        
+        # 美化代码块
+        markdown_content = re.sub(r'```([^`]+)```', r'\n\n```\1```\n\n', markdown_content)
+        
+        # 美化图片格式，确保图片前后有空行
+        markdown_content = re.sub(r'([^\n])!\[', r'\1\n\n![', markdown_content)
+        markdown_content = re.sub(r'\.(?:jpg|jpeg|png|gif|webp|svg)\)([^\n])', r'.jpg)\n\n\1', markdown_content)
+        
+        # 修复可能的链接问题
+        markdown_content = re.sub(r'\]\(\/(?!http)', r'](https://cloud.google.com/', markdown_content)
+        
+        # 移除任何空链接文本的链接
+        markdown_content = re.sub(r'\* \[\]\([^\)]+\)\s*', '', markdown_content)
+        
+        # 移除引用格式的链接列表
+        markdown_content = re.sub(r'>\s*\* \[[^\]]*\]\([^\)]+\)\s*', '', markdown_content)
+        
+        # 删除末尾的参考链接区，但保留Posted in部分
+        reference_section_pattern = r'\n\s*\[\d+\]:\s*http[^\n]+(?:\n\s*\[\d+\]:\s*http[^\n]+)*\s*$'
+        posted_in_pattern = r'Posted in.*?(?=\n#{1,6}|\Z)'
+        
+        # 先查找是否存在Posted in部分
+        posted_in_match = re.search(posted_in_pattern, markdown_content)
+        posted_in_content = posted_in_match.group(0) if posted_in_match else None
+        
+        # 删除参考链接
+        markdown_content = re.sub(reference_section_pattern, '', markdown_content)
+        
+        # 移除带有图片链接的相关文章部分，但保留Learn more和Posted in部分
+        related_with_images = r'\[[^\]]*\n\n!\[[^\]]*\]\([^\)]+\)\n\n[^\]]*\]\([^\)]+\)'
+        markdown_content = re.sub(related_with_images, '', markdown_content)
+        
+        # 确保Learn more和Posted in部分保留在内容中
+        if posted_in_content and posted_in_content not in markdown_content:
+            markdown_content += f"\n\n{posted_in_content}"
+        
+        return markdown_content.strip()
+    
+    def _create_filename(self, url: str, pub_date: str, ext: str) -> str:
+        """
+        根据发布日期和URL哈希值创建文件名
+        
+        Args:
+            url: 文章URL
+            pub_date: 发布日期（YYYY_MM_DD格式）
+            ext: 文件扩展名（如.md）
+            
+        Returns:
+            格式为: YYYY_MM_DD_URLHASH.md 的文件名
+        """
+        # 生成URL的哈希值（取前8位作为短哈希）
+        url_hash = hashlib.md5(url.encode()).hexdigest()[:8]
+        
+        # 组合日期和哈希值
+        filename = f"{pub_date}_{url_hash}{ext}"
+        
+        return filename
+    
+    def save_to_markdown(self, url: str, title: str, content_and_date: Tuple[str, Optional[str]]) -> str:
+        """
+        保存内容为Markdown文件
+        
+        Args:
+            url: 文章URL
+            title: 文章标题
+            content_and_date: 文章内容和发布日期的元组
+            
+        Returns:
+            保存的文件路径
+        """
+        content, pub_date = content_and_date
+        
+        if not pub_date:
+            # 如果没有提取到日期，使用当前日期
+            pub_date = datetime.datetime.now().strftime("%Y_%m_%d")
+        
+        # 创建用于存储的文件名（使用日期和URL哈希）
+        filename = self._create_filename(url, pub_date, ".md")
+        filepath = os.path.join(self.output_dir, filename)
+        
+        # 将日期格式转换为更友好的显示格式（比如 2024-03-02）
+        display_date = pub_date.replace('_', '-') if pub_date else "未知"
+        
+        # 构建Markdown内容（美化格式）
+        metadata = [
+            f"# {title}",
+            "",
+            f"**原始链接:** [{url}]({url})",
+            "",
+            f"**发布时间:** {display_date}",
+            "",
+            f"**厂商:** {self.vendor.upper()}",
+            "",
+            f"**类型:** {self.source_type.upper()}",
+            "",
+            "---",
+            "",
+        ]
+        
+        # 组合最终内容
+        final_content = "\n".join(metadata) + content
+        
+        # 写入文件
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write(final_content)
+            
+        return filepath
     
     def _is_likely_blog_post(self, url: str) -> bool:
         """
         判断URL是否可能是博客文章
         
         Args:
-            url: 要判断的URL
+            url: 要检查的URL
             
         Returns:
             True如果URL可能是博客文章，否则False
@@ -753,68 +895,4 @@ class GcpBlogCrawler(BaseCrawler):
                 return True
         
         # 默认情况下，我们更谨慎地认为链接不是文章
-        return False
-    
-    def _clean_markdown(self, markdown_content: str) -> str:
-        """
-        清理Markdown内容
-        
-        Args:
-            markdown_content: 原始Markdown内容
-            
-        Returns:
-            清理后的Markdown内容
-        """
-        # 移除多余的空行
-        markdown_content = re.sub(r'\n{3,}', '\n\n', markdown_content)
-        
-        # 移除HTML注释
-        markdown_content = re.sub(r'<!--.*?-->', '', markdown_content, flags=re.DOTALL)
-        
-        # 清理超链接中的文本，去掉多余的空格
-        markdown_content = re.sub(r'\[([^]]+)\]\s*\(([^)]+)\)', r'[\1](\2)', markdown_content)
-        
-        # 修正错误的列表格式
-        markdown_content = re.sub(r'(?<!\n)\n\* ', '\n\n* ', markdown_content)
-        markdown_content = re.sub(r'(?<!\n)\n\d+\. ', '\n\n1. ', markdown_content)
-        
-        # 修正标题格式，确保#后有空格
-        markdown_content = re.sub(r'(#{1,6})([^#\s])', r'\1 \2', markdown_content)
-        
-        return markdown_content.strip()
-    
-    def _format_filename(self, title: str) -> str:
-        """
-        规范化文件名，确保生成干净且有效的文件名
-        
-        Args:
-            title: 原始标题
-            
-        Returns:
-            规范化后的文件名
-        """
-        # 如果标题为空，返回默认值
-        if not title:
-            return "gcp_blog_post"
-            
-        # 基本清理，移除非法字符
-        filename = self._sanitize_filename(title)
-        
-        # 替换空格为下划线
-        filename = filename.replace(' ', '_')
-        
-        # 移除多余的下划线
-        filename = re.sub(r'_{2,}', '_', filename)
-        
-        # 移除标点符号
-        filename = re.sub(r'[.,;:!?\'"`]+', '', filename)
-        
-        # 确保文件名不为空
-        if not filename or len(filename.strip()) == 0:
-            return "gcp_blog_post"
-            
-        # 确保文件名不过长，最多保留80个字符
-        if len(filename) > 80:
-            filename = filename[:77] + '...'
-        
-        return filename 
+        return False 

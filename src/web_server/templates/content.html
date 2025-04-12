@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - 网络间谍{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/">首页</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('vendor_list', vendor=vendor) }}">{{ vendor|upper }}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ title }}</li>
+            </ol>
+        </nav>
+        
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h2 class="mb-0">{{ title }}</h2>
+                <span class="badge bg-primary">{{ vendor|upper }}</span>
+            </div>
+            <div class="card-body">
+                <div class="mb-3 text-muted">
+                    <small>
+                        <i class="bi bi-calendar-event"></i> 更新于: {{ update_time }}
+                        {% if author %}
+                        | <i class="bi bi-person"></i> 作者: {{ author }}
+                        {% endif %}
+                    </small>
+                </div>
+                
+                <div class="content-body">
+                    {{ content|safe }}
+                </div>
+            </div>
+        </div>
+        
+        <div class="d-flex justify-content-between mt-4">
+            <a href="{{ url_for('vendor_list', vendor=vendor) }}" class="btn btn-outline-primary">
+                <i class="bi bi-arrow-left"></i> 返回{{ vendor|upper }}列表
+            </a>
+            
+            {% if raw_url %}
+            <a href="{{ raw_url }}" class="btn btn-outline-secondary" target="_blank">
+                查看原始页面 <i class="bi bi-box-arrow-up-right"></i>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 
