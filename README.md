@@ -18,7 +18,7 @@ cloud-comp-spy/
 │   ├── raw/            # 原始爬取数据
 │   └── analysis/       # 分析结果
 ├── scripts/            # 脚本文件
-│   └── setup_webdriver.sh  # WebDriver管理脚本
+│   └── setup_latest_driver.sh  # WebDriver和ChromeDriver自动下载脚本
 ├── src/                # 源代码
 │   ├── crawlers/       # 爬虫模块
 │   │   ├── common/     # 通用爬虫组件
@@ -52,8 +52,16 @@ cloud-comp-spy/
 
 4. 设置WebDriver
    ```
-   bash scripts/setup_webdriver.sh
+   # 下载最新版的chrome-headless-shell和ChromeDriver
+   bash scripts/setup_latest_driver.sh
    ```
+   
+   该脚本会自动：
+   - 检测您的操作系统和架构
+   - 从官方Chrome for Testing链接获取最新的稳定版本
+   - 下载最新版本的chrome-headless-shell和ChromeDriver
+   - 设置必要的执行权限
+   - 创建配置文件以供程序使用
 
 5. 运行程序
 
@@ -402,14 +410,17 @@ AI生成的技术分析和竞争情报，包括：
 - 应用场景建议
 ```
 
-## 常见问题解答(FAQ)
+## 常见问题 (FAQ)
 
 ### 1. 安装问题
 **Q: 安装时找不到chrome-headless-shell**
-A: 执行`bash scripts/setup_webdriver.sh`重新安装WebDriver，或手动下载Chrome浏览器
+A: 执行`bash scripts/setup_latest_driver.sh`重新安装WebDriver，或手动下载Chrome浏览器
 
 **Q: 依赖安装出错**
-A: 确保您的Python版本是3.8或更高版本，并且已安装pip的最新版本
+A: 确保您的Python版本是3.8或更高版本，并且已安装pip的最新版本。尝试`pip install --upgrade pip`后重新安装
+
+**Q: 在Windows上安装出现问题**
+A: Windows用户可能需要安装Visual C++ Build Tools，或者使用WSL(Windows Subsystem for Linux)
 
 ### 2. 爬虫问题
 **Q: 爬虫无法获取某些网站内容**
@@ -420,6 +431,12 @@ A: 有些网站可能有反爬虫措施。尝试以下解决方案：
 
 **Q: 如何只爬取特定类别的内容？**
 A: 在配置文件中设置`specific_categories`或`specific_tags`参数，详见"厂商爬虫配置示例"
+
+**Q: 报错"Chrome version must be between X and Y"**
+A: 执行`bash scripts/setup_latest_driver.sh`下载最新版本的chrome-headless-shell和匹配的ChromeDriver
+
+**Q: 爬虫运行时出现ChromeDriver错误**
+A: 版本兼容性问题导致。执行`bash scripts/setup_latest_driver.sh`，它会自动下载兼容的chrome-headless-shell和ChromeDriver
 
 ### 3. AI分析问题
 **Q: AI分析没有生成结果**
@@ -434,6 +451,9 @@ A: 可以调整以下参数：
 - 调整`temperature`参数（较低的值会使输出更确定性，较高的值会增加随机性）
 - 自定义`tasks`中的具体提示词
 
+**Q: AI模型调用失败**
+A: 检查您的API密钥是否正确，网络是否畅通，以及是否超出API调用限制
+
 ### 4. 性能与优化
 **Q: 爬虫运行很慢**
 A: 可以尝试以下优化：
@@ -446,6 +466,15 @@ A: 可以使用以下策略：
 - 设置合理的`article_limit`以限制处理的文章数量
 - 使用`filters`过滤掉不相关的内容
 - 先使用`--mode test`进行小规模测试
+
+**Q: 如何确保chrome-headless-shell和ChromeDriver版本匹配？**
+A: 使用`bash scripts/setup_latest_driver.sh`脚本，它会自动下载匹配的版本，确保两者兼容
+
+**Q: 如何修改爬取的内容范围？**
+A: 编辑`config.yaml`文件中相应厂商的配置，添加或修改特定类别、标签等
+
+**Q: 如何自定义AI分析任务？**
+A: 在`config.yaml`的`ai_analyzer.tasks`部分添加新的任务类型和提示词
 
 ## 安全性说明
 
