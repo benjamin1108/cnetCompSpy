@@ -164,13 +164,29 @@ class GcpBlogCrawler(BaseCrawler):
             
             logger.info(f"从页面解析到 {len(articles)} 篇文章链接")
             
+            # 增加额外的日志记录，帮助理解爬取的内容
+            if articles:
+                logger.info("前10篇文章链接:")
+                for i, (title, url) in enumerate(articles[:10], 1):
+                    logger.info(f"{i}. {title} - {url}")
+            
             # 如果没有找到任何文章链接，检查当前页面是否就是一篇博客文章
             if not articles and self._is_likely_blog_post(self.start_url):
                 logger.info("当前页面可能是单篇博客文章，直接处理")
                 title = self._extract_page_title(soup)
                 articles.append((title, self.start_url))
             
-            return articles
+            # 后处理：只过滤类别页面，不做内容相关性筛选
+            filtered_articles = []
+            for title, url in articles:
+                # 对每个链接再次确认是否是具体文章而非类别页面
+                if not self._is_likely_blog_post(url):
+                    logger.info(f"过滤掉可能的类别页面: {title} - {url}")
+                    continue
+                
+                filtered_articles.append((title, url))
+            
+            return filtered_articles
         except Exception as e:
             logger.error(f"解析文章链接时出错: {e}")
             return []
@@ -244,80 +260,57 @@ class GcpBlogCrawler(BaseCrawler):
         """
         blog_links = []
         
-        # GCP特定策略: 在开发者和实践者页面上有特定的文章卡片
-        # 找到所有带有博客文章缩略图的链接，这些通常是实际文章
-        thumbnail_links = soup.select('a[href*="/blog/"]')
-        # 额外检查: 图片链接通常是完整的博客文章
-        for link in thumbnail_links:
-            if link.find('img'):
-                blog_links.append(link)
-                
-        # GCP特定策略: 查找带有分钟阅读时间的链接
-        # 例如 "5-minute read" 这类文本通常出现在博客文章链接中
-        read_time_patterns = [
-            re.compile(r'\d+-minute read', re.IGNORECASE),
-            re.compile(r'\d+ min read', re.IGNORECASE)
+        # 基于测试脚本发现的最佳选择器
+        # 选择器 'a[href*="/blog/"][href*="networking"]' 可以精确匹配网络相关的文章链接
+        primary_selectors = [
+            'a[href*="/blog/"][href*="networking"]',               # 网络博客文章链接
+            'a[href*="/blog/topics/telecommunications/"]',          # 电信博客文章链接
         ]
-        
-        for pattern in read_time_patterns:
-            # 查找所有包含阅读时间的文本节点
-            for element in soup.find_all(text=pattern):
-                # 寻找这个文本节点的父链接
-                parent_link = element.find_parent('a')
-                if parent_link and 'href' in parent_link.attrs:
-                    blog_links.append(parent_link)
-                # 如果父元素不是链接，尝试找最近的链接祖先或兄弟
-                else:
-                    parent = element.parent
-                    if parent:
-                        # 查找父元素的所有链接
-                        links = parent.find_all('a', href=True)
-                        blog_links.extend(links)
-        
-        # 策略1: 查找带有文章角色的容器中的链接
-        article_roles = soup.select('[role="article"]')
-        for container in article_roles:
-            links = container.find_all('a', href=True)
-            blog_links.extend(links)
-        
-        # 策略2: 查找文章标签中的链接
-        articles = soup.find_all('article')
-        for article in articles:
-            links = article.find_all('a', href=True)
-            blog_links.extend(links)
-        
-        # 策略3: 查找在标题中的链接
-        for heading in soup.find_all(['h2', 'h3', 'h4']):
-            links = heading.find_all('a', href=True)
-            blog_links.extend(links)
-            
-            # 同时查找标题后面紧跟的链接
-            next_elem = heading.find_next_sibling()
-            if next_elem:
-                links = next_elem.find_all('a', href=True)
+
+        # 使用精确的选择器查找链接
+        for selector in primary_selectors:
+            logger.info(f"使用选择器 '{selector}' 查找文章链接")
+            links = soup.select(selector)
+            if links:
+                logger.info(f"选择器 '{selector}' 找到 {len(links)} 个链接元素")
                 blog_links.extend(links)
         
-        # 策略4: 查找section中的链接（GCP博客常用section组织内容）
-        sections = soup.find_all('section')
-        for section in sections:
-            # 先找标题
-            heading = section.find(['h2', 'h3', 'h4'])
-            if heading:
-                # 然后找链接
-                links = section.find_all('a', href=True)
-                # 选择性添加链接 - 标题相关的链接更可能是文章链接
-                for link in links:
-                    # 如果链接文本长度合适，更可能是文章链接
-                    link_text = link.get_text(strip=True)
-                    if link_text and len(link_text) > 10:
-                        blog_links.append(link)
-        
-        # 策略5: 直接查找可能的博客URL模式链接
-        all_links = soup.find_all('a', href=True)
-        for link in all_links:
-            href = link.get('href', '')
-            if href and self._is_likely_blog_post(href):
-                blog_links.append(link)
+        # 如果使用主要选择器没有找到链接，尝试备用策略
+        if not blog_links:
+            logger.warning("主要选择器未找到链接，尝试备用选择器")
+            
+            # 确保 /products/networking/ 路径下的所有链接都会被包含
+            backup_selectors = [
+                'a[href*="/blog/products/networking/"]'  # 指向网络产品博客的链接
+            ]
+            
+            for selector in backup_selectors:
+                logger.info(f"使用备用选择器 '{selector}' 查找文章链接")
+                links = soup.select(selector)
+                if links:
+                    logger.info(f"备用选择器 '{selector}' 找到 {len(links)} 个链接元素")
+                    blog_links.extend(links)
+                    
+        # 最后一次尝试：如果仍然没有找到链接，使用带有分钟阅读时间的链接，这些通常是文章
+        if not blog_links:
+            logger.warning("尝试查找带有阅读时间的链接")
+            read_time_patterns = [
+                re.compile(r'\d+-minute read', re.IGNORECASE),
+                re.compile(r'\d+ min read', re.IGNORECASE)
+            ]
+            
+            for pattern in read_time_patterns:
+                # 查找所有包含阅读时间的文本节点
+                for element in soup.find_all(text=pattern):
+                    # 寻找这个文本节点的父链接
+                    parent_link = element.find_parent('a')
+                    if parent_link and 'href' in parent_link.attrs:
+                        href = parent_link.get('href', '')
+                        if href and '/blog/' in href:
+                            blog_links.append(parent_link)
+            
+            if blog_links:
+                logger.info(f"根据阅读时间找到 {len(blog_links)} 个链接元素")
         
         # 去重
         unique_links = []
@@ -328,14 +321,8 @@ class GcpBlogCrawler(BaseCrawler):
                 seen_hrefs.add(href)
                 unique_links.append(link)
         
-        # 额外过滤 - 只保留可能是博客文章的链接
-        filtered_links = []
-        for link in unique_links:
-            href = link.get('href', '')
-            if self._is_likely_blog_post(href):
-                filtered_links.append(link)
-        
-        return filtered_links
+        logger.info(f"去重后共找到 {len(unique_links)} 个链接元素")
+        return unique_links
     
     def _normalize_url(self, href: str) -> str:
         """
@@ -675,70 +662,98 @@ class GcpBlogCrawler(BaseCrawler):
         # 检查URL是否符合GCP博客文章的模式
         url_lower = url.lower()
         
-        # GCP博客文章URL通常包含以下路径之一
-        blog_indicators = [
-            '/blog/products/',
-            '/blog/topics/',
-        ]
-        
-        # 更具体的博客文章指示器 - 这些通常指向具体文章
-        specific_indicators = [
-            '-is-transforming-',
-            '-with-google-cloud',
-            '-on-google-cloud',
-            '-for-ai-',
-            '-service-with-',
-            '-guide-to-',
-        ]
-        
         # 排除明显不是文章的URL
         exclusions = [
-            '/tag/', 
-            '/category/', 
-            '/author/', 
-            '/archive/', 
-            '/search/', 
-            '/feed/', 
-            '/about/',
-            '/contact/',
-            '/docs/',
-            '/terms/',
-            '/privacy/',
-            '/help/',
-            '/support/',
             'twitter.com',
             'x.com',
             'facebook.com',
             'linkedin.com',
             'youtube.com',
             'instagram.com',
-            # 排除列表页面
-            '/developers-practitioners',
-            '/inside-google-cloud',
-            '/products/ai-machine-learning',
-            '/products/networking'
+            'myaccount.google.com',
+            'accounts.google.com',
+            'console.cloud.google.com',
+            'termsofservice',
+            'privacy',
+            'legal',
+            'cookies'
         ]
         
-        # 检查URL是否符合条件
-        is_general_blog = any(indicator in url_lower for indicator in blog_indicators)
-        is_specific_blog = any(indicator in url_lower for indicator in specific_indicators)
+        # 类别页面和主题页面的路径关键词
+        category_keywords = [
+            '/topics/',
+            '/categories/',
+            '/tags/',
+            '/authors/',
+            '/products/',
+            '/solutions/'
+        ]
+        
+        # 检查是否在排除列表中
         is_excluded = any(exclusion in url_lower for exclusion in exclusions)
+        if is_excluded:
+            return False
+           
+        # 如果URL中包含典型的类别关键词且路径结构简单，很可能是类别页面而非具体文章
+        for keyword in category_keywords:
+            if keyword in url_lower:
+                # 分析URL路径
+                url_parts = urlparse(url_lower).path.split('/')
+                # 类别页面通常路径较短且没有文章特征（如长数字或日期格式）
+                if len(url_parts) <= 4 and not any(re.search(r'\d{4}[-/]\d{1,2}[-/]\d{1,2}', part) for part in url_parts):
+                    # 检查最后一部分是否是单个词（类别名）而不是文章标题（通常有连字符）
+                    last_part = url_parts[-1] if url_parts and url_parts[-1] else ''
+                    if not '-' in last_part and not re.search(r'\d{4,}', last_part):
+                        return False
+            
+        # 如果URL包含blog且和原始URL域名相同，则很可能是一篇博客文章
+        if '/blog/' in url_lower:
+            # 确保是Google Cloud博客而不是外部链接
+            if 'cloud.google.com' in url_lower:
+                # 分析URL的路径部分
+                url_parts = urlparse(url_lower).path.split('/')
+                
+                # 以下情况很可能是文章而非类别页面：
+                # 1. 路径很深（超过4层）
+                # 2. 最后一部分包含连字符（常见于文章标题）
+                # 3. 最后一部分包含日期格式
+                if (len(url_parts) > 4 or 
+                    (len(url_parts) > 2 and '-' in url_parts[-1]) or
+                    any(re.search(r'\d{4}[-/]\d{1,2}[-/]\d{1,2}', part) for part in url_parts)):
+                    return True
+                
+                # 针对products/networking，确保我们爬取这个类别下的文章
+                if '/products/networking' in url_lower and len(url_parts) > 4:
+                    return True
+                
+                # 如果是以下模式，则可能是类别页面
+                # 例如: /blog/products/networking, /blog/topics/security
+                if (len(url_parts) <= 4 and 
+                    not any('-' in part for part in url_parts) and
+                    ('/products/' in url_lower or '/topics/' in url_lower)):
+                    return False
+                
+                # 其它有/blog/的链接可能是文章
+                return True
+                
+        # 检查URL是否包含明确的文章标识特征
+        article_indicators = [
+            # 日期格式的路径
+            r'/\d{4}/\d{1,2}/\d{1,2}/',  # /2023/04/12/
+            r'/\d{4}-\d{1,2}-\d{1,2}/',  # /2023-04-12/
+            # 文章ID格式
+            r'/post[_-]\d+',             # /post-123456
+            r'/article[_-]\d+',          # /article-123456
+            # 多段连字符标题（典型的文章slug）
+            r'/[a-z0-9]+-[a-z0-9]+-[a-z0-9]+-[a-z0-9]+' # /this-is-article-title
+        ]
         
-        # 分析URL结构 - 博客文章URL通常有较深的路径结构
-        path_segments = url_lower.split('/')
-        is_deep_path = len(path_segments) >= 6  # 一个合理的深度阈值
+        for pattern in article_indicators:
+            if re.search(pattern, url_lower):
+                return True
         
-        # 针对Google Cloud特殊的URL模式
-        # 例如： https://cloud.google.com/blog/products/ai-machine-learning/how-signal-iduna-supercharges-customer-service-with-gen-ai
-        # 这种URL包含很长的标题段，通常是实际文章
-        has_long_title_segment = False
-        for segment in path_segments:
-            if len(segment) > 20 and '-' in segment:  # 长标题段通常包含连字符
-                has_long_title_segment = True
-                break
-        
-        # 综合判断
-        return (is_general_blog or is_specific_blog or has_long_title_segment) and not is_excluded
+        # 默认情况下，我们更谨慎地认为链接不是文章
+        return False
     
     def _clean_markdown(self, markdown_content: str) -> str:
         """
