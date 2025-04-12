@@ -111,47 +111,94 @@ class AwsBlogCrawler(BaseCrawler):
         soup = BeautifulSoup(html, 'lxml')
         articles = []
         
-        # AWS博客文章通常在具有特定类的div元素中
-        # 更新选择器以匹配实际的AWS博客页面结构
+        # 打印页面的标题，便于调试
+        page_title = soup.find('title')
+        if page_title:
+            logger.info(f"页面标题: {page_title.text.strip()}")
+        
         try:
-            # 尝试多种可能的文章容器选择器
-            article_containers = soup.select('.blog-post, .blog-card, .aws-card, .lb-card, article, .blog-media, .blog-entry, .aws-blog-post')
+            # 新版AWS博客页面的文章选择器
+            # 先尝试获取所有可能的文章容器
+            article_containers = soup.select('.blog-post, .blog-card, .aws-card, .aws-card-blog, .lb-card, article, .blog-media, .blog-entry, .aws-blog-post, .blog-post-group, .blog-post-card')
             
             if not article_containers:
-                # 如果特定选择器没找到，尝试查找包含链接的所有div
+                # 使用更通用的选择器
                 logger.warning("未找到指定文章容器，尝试使用通用选择器")
-                # 找到所有可能是博客文章的链接
-                links = soup.select('a[href*="/blogs/"]')
                 
-                for link in links:
-                    if link.get('href') and '/blogs/' in link.get('href'):
-                        title = link.get_text(strip=True)
-                        if not title:
-                            title = "AWS博客文章"  # 默认标题
-                        url = urljoin(self.start_url, link['href'])
-                        if url not in [x[1] for x in articles]:  # 避免重复
-                            articles.append((title, url))
+                # 首先尝试找到博客主区域
+                content_area = (
+                    soup.select_one('main, .main-content, #main, .content, .blog-content, #content') or 
+                    soup.select_one('.lb-main, .aws-main, .blog-list') or 
+                    soup.body
+                )
+                
+                # 从主区域中找到所有链接
+                all_links = content_area.find_all('a', href=True) if content_area else soup.find_all('a', href=True)
+                
+                # 筛选博客文章链接
+                blog_links = []
+                for link in all_links:
+                    href = link.get('href', '')
+                    # AWS博客文章URL通常包含 /blogs/ 或 /blog/ 路径
+                    if '/blogs/' in href or '/blog/' in href or 'aws.amazon.com' in href and '/post/' in href:
+                        if not any(x in href for x in ['category', 'tag', 'archive', 'author', 'about', 'contact', 'feed']):
+                            # 获取标题文本
+                            title = link.get_text(strip=True)
+                            if not title or len(title) < 5:  # 忽略太短的标题
+                                continue
+                                
+                            # 构建完整URL
+                            url = href if href.startswith('http') else urljoin(self.start_url, href)
+                            
+                            # 避免重复
+                            if url not in [x[1] for x in blog_links]:
+                                blog_links.append((title, url))
+                
+                # 使用URL模式进一步筛选链接
+                for title, url in blog_links:
+                    if self._is_likely_blog_post(url):
+                        articles.append((title, url))
             else:
                 # 处理找到的文章容器
                 for container in article_containers:
-                    # 尝试多种可能的标题和链接选择器
-                    title_elem = (container.select_one('h1, h2, h3, h4, .lb-txt-bold, .blog-title, .aws-blog-title') or 
-                                 container.select_one('a') or container)
+                    # 尝试找到标题元素
+                    title_elem = (
+                        container.select_one('h1, h2, h3, h4, h5, .lb-txt-bold, .blog-title, .aws-blog-title, .blog-post-title') or 
+                        container.select_one('.title, .post-title, .entry-title') or
+                        container.select_one('a')
+                    )
                     
                     if title_elem:
                         # 获取标题
                         title = title_elem.get_text(strip=True)
                         
-                        # 获取链接
-                        link = title_elem.find('a') if title_elem.name != 'a' else title_elem
-                        link = container.find('a') if not link else link
+                        # 获取链接元素
+                        link_elem = None
+                        if title_elem.name == 'a':
+                            link_elem = title_elem
+                        else:
+                            # 在标题元素或容器中查找链接
+                            link_elem = title_elem.find('a') or container.find('a', href=True)
                         
-                        if link and link.get('href') and '/blogs/' in link.get('href'):
-                            url = urljoin(self.start_url, link['href'])
-                            if url not in [x[1] for x in articles]:  # 避免重复
-                                articles.append((title, url))
+                        if link_elem and link_elem.get('href'):
+                            href = link_elem['href']
+                            # 构建完整URL
+                            url = href if href.startswith('http') else urljoin(self.start_url, href)
+                            
+                            # 检查是否为有效的博客文章URL
+                            if self._is_likely_blog_post(url):
+                                # 避免重复
+                                if url not in [x[1] for x in articles]:
+                                    articles.append((title, url))
             
             logger.info(f"找到 {len(articles)} 篇潜在的博客文章链接")
+            
+            # 如果没有找到任何文章，尝试直接爬取当前页面
+            if not articles and self._is_likely_blog_post(self.start_url):
+                page_title = soup.find('title')
+                title = page_title.text.strip() if page_title else "AWS Blog Post"
+                articles.append((title, self.start_url))
+                logger.info(f"未找到文章列表，将当前页面作为博客文章处理: {title}")
         
         except Exception as e:
             logger.error(f"解析文章链接出错: {e}")
@@ -168,6 +215,55 @@ class AwsBlogCrawler(BaseCrawler):
         limit = self.crawler_config.get('article_limit', 50)
         logger.info(f"爬取模式：限制爬取{limit}篇文章")
         return articles[:limit]
+    
+    def _is_likely_blog_post(self, url: str) -> bool:
+        """
+        判断URL是否可能是博客文章
+        
+        Args:
+            url: 要检查的URL
+            
+        Returns:
+            True如果URL可能是博客文章，否则False
+        """
+        # 移除协议和域名部分
+        parsed = urlparse(url)
+        path = parsed.path
+        
+        # AWS博客文章URL的常见模式
+        blog_patterns = [
+            r'/blogs/[^/]+/[^/]+',  # 如 /blogs/networking-and-content-delivery/article-name
+            r'/blog/[^/]+',         # 如 /blog/article-name
+            r'/post/[^/]+',         # 如 /post/article-name
+            r'/\d{4}/\d{2}/[^/]+',  # 如 /2022/01/article-name (日期格式)
+            r'/news/[^/]+',         # 如 /news/article-name
+            r'/announcements/[^/]+', # 如 /announcements/article-name
+        ]
+        
+        # 检查是否匹配任何博客文章模式
+        for pattern in blog_patterns:
+            if re.search(pattern, path):
+                return True
+        
+        # 排除常见的非文章页面
+        exclude_patterns = [
+            r'/tag/', r'/tags/', r'/category/', r'/categories/',
+            r'/author/', r'/about/', r'/contact/', r'/feed/',
+            r'/archive/', r'/archives/', r'/page/\d+', r'/search/'
+        ]
+        
+        for pattern in exclude_patterns:
+            if re.search(pattern, path):
+                return False
+                
+        # 检查是否在URL路径中包含特定关键词
+        blog_keywords = ['post', 'article', 'blog', 'news', 'announcement']
+        for keyword in blog_keywords:
+            if keyword in path.lower():
+                return True
+                
+        # 默认返回False，宁可错过也不要误报
+        return False
     
     def _parse_article_content(self, url: str, html: str) -> str:
         """

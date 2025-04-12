@@ -4,6 +4,8 @@
 import logging
 import os
 import time
+import json
+import platform
 from abc import ABC, abstractmethod
 from typing import Dict, Any, List, Optional
 
@@ -15,6 +17,8 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from webdriver_manager.chrome import ChromeDriverManager
+from webdriver_manager.core.utils import ChromeType
 
 logger = logging.getLogger(__name__)
 
@@ -50,10 +54,88 @@ class BaseCrawler(ABC):
         chrome_options.add_argument('--headless')
         chrome_options.add_argument('--no-sandbox')
         chrome_options.add_argument('--disable-dev-shm-usage')
+        chrome_options.add_argument('--disable-gpu')
         
         try:
-            service = Service()
-            self.driver = webdriver.Chrome(options=chrome_options, service=service)
+            # 获取ChromeDriver路径
+            chromedriver_path = os.path.join('drivers', 'chromedriver')
+            if platform.system().lower() == 'windows':
+                chromedriver_path += '.exe'
+            
+            # 尝试使用已安装的chrome-headless-shell
+            config_path = os.path.join('drivers', 'webdriver_config.json')
+            if os.path.exists(config_path):
+                with open(config_path, 'r') as f:
+                    config = json.load(f)
+                
+                chrome_path = config.get('chrome_path')
+                if chrome_path and os.path.exists(chrome_path):
+                    chrome_options.binary_location = chrome_path
+                    logger.debug(f"使用chrome-headless-shell: {chrome_path}")
+            
+            # 尝试多种方式初始化WebDriver
+            try:
+                # 方法1: 使用我们自己下载的chromedriver
+                if os.path.exists(chromedriver_path):
+                    logger.debug(f"使用已下载的ChromeDriver: {chromedriver_path}")
+                    service = Service(executable_path=chromedriver_path)
+                    self.driver = webdriver.Chrome(options=chrome_options, service=service)
+                    logger.debug("方法1成功：使用下载的ChromeDriver初始化WebDriver")
+                else:
+                    raise FileNotFoundError(f"ChromeDriver不存在: {chromedriver_path}")
+            except Exception as e1:
+                logger.warning(f"方法1失败: {e1}")
+                
+                try:
+                    # 方法2: 直接使用Service()，让系统查找ChromeDriver
+                    service = Service()
+                    self.driver = webdriver.Chrome(options=chrome_options, service=service)
+                    logger.debug("方法2成功：使用默认Service初始化WebDriver")
+                except Exception as e2:
+                    logger.warning(f"方法2失败: {e2}")
+                    
+                    try:
+                        # 方法3: 使用webdriver_manager自动下载
+                        from webdriver_manager.chrome import ChromeDriverManager
+                        service = Service(ChromeDriverManager().install())
+                        self.driver = webdriver.Chrome(options=chrome_options, service=service)
+                        logger.debug("方法3成功：使用webdriver_manager初始化WebDriver")
+                    except Exception as e3:
+                        logger.warning(f"方法3失败: {e3}")
+                        
+                        try:
+                            # 方法4: 尝试使用系统Chrome/Chromium
+                            potential_paths = []
+                            
+                            if platform.system().lower() == 'darwin':  # macOS
+                                potential_paths = [
+                                    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+                                    "/Applications/Chromium.app/Contents/MacOS/Chromium"
+                                ]
+                            elif platform.system().lower() == 'linux':
+                                potential_paths = [
+                                    "/usr/bin/google-chrome",
+                                    "/usr/bin/chromium-browser",
+                                    "/usr/bin/chromium"
+                                ]
+                            elif platform.system().lower() == 'windows':
+                                potential_paths = [
+                                    r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+                                    r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
+                                ]
+                                
+                            for path in potential_paths:
+                                if os.path.exists(path):
+                                    chrome_options.binary_location = path
+                                    self.driver = webdriver.Chrome(options=chrome_options)
+                                    logger.debug(f"方法4成功：使用系统Chrome: {path}")
+                                    break
+                            else:
+                                raise Exception("未找到系统Chrome")
+                        except Exception as e4:
+                            logger.error(f"方法4失败: {e4}")
+                            raise Exception(f"无法初始化WebDriver: 所有方法都失败")
+            
             self.driver.set_page_load_timeout(self.timeout)
             logger.debug(f"WebDriver初始化成功")
         except Exception as e:
