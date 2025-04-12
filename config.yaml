@@ -63,7 +63,7 @@ sources:
 ai_analyzer:
   model: "qwen-max"           # 使用的AI模型名称
   max_tokens: 4000                   # 最大令牌数
-  temperature: 0.8                   # 温度参数
+  temperature: 1                   # 温度参数
     # API基础URL（请选择您使用的模型服务提供商的API端点）
   # 示例:
   # - 阿里云通义千问: "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
