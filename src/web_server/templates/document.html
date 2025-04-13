@@ -36,6 +36,65 @@
             margin-left: 10px;
             vertical-align: middle;
         }
+
+        /* 警告信息样式 */
+        .warning-message {
+            background-color: #fff4e5;
+            border-left: 4px solid #ff9800;
+            color: #333;
+            padding: 16px;
+            margin: 16px 0;
+            border-radius: 4px;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        /* 折叠列表样式 */
+        .collapsible-section {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+        
+        .collapsible-header {
+            background-color: #f5f5f5;
+            padding: 12px 16px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.2s;
+        }
+        
+        .collapsible-header:hover {
+            background-color: #e8e8e8;
+        }
+        
+        .collapsible-header::after {
+            content: "▼";
+            font-size: 12px;
+            transition: transform 0.3s;
+        }
+        
+        .collapsible-header.collapsed::after {
+            transform: rotate(-90deg);
+        }
+        
+        .collapsible-content {
+            padding: 0 16px;
+            max-height: 100000px; /* 增加最大高度 */
+            overflow: hidden;
+            transition: max-height 0.8s cubic-bezier(0,1,0,1), padding 0.3s;
+        }
+        
+        .collapsible-content.collapsed {
+            max-height: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+            transition: max-height 0.4s cubic-bezier(1,0,1,0), padding 0.3s;
+        }
     </style>
 </head>
 <body>
@@ -102,7 +161,13 @@
 
     <main>
         <article class="document-content">
-            {{ content|safe }}
+            {% if view_type == 'analysis' %}
+                <div id="ai-content-wrapper">
+                    {{ content|safe }}
+                </div>
+            {% else %}
+                {{ content|safe }}
+            {% endif %}
         </article>
     </main>
 
@@ -115,5 +180,146 @@
             {% endif %}
         </p>
     </footer>
+
+    {% if view_type == 'analysis' %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 查找AI分析内容
+            const contentWrapper = document.getElementById('ai-content-wrapper');
+            if (!contentWrapper) return;
+            
+            // 获取原始内容
+            const originalContent = contentWrapper.innerHTML;
+            console.log("原始内容长度: " + originalContent.length + " 字符");
+            
+            // 清空原始内容
+            contentWrapper.innerHTML = '';
+            
+            // 动态检测文档中包含的任务类型
+            const taskTypes = detectTaskTypes(originalContent);
+            console.log("检测到的任务类型: ", taskTypes);
+            
+            // 如果没有检测到任何任务类型，则显示提示信息
+            if (taskTypes.length === 0) {
+                contentWrapper.innerHTML = '<div class="warning-message">未检测到任何AI分析任务内容</div>';
+                return;
+            }
+            
+            // 通过标记精确提取任务内容
+            const tasks = extractTasksByMarkers(originalContent, taskTypes);
+            
+            // 按照默认任务顺序显示
+            taskTypes.forEach((taskType, index) => {
+                const content = tasks[taskType] || '';
+                if (content) {
+                    console.log(`创建任务块: ${taskType}, 内容长度: ${content.length}`);
+                    createCollapsibleSection(contentWrapper, taskType, content, index === 0);
+                } else {
+                    console.log(`任务 ${taskType} 没有找到内容`);
+                    createCollapsibleSection(contentWrapper, taskType, '<p>此部分暂无内容</p>', false);
+                }
+            });
+        });
+        
+        /**
+         * 动态检测文档中包含的任务类型
+         */
+        function detectTaskTypes(content) {
+            const taskTypes = [];
+            let currentPos = 0;
+            const startToken = "<!-- AI_TASK_START: ";
+            const endToken = " -->";
+            
+            // 循环查找所有任务开始标记
+            while (true) {
+                const startIndex = content.indexOf(startToken, currentPos);
+                if (startIndex === -1) break;
+                
+                const typeStartIndex = startIndex + startToken.length;
+                const typeEndIndex = content.indexOf(endToken, typeStartIndex);
+                
+                if (typeEndIndex !== -1) {
+                    const taskType = content.substring(typeStartIndex, typeEndIndex);
+                    if (!taskTypes.includes(taskType)) {
+                        taskTypes.push(taskType);
+                    }
+                    currentPos = typeEndIndex + endToken.length;
+                } else {
+                    break;
+                }
+            }
+            
+            return taskTypes;
+        }
+        
+        /**
+         * 通过HTML注释标记提取任务内容
+         */
+        function extractTasksByMarkers(content, taskTypes) {
+            const tasks = {};
+            
+            // 使用简单的字符串搜索查找任务
+            taskTypes.forEach(function(taskType) {
+                const startMarker = `<!-- AI_TASK_START: ${taskType} -->`;
+                const endMarker = `<!-- AI_TASK_END: ${taskType} -->`;
+                
+                const startIndex = content.indexOf(startMarker);
+                const endIndex = content.indexOf(endMarker);
+                
+                if (startIndex !== -1 && endIndex !== -1 && startIndex < endIndex) {
+                    // 提取内容 (加上startMarker的长度，去掉结束标记)
+                    const taskContent = content.substring(startIndex + startMarker.length, endIndex).trim();
+                    console.log(`通过标记提取任务: ${taskType}, 内容长度: ${taskContent.length}`);
+                    tasks[taskType] = taskContent;
+                }
+            });
+            
+            return tasks;
+        }
+        
+        /**
+         * 创建可折叠的内容部分
+         */
+        function createCollapsibleSection(container, title, content, isExpanded = false) {
+            const section = document.createElement('div');
+            section.className = 'collapsible-section';
+            
+            const header = document.createElement('div');
+            header.className = 'collapsible-header' + (isExpanded ? '' : ' collapsed');
+            header.textContent = title;
+            
+            // 添加点击事件，控制展开/收起
+            header.addEventListener('click', function() {
+                header.classList.toggle('collapsed');
+                contentDiv.classList.toggle('collapsed');
+                
+                // 确保内容完全展开 - 动态设置高度
+                if (!contentDiv.classList.contains('collapsed')) {
+                    // 设置为内容的实际高度
+                    const actualHeight = contentDiv.scrollHeight + 'px';
+                    contentDiv.style.maxHeight = 'none';
+                } else {
+                    contentDiv.style.maxHeight = null; // 恢复为 CSS 定义的值
+                }
+            });
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'collapsible-content' + (isExpanded ? '' : ' collapsed');
+            contentDiv.innerHTML = content;
+            
+            // 如果默认展开，确保内容完全显示
+            if (isExpanded) {
+                // 在下一个渲染循环设置高度，确保内容已渲染
+                setTimeout(() => {
+                    contentDiv.style.maxHeight = 'none';
+                }, 10);
+            }
+            
+            section.appendChild(header);
+            section.appendChild(contentDiv);
+            container.appendChild(section);
+        }
+    </script>
+    {% endif %}
 </body>
 </html> 

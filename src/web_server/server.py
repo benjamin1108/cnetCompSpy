@@ -466,6 +466,13 @@ class WebServer:
             if title_match:
                 meta['title'] = title_match.group(1).strip()
             
+            # 判断是分析文档还是原始文档
+            is_analysis = 'analyzed' in file_path
+            
+            # 对于分析文档，如果标题没有"竞争分析摘要："前缀，则添加
+            if is_analysis and not meta['title'].startswith('竞争分析摘要：'):
+                meta['title'] = f"竞争分析摘要：{meta['title']}"
+            
             # 尝试从内容中提取日期
             date_match = re.search(r'发布(?:日期|时间)[：:]\s*(\d{4}[-/]\d{1,2}[-/]\d{1,2})', content, re.MULTILINE)
             if date_match:
