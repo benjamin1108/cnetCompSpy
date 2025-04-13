@@ -34,6 +34,24 @@ cloud-comp-spy/
 └── README.md           # 项目说明
 ```
 
+## 系统要求
+
+### Python版本
+- **推荐版本**: Python 3.10
+- **最低支持版本**: Python 3.8
+- **最高测试版本**: Python 3.11
+
+### 操作系统
+- **Linux**: Ubuntu 20.04+, CentOS 7+
+- **Windows**: Windows 10, Windows 11
+- **macOS**: macOS 10.15 (Catalina)及以上版本
+
+### 其他要求
+- **内存**: 最低2GB RAM，建议4GB及以上
+- **存储**: 最低1GB可用空间，根据爬取数据量可能需要更多
+- **网络**: 需要稳定的互联网连接
+- **浏览器**: Chrome/Chromium 114.0 或更高版本（用于驱动爬虫）
+
 ## 安装使用
 1. 克隆仓库
    ```
