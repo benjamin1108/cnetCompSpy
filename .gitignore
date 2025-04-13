@@ -98,4 +98,14 @@ htmlcov/
 .pytest_cache/
 .coverage.*
 coverage.xml
-*.cover 
+*.cover
+
+# 爬虫缓存和临时文件
+.scrapy
+.webdriver/
+
+# 本地数据和结果目录
+/scripts/drivers/
+
+# 敏感配置文件 - 防止意外提交真实配置
+config.secret.yaml 

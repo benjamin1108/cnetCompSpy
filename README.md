@@ -92,6 +92,16 @@ cloud-comp-spy/
      api_key: "your-api-key-here"
    ```
 
+   > **注意**: 项目提供了`config.secret.yaml.example`作为模板，请复制该文件并重命名为`config.secret.yaml`，然后填入您的实际配置。`config.secret.yaml`文件已在`.gitignore`中，不会被提交到版本控制系统，以保护您的敏感信息安全。
+   
+   ```bash
+   # 复制示例配置文件
+   cp config.secret.yaml.example config.secret.yaml
+   
+   # 编辑配置文件填入您的API密钥
+   nano config.secret.yaml
+   ```
+
 6. 运行程序
 
    a. 运行爬虫、分析
