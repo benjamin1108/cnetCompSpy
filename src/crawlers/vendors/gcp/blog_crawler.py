@@ -693,6 +693,9 @@ class GcpBlogCrawler(BaseCrawler):
         markdown_content = re.sub(r'([^\n])!\[', r'\1\n\n![', markdown_content)
         markdown_content = re.sub(r'\.(?:jpg|jpeg|png|gif|webp|svg)\)([^\n])', r'.jpg)\n\n\1', markdown_content)
         
+        # 修复重复的图片链接问题
+        markdown_content = re.sub(r'(!\[[^\]]*\]\([^\)]+\))\s*\n+\s*\1', r'\1', markdown_content)
+        
         # 修复可能的链接问题
         markdown_content = re.sub(r'\]\(\/(?!http)', r'](https://cloud.google.com/', markdown_content)
         

@@ -137,8 +137,13 @@ class BaseCrawler(ABC):
                             logger.error(f"方法4失败: {e4}")
                             raise Exception(f"无法初始化WebDriver: 所有方法都失败")
             
-            self.driver.set_page_load_timeout(self.timeout)
-            logger.debug(f"WebDriver初始化成功")
+            # 设置不同类型的超时
+            self.driver.set_page_load_timeout(self.crawler_config.get('page_load_timeout', 45))
+            self.driver.set_script_timeout(self.crawler_config.get('script_timeout', 30))
+            # 设置隐式等待 - 所有元素查找操作的基础等待
+            self.driver.implicitly_wait(self.crawler_config.get('implicit_wait', 10))
+            
+            logger.debug(f"WebDriver初始化成功，配置了多级超时机制")
         except Exception as e:
             logger.error(f"WebDriver初始化失败: {e}")
             raise
@@ -172,6 +177,43 @@ class BaseCrawler(ABC):
         
         return None
     
+    def wait_for_element(self, by, value, timeout=None, condition=EC.presence_of_element_located):
+        """
+        智能等待元素
+        
+        Args:
+            by: 定位方法 (By.ID, By.CSS_SELECTOR等)
+            value: 元素定位值
+            timeout: 超时时间，如果为None则使用默认值
+            condition: 等待条件，默认为元素存在
+        
+        Returns:
+            找到的WebElement对象
+        """
+        if timeout is None:
+            timeout = self.crawler_config.get('default_element_timeout', 15)
+        
+        return WebDriverWait(self.driver, timeout).until(
+            condition((by, value))
+        )
+
+    def wait_for_page_load(self):
+        """等待页面完全加载"""
+        # 等待DOM准备就绪
+        WebDriverWait(self.driver, self.crawler_config.get('page_load_timeout', 45)).until(
+            EC.presence_of_element_located((By.TAG_NAME, "body"))
+        )
+        
+        # 等待页面上的Ajax加载完成
+        try:
+            script = "return document.readyState === 'complete'"
+            WebDriverWait(self.driver, self.crawler_config.get('page_load_timeout', 45)).until(
+                lambda driver: driver.execute_script(script)
+            )
+        except Exception as e:
+            logger.warning(f"等待页面readyState完成时超时: {e}")
+            # 继续处理，因为页面可能已经加载了足够的内容
+    
     def _get_selenium(self, url: str) -> Optional[str]:
         """
         使用Selenium获取网页内容
@@ -188,15 +230,31 @@ class BaseCrawler(ABC):
         for i in range(self.retry):
             try:
                 self.driver.get(url)
-                # 等待页面加载完成
-                WebDriverWait(self.driver, self.timeout).until(
-                    EC.presence_of_element_located((By.TAG_NAME, "body"))
-                )
+                # 使用改进的页面加载等待
+                self.wait_for_page_load()
+                
+                # 对于特别复杂的页面，可以添加额外等待
+                if any(keyword in url.lower() for keyword in ['azure', 'cloud.google', 'complex']):
+                    # 使用更长的超时等待复杂页面上的关键元素
+                    long_timeout = self.crawler_config.get('long_element_timeout', 25)
+                    try:
+                        # 等待主要内容出现
+                        self.wait_for_element(
+                            By.CSS_SELECTOR, 
+                            "article, .content, main, #main-content", 
+                            timeout=long_timeout
+                        )
+                    except Exception as content_e:
+                        # 超时但页面可能已经有足够内容，继续处理
+                        logger.warning(f"页面主要内容等待超时，但继续处理: {url} - {content_e}")
+                
                 return self.driver.page_source
             except Exception as e:
                 logger.warning(f"Selenium请求失败 (尝试 {i+1}/{self.retry}): {url} - {e}")
                 if i < self.retry - 1:
-                    time.sleep(self.interval)
+                    # 增加指数退避重试间隔
+                    retry_interval = self.interval * (i + 1)
+                    time.sleep(retry_interval)
         
         return None
     

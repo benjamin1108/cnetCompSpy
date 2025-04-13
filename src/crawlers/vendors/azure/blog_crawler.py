@@ -15,6 +15,9 @@ from bs4 import BeautifulSoup
 import requests
 import markdown
 import html2text
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 # 添加项目根目录到路径
 sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))))
@@ -60,7 +63,13 @@ class AzureBlogCrawler(BaseCrawler):
         try:
             # 获取博客列表页
             logger.info(f"获取Azure博客列表页: {self.start_url}")
-            html = self._get_selenium(self.start_url)
+            
+            # 初始化WebDriver（如果未初始化）
+            if not self.driver:
+                self._init_driver()
+            
+            # 使用增强的Selenium获取方法，带有特定页面处理
+            html = self._get_azure_page(self.start_url)
             if not html:
                 logger.error(f"获取博客列表页失败: {self.start_url}")
                 return []
@@ -85,8 +94,8 @@ class AzureBlogCrawler(BaseCrawler):
                 logger.info(f"正在爬取第 {idx}/{len(article_info)} 篇文章: {title}")
                 
                 try:
-                    # 获取文章内容
-                    article_html = self._get_selenium(url)
+                    # 使用专用Azure页面获取方法
+                    article_html = self._get_azure_page(url)
                     if not article_html:
                         logger.warning(f"获取文章内容失败: {url}")
                         continue
@@ -129,25 +138,46 @@ class AzureBlogCrawler(BaseCrawler):
         if page_title:
             logger.info(f"页面标题: {page_title.text.strip()}")
         
+        logger.info("开始解析Azure博客列表页...")
+        
+        # 保存HTML用于调试
+        try:
+            debug_dir = os.path.join(os.path.dirname(self.output_dir), 'debug')
+            os.makedirs(debug_dir, exist_ok=True)
+            with open(os.path.join(debug_dir, 'azure_page.html'), 'w', encoding='utf-8') as f:
+                f.write(html)
+            logger.info("已保存HTML用于调试")
+        except Exception as e:
+            logger.warning(f"保存HTML调试文件失败: {e}")
+        
         # Azure博客搜索结果页面的文章通常在指定的容器内
         try:
-            # Azure搜索结果页面的文章卡片选择器 
-            # 首先尝试找到结果区域
-            results_containers = soup.select('.search-results-content, .results-list, #main-column, main')
+            # 扩展结果容器选择器
+            results_containers = soup.select('.search-results-content, .results-list, #main-column, main, .grid, .items, .site-main, #content, .content, .container')
+            logger.info(f"找到 {len(results_containers)} 个可能的结果容器")
             
             # 如果找到结果容器，从中找到文章卡片
             if results_containers:
                 results_container = results_containers[0]
-                # Azure通常使用卡片布局显示搜索结果
-                article_cards = results_container.select('.search-item, .card, article, .link-card, .document-card, .post-card, .text-card, .result-item, .msx-card')
+                logger.info(f"使用第一个结果容器: {results_container.name}{'#'+results_container.get('id') if results_container.get('id') else ''}{'.'+results_container.get('class')[0] if results_container.get('class') else ''}")
+                
+                # 扩展Azure卡片选择器
+                card_selectors = '.search-item, .card, article, .link-card, .document-card, .post-card, .text-card, .result-item, .msx-card, .blog-card, .post, .news-item, .grid-item, .item'
+                article_cards = results_container.select(card_selectors)
+                
+                logger.info(f"找到 {len(article_cards)} 个可能的文章卡片")
                 
                 if article_cards:
-                    for card in article_cards:
-                        # 查找标题元素
-                        title_elem = card.select_one('h2, h3, .card-title, .title, .post-title, a[role="heading"], .msx-card__title') or card.select_one('a')
+                    for idx, card in enumerate(article_cards[:10]):  # 只处理前10个，避免过多日志
+                        logger.info(f"处理卡片 {idx+1}: {card.name}{'#'+card.get('id') if card.get('id') else ''}{'.'+card.get('class')[0] if card.get('class') else ''}")
+                        
+                        # 扩展标题元素选择器
+                        title_selectors = 'h2, h3, .card-title, .title, .post-title, a[role="heading"], .msx-card__title, .headline, .entry-title, .heading'
+                        title_elem = card.select_one(title_selectors) or card.select_one('a')
                         
                         if title_elem:
                             title = title_elem.get_text(strip=True)
+                            logger.info(f"找到标题: {title}")
                             
                             # 查找链接
                             link_elem = None
@@ -161,15 +191,17 @@ class AzureBlogCrawler(BaseCrawler):
                                 href = link_elem['href']
                                 # 构建完整URL
                                 url = href if href.startswith('http') else urljoin(self.start_url, href)
+                                logger.info(f"找到链接: {url}")
                                 
                                 # 提取日期 - 查找卡片中的日期信息
                                 date = None
                                 # 针对Azure博客列表页面中的特定日期格式
-                                meta_items = card.select('.msx-card__meta li')
+                                meta_items = card.select('.msx-card__meta li, .meta, .date, time, .timestamp')
                                 for item in meta_items:
-                                    # 尝试匹配日期格式（如 Jan 27, Mar 15 等）
-                                    if re.match(r'^\s*(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2}\s*$', item.get_text().strip()):
-                                        date_text = item.get_text().strip()
+                                    date_text = item.get_text(strip=True)
+                                    logger.info(f"找到可能的日期文本: {date_text}")
+                                    # 尝试匹配日期格式
+                                    if re.match(r'^\s*(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2}\s*$', date_text):
                                         try:
                                             # 添加年份（假设为当前年份）
                                             current_year = datetime.datetime.now().year
@@ -185,38 +217,50 @@ class AzureBlogCrawler(BaseCrawler):
                                 # 避免重复
                                 if url not in [x[1] for x in articles]:
                                     articles.append((title, url, date))
+                                    logger.info(f"添加文章: {title} - {url}")
+                        else:
+                            logger.info(f"卡片 {idx+1} 没有找到标题元素")
+                else:
+                    logger.warning("未找到任何文章卡片")
             
             # 如果没有找到文章卡片，使用通用选择器
             if not articles:
                 logger.warning("未找到文章卡片，尝试使用通用选择器")
                 
-                # 使用更通用的选择器查找可能的文章链接
-                content_area = soup.select_one('main, #main, .main-content, .content, article, section') or soup.body
+                # 直接查找所有链接
+                all_links = soup.find_all('a', href=True)
+                logger.info(f"页面上共有 {len(all_links)} 个链接")
                 
-                # 查找所有链接
-                if content_area:
-                    links = content_area.find_all('a', href=True)
+                # 查找可能的博客文章链接
+                blog_links = []
+                for link in all_links:
+                    href = link.get('href', '')
+                    # Azure博客文章URL通常包含特定路径
+                    if (
+                        ('azure.microsoft.com' in href and '/blog/' in href) or 
+                        ('/articles/' in href) or 
+                        ('/posts/' in href) or
+                        ('/announcements/' in href)
+                    ) and not any(x in href for x in ['category', 'tag', 'archive', 'author', 'search']):
+                        blog_links.append(link)
+                
+                logger.info(f"找到 {len(blog_links)} 个可能的博客文章链接")
+                
+                for link in blog_links:
+                    href = link.get('href', '')
+                    # 获取标题
+                    title = link.get_text(strip=True)
+                    if not title or len(title) < 5:  # 忽略太短的标题
+                        continue
                     
-                    for link in links:
-                        href = link.get('href', '')
-                        # Azure博客文章URL通常包含特定路径
-                        if (
-                            ('azure.microsoft.com' in href and '/blog/' in href) or 
-                            ('/articles/' in href) or 
-                            ('/posts/' in href) or
-                            ('/announcements/' in href)
-                        ) and not any(x in href for x in ['category', 'tag', 'archive', 'author', 'search']):
-                            # 获取标题
-                            title = link.get_text(strip=True)
-                            if not title or len(title) < 5:  # 忽略太短的标题
-                                continue
-                            
-                            # 构建完整URL
-                            url = href if href.startswith('http') else urljoin(self.start_url, href)
-                            
-                            # 避免重复
-                            if url not in [x[1] for x in articles]:
-                                articles.append((title, url, None))
+                    # 构建完整URL
+                    url = href if href.startswith('http') else urljoin(self.start_url, href)
+                    logger.info(f"找到博客链接: {title} - {url}")
+                    
+                    # 避免重复
+                    if url not in [x[1] for x in articles]:
+                        articles.append((title, url, None))
+                        logger.info(f"添加文章: {title} - {url}")
             
             logger.info(f"找到 {len(articles)} 篇潜在的博客文章链接")
             
@@ -231,6 +275,8 @@ class AzureBlogCrawler(BaseCrawler):
         
         except Exception as e:
             logger.error(f"解析文章链接时出错: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             return []
     
     def _parse_article_content(self, url: str, html: str, list_date: Optional[str]) -> Tuple[str, Optional[str]]:
@@ -529,4 +575,53 @@ class AzureBlogCrawler(BaseCrawler):
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(final_content)
             
-        return filepath 
+        return filepath
+    
+    def _get_azure_page(self, url: str) -> Optional[str]:
+        """
+        针对Azure页面的特殊获取方法，使用增强的等待机制
+        
+        Args:
+            url: 目标URL
+            
+        Returns:
+            网页HTML内容或None（如果失败）
+        """
+        if not self.driver:
+            self._init_driver()
+        
+        for i in range(self.retry):
+            try:
+                logger.info(f"正在加载Azure页面: {url}")
+                self.driver.get(url)
+                logger.info("页面初始加载完成")
+                
+                # 简化页面加载等待 - 只等待body元素
+                WebDriverWait(self.driver, self.crawler_config.get('page_load_timeout', 45)).until(
+                    EC.presence_of_element_located((By.TAG_NAME, "body"))
+                )
+                logger.info("基础页面body元素加载完成")
+                
+                # 快速等待主要内容
+                try:
+                    WebDriverWait(self.driver, 5).until(
+                        EC.presence_of_element_located((By.CSS_SELECTOR, "main, article, .content"))
+                    )
+                    logger.info("主要内容元素找到")
+                except Exception as e:
+                    logger.warning(f"主要内容等待超时，继续处理: {e}")
+                
+                # 获取页面源码并立即返回，跳过其他处理
+                page_source = self.driver.page_source
+                logger.info(f"成功获取页面源码，长度: {len(page_source)} 字符")
+                
+                return page_source
+            
+            except Exception as e:
+                logger.warning(f"Azure页面请求失败 (尝试 {i+1}/{self.retry}): {url} - {e}")
+                if i < self.retry - 1:
+                    retry_interval = self.interval * (i + 1)
+                    logger.info(f"等待 {retry_interval} 秒后重试...")
+                    time.sleep(retry_interval)
+        
+        return None 

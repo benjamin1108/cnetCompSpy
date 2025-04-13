@@ -419,6 +419,7 @@ class AIAnalyzer:
                 for i, task in enumerate(self.tasks):
                     task_type = task.get('type')
                     prompt = task.get('prompt')
+                    output = task.get('output', True)  # 默认显示
                     
                     if not task_type or not prompt:
                         logger.warning(f"跳过无效任务: {task}")
@@ -430,12 +431,7 @@ class AIAnalyzer:
                     full_prompt = f"{prompt}\n\n{content}"
                     logger.debug(f"完整提示词长度: {len(full_prompt)} 字符")
                     
-                    # 添加任务开始标记 - 使用特殊的HTML注释作为分隔符
-                    task_start = f"\n<!-- AI_TASK_START: {task_type} -->\n"
-                    f.write(task_start)
-                    f.flush()
-                    
-                    # 调用AI模型
+                    # 调用AI模型获取结果
                     logger.info(f"开始调用AI模型进行 {task_type} 分析...")
                     logger.info(f"[{time.strftime('%H:%M:%S')}] 正在发送请求至API服务器...")
                     start_time = time.time()
@@ -444,21 +440,30 @@ class AIAnalyzer:
                     logger.info(f"AI模型调用完成，耗时: {end_time - start_time:.2f} 秒")
                     logger.info(f"[{time.strftime('%H:%M:%S')}] 已接收{len(result)}字符的响应")
                     
-                    # 立即写入结果到文件
-                    f.write(f"{result}\n")
-                    f.flush()
-                    os.fsync(f.fileno())  # 确保数据完全写入磁盘
-                    
-                    # 添加任务结束标记
-                    task_end = f"\n<!-- AI_TASK_END: {task_type} -->\n\n"
-                    f.write(task_end)
-                    f.flush()
-                    os.fsync(f.fileno())  # 确保数据完全写入磁盘
-                    
-                    # 保存结果到内存中 - 用于返回
+                    # 保存分析结果到内存
                     analysis_results[task_type] = result
                     
-                    logger.info(f"已将任务 {task_type} 的分析结果写入文件，并进行了同步")
+                    # 特殊处理：标题翻译总是需要保存，因为它用于网页标题显示
+                    if task_type == "AI标题翻译" or output:
+                        # 添加任务开始标记 - 使用特殊的HTML注释作为分隔符
+                        task_start = f"\n<!-- AI_TASK_START: {task_type} -->\n"
+                        f.write(task_start)
+                        f.flush()
+                        
+                        # 立即写入结果到文件
+                        f.write(f"{result}\n")
+                        f.flush()
+                        os.fsync(f.fileno())  # 确保数据完全写入磁盘
+                        
+                        # 添加任务结束标记
+                        task_end = f"\n<!-- AI_TASK_END: {task_type} -->\n\n"
+                        f.write(task_end)
+                        f.flush()
+                        os.fsync(f.fileno())  # 确保数据完全写入磁盘
+                        
+                        logger.info(f"已将任务 {task_type} 的分析结果写入文件，并进行了同步")
+                    else:
+                        logger.info(f"任务 {task_type} 设置为不输出到文件，结果仅保存在内存中")
             
             # 设置文件权限 - 使用完全开放的权限以确保Windows可访问
             try:

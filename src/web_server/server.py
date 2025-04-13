@@ -9,14 +9,17 @@
 
 import os
 import re
+import json
 import logging
+import glob
 import markdown
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 
-from flask import Flask, render_template, send_from_directory, abort, request
+from flask import Flask, render_template, send_from_directory, abort, request, jsonify
 from flask import redirect, url_for
 from datetime import datetime
+from markdown.extensions.codehilite import CodeHiliteExtension
 
 
 class WebServer:
@@ -164,13 +167,22 @@ class WebServer:
             content = self._render_document(analysis_path)
             meta = self._extract_document_meta(analysis_path)
             
+            # 提取翻译后的标题
+            translated_title = self._extract_translated_title(analysis_path)
+            if translated_title:
+                # 使用翻译后的标题
+                title = translated_title
+            else:
+                # 回退到原来的行为
+                title = f"AI分析: {meta.get('title', filename)}"
+            
             # 原始文档路径
             raw_path = os.path.join(self.raw_dir, vendor, doc_type, filename)
             has_raw = os.path.isfile(raw_path)
             
             return render_template(
                 'document.html',
-                title=f"AI分析: {meta.get('title', filename)}",
+                title=title,
                 vendor=vendor,
                 doc_type=doc_type,
                 filename=filename,
@@ -424,6 +436,12 @@ class WebServer:
                         # 提取文档信息
                         meta = self._extract_document_meta(file_path)
                         
+                        # 提取翻译后的标题
+                        translated_title = self._extract_translated_title(file_path)
+                        
+                        # 使用翻译后的标题，如果没有则使用原标题
+                        title = translated_title if translated_title else meta.get('title', filename.replace('.md', ''))
+                        
                         # 检查是否有原始版本
                         raw_path = os.path.join(self.raw_dir, vendor, doc_type, filename)
                         has_raw = os.path.isfile(raw_path)
@@ -431,7 +449,7 @@ class WebServer:
                         docs[doc_type].append({
                             'filename': filename,
                             'path': f"{vendor}/{doc_type}/{filename}",
-                            'title': meta.get('title', filename.replace('.md', '')),
+                            'title': title,
                             'date': meta.get('date', ''),
                             'size': os.path.getsize(file_path),
                             'has_raw': has_raw
@@ -459,7 +477,7 @@ class WebServer:
         
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
-                content = f.read(2048)  # 只读取前2KB
+                content = f.read(4096)  # 读取前4KB，增加获取元数据的可能性
             
             # 尝试从内容中提取标题
             title_match = re.search(r'^#\s+(.+)$', content, re.MULTILINE)
@@ -473,10 +491,29 @@ class WebServer:
             if is_analysis and not meta['title'].startswith('竞争分析摘要：'):
                 meta['title'] = f"竞争分析摘要：{meta['title']}"
             
-            # 尝试从内容中提取日期
-            date_match = re.search(r'发布(?:日期|时间)[：:]\s*(\d{4}[-/]\d{1,2}[-/]\d{1,2})', content, re.MULTILINE)
-            if date_match:
-                meta['date'] = date_match.group(1).replace('/', '-')
+            # 尝试从内容中提取日期 - 优先使用发布日期，而不是文件修改时间
+            # 尝试匹配多种可能的日期格式
+            date_patterns = [
+                r'发布(?:日期|时间)[：:]\s*(\d{4}[-/]\d{1,2}[-/]\d{1,2})',  # 发布日期: 2025-04-10
+                r'\*\*发布时间:\*\*\s*(\d{4}[-/]\d{1,2}[-/]\d{1,2})',  # **发布时间:** 2025-04-10
+                r'\*\*发布时间:\*\*\s*(\d{4}年\d{1,2}月\d{1,2}日)',    # **发布时间:** 2025年4月10日
+                r'\*\*发布时间\*\*:\s*(\d{4}[-/]\d{1,2}[-/]\d{1,2})', # **发布时间**: 2025-04-10
+                r'\*\*发布日期:\*\*\s*(\d{4}[-/]\d{1,2}[-/]\d{1,2})',  # **发布日期:** 2025-04-10
+                r'(\d{4}年\d{1,2}月\d{1,2}日)',                       # 2025年4月10日 (仅在上面几种都没匹配到时使用)
+                r'(\d{4}[-/]\d{1,2}[-/]\d{1,2})\s+\d{1,2}:\d{1,2}'    # 2025-04-10 10:30 (包含时间的情况)
+            ]
+            
+            for pattern in date_patterns:
+                date_match = re.search(pattern, content, re.MULTILINE)
+                if date_match:
+                    date_str = date_match.group(1).strip()
+                    # 处理中文日期格式 (2025年4月10日 -> 2025-04-10)
+                    if '年' in date_str and '月' in date_str and '日' in date_str:
+                        date_str = date_str.replace('年', '-').replace('月', '-').replace('日', '')
+                    # 统一分隔符为横杠
+                    date_str = date_str.replace('/', '-')
+                    meta['date'] = date_str
+                    break
             
             # 尝试从内容中提取作者
             author_match = re.search(r'作者[：:]\s*(.+?)[\r\n]', content, re.MULTILINE)
@@ -517,4 +554,50 @@ class WebServer:
         
         except Exception as e:
             self.logger.error(f"渲染文档时出错: {e}")
-            return f"<p>无法渲染文档: {e}</p>" 
+            return f"<p>无法渲染文档: {e}</p>"
+    
+    def _extract_translated_title(self, file_path: str) -> Optional[str]:
+        """
+        从分析文档中提取翻译后的标题
+        
+        Args:
+            file_path: 文档路径
+            
+        Returns:
+            翻译后的标题，如果没有找到则返回None
+        """
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            # 查找AI标题翻译任务的开始和结束标记
+            start_marker = "<!-- AI_TASK_START: AI标题翻译 -->"
+            end_marker = "<!-- AI_TASK_END: AI标题翻译 -->"
+            
+            start_idx = content.find(start_marker)
+            if start_idx == -1:
+                return None
+                
+            start_idx += len(start_marker)
+            end_idx = content.find(end_marker, start_idx)
+            
+            if end_idx == -1:
+                return None
+            
+            # 提取翻译后的标题
+            translated_title = content[start_idx:end_idx].strip()
+            
+            # 如果标题为空或只包含空白字符，返回None
+            if not translated_title:
+                return None
+                
+            # 清理标题中可能的Markdown格式
+            # 通常AI只会返回纯文本标题，但以防万一
+            translated_title = translated_title.replace('#', '').strip()
+            
+            self.logger.info(f"从分析文档中提取到翻译标题: {translated_title}")
+            return translated_title
+            
+        except Exception as e:
+            self.logger.error(f"提取翻译标题时出错: {e}")
+            return None 
