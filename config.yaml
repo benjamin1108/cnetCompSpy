@@ -69,7 +69,14 @@ sources:
 ai_analyzer:
   model: "grok-3-latest" # 使用的AI模型名称
   max_tokens: 8192 # 最大令牌数
-  temperature: 1 # 温度参数
+  temperature: 0.5 # 温度参数
+  max_workers: 2 # 同时分析的最大文件数
+  api_rate_limit: 10 # 每分钟允许的最大API调用次数，避免API过载
+  
+  # API错误重试策略配置
+  max_retries: 3  # API调用失败时的最大重试次数
+  initial_retry_delay: 2.0  # 初始重试延迟(秒)
+  max_retry_delay: 30.0  # 最大重试延迟(秒)
   
   # API基础URL（请选择您使用的模型服务提供商的API端点）
   # 示例:
@@ -82,7 +89,6 @@ ai_analyzer:
   api_base: "https://api.x.ai"
 
   # 请替换为您的API密钥
-  api_key: "xai-AZUF2sEl1HujmDaasjJ8nUVmllE1UBTF93WHQvrhk6nYqQ0orLOi0qSu0WAKlKIYrGqkIfoPbFWNzYXJ"
 
   system_prompt: |
     你是一个专业的云计算技术分析师，擅长分析和解读各类云计算技术文档。请以简洁有力、专业清晰的风格回答问题。
