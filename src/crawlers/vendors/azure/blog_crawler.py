@@ -500,7 +500,7 @@ class AzureBlogCrawler(BaseCrawler):
         
         # 美化图片格式，确保图片前后有空行
         markdown_content = re.sub(r'([^\n])!\[', r'\1\n\n![', markdown_content)
-        markdown_content = re.sub(r'\.(?:jpg|jpeg|png|gif|webp|svg)\)([^\n])', r'.jpg)\n\n\1', markdown_content)
+        markdown_content = re.sub(r'\.((?:jpg|jpeg|png|gif|webp|svg))\)([^\n])', r'.\1)\n\n\2', markdown_content)
         
         # 修复可能的链接问题
         markdown_content = re.sub(r'\]\(\/(?!http)', r'](https://azure.microsoft.com/', markdown_content)

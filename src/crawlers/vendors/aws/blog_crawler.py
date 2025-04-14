@@ -630,7 +630,7 @@ class AwsBlogCrawler(BaseCrawler):
         
         # 美化图片格式，确保图片前后有空行
         markdown_text = re.sub(r'([^\n])!\[', r'\1\n\n![', markdown_text)
-        markdown_text = re.sub(r'\.(?:jpg|jpeg|png|gif|webp|svg)\)([^\n])', r'.jpg)\n\n\1', markdown_text)
+        markdown_text = re.sub(r'\.((?:jpg|jpeg|png|gif|webp|svg))\)([^\n])', r'.\1)\n\n\2', markdown_text)
         
         return markdown_text
     
