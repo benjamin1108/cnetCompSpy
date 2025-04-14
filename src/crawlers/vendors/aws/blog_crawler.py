@@ -301,6 +301,25 @@ class AwsBlogCrawler(BaseCrawler):
             # 将相对URL转换为绝对URL
             img_url = urljoin(url, img['src'])
             img['src'] = img_url
+            
+            # 处理srcset属性，优先选择webp格式
+            if img.get('srcset'):
+                srcset = img['srcset']
+                # 保存srcset值用于调试
+                logger.debug(f"Found image with srcset: {srcset}")
+                
+                # 尝试从srcset中提取webp格式的URL
+                webp_match = re.search(r'(https?://[^\s]+\.webp)', srcset)
+                if webp_match:
+                    webp_url = webp_match.group(1)
+                    logger.info(f"选择webp格式图片URL: {webp_url}")
+                    img['src'] = webp_url
+                    
+                # 删除srcset和sizes属性，以防html2text无法正确处理
+                if img.has_attr('srcset'):
+                    del img['srcset']
+                if img.has_attr('sizes'):
+                    del img['sizes']
         
         # 4. 提取正文内容并转换为Markdown
         article_md = self._html_to_markdown(article)

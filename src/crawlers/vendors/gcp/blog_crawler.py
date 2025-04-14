@@ -633,6 +633,34 @@ class GcpBlogCrawler(BaseCrawler):
                 for el in content_elem.select(selector):
                     el.decompose()
             
+            # 处理图片 - 使用原始URL
+            for img in content_elem.find_all('img'):
+                if not img.get('src'):
+                    continue
+                
+                # 将相对URL转换为绝对URL
+                img_url = urljoin(self.start_url, img['src'])
+                img['src'] = img_url
+                
+                # 处理srcset属性，优先选择webp格式
+                if img.get('srcset'):
+                    srcset = img['srcset']
+                    # 保存srcset值用于调试
+                    logger.debug(f"Found image with srcset: {srcset}")
+                    
+                    # 尝试从srcset中提取webp格式的URL
+                    webp_match = re.search(r'(https?://[^\s]+\.webp)', srcset)
+                    if webp_match:
+                        webp_url = webp_match.group(1)
+                        logger.info(f"选择webp格式图片URL: {webp_url}")
+                        img['src'] = webp_url
+                        
+                    # 删除srcset和sizes属性，以防html2text无法正确处理
+                    if img.has_attr('srcset'):
+                        del img['srcset']
+                    if img.has_attr('sizes'):
+                        del img['sizes']
+            
             # 转换为Markdown
             content_html = str(content_elem)
             content_markdown = self.html_converter.handle(content_html)
