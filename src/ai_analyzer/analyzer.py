@@ -188,6 +188,8 @@ class AIAnalyzer:
                     return "baidu"
                 elif "xf-yun" in api_base_lower or "spark" in api_base_lower:
                     return "xfyun"
+                elif "api.x.ai" in api_base_lower:
+                    return "xai_grok"
                 else:
                     return "custom"
             
@@ -298,6 +300,25 @@ class AIAnalyzer:
                     {"role": "user", "content": prompt}
                 ]
                 
+                # Grok-3 API的特殊处理
+                if self.provider == "xai_grok":
+                    url = "https://api.x.ai/v1/chat/completions"
+                    headers["Authorization"] = f"Bearer {self.api_key}"
+                    
+                    payload = {
+                        "model": "grok-3-latest",  # 固定使用grok-3-latest
+                        "messages": messages,
+                        "temperature": self.temperature,
+                        "max_tokens": self.max_tokens,
+                        "stream": False
+                    }
+                    
+                    return {
+                        "url": url,
+                        "headers": headers,
+                        "payload": payload
+                    }
+                
                 # 直接使用用户配置的URL
                 if "compatible-mode" in self.api_base.lower() and self.api_base.endswith("chat/completions"):
                     # 已经是完整URL，直接使用
@@ -345,6 +366,10 @@ class AIAnalyzer:
                     elif self.provider == "xfyun":
                         # 讯飞星火
                         return response_json.get('payload', {}).get('choices', [{}])[0].get('text', '')
+                    
+                    elif self.provider == "xai_grok":
+                        # Grok-3 API (X.AI)
+                        return response_json.get('choices', [{}])[0].get('message', {}).get('content', '')
                     
                     else:
                         # OpenAI兼容格式

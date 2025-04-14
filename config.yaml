@@ -67,7 +67,7 @@ sources:
 
 # AI分析基础配置
 ai_analyzer:
-  model: "qwen-max" # 使用的AI模型名称
+  model: "grok-3-latest" # 使用的AI模型名称
   max_tokens: 8192 # 最大令牌数
   temperature: 1 # 温度参数
   
@@ -78,7 +78,11 @@ ai_analyzer:
   # - Azure OpenAI: "https://your-resource-name.openai.azure.com/openai/deployments/your-deployment-name"
   # - 百度文心一言: "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop"
   # - 讯飞星火: "https://spark-api.xf-yun.com/v1"
-  api_base: "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
+  # - X.AI Grok: "https://api.x.ai"
+  api_base: "https://api.x.ai"
+
+  # 请替换为您的API密钥
+  api_key: "xai-AZUF2sEl1HujmDaasjJ8nUVmllE1UBTF93WHQvrhk6nYqQ0orLOi0qSu0WAKlKIYrGqkIfoPbFWNzYXJ"
 
   system_prompt: |
     你是一个专业的云计算技术分析师，擅长分析和解读各类云计算技术文档。请以简洁有力、专业清晰的风格回答问题。
