@@ -51,91 +51,114 @@ class BaseCrawler(ABC):
     def _init_driver(self) -> None:
         """初始化WebDriver"""
         chrome_options = Options()
-        chrome_options.add_argument('--headless')
+        chrome_options.add_argument('--headless=new')  # 使用新的无头模式
         chrome_options.add_argument('--no-sandbox')
         chrome_options.add_argument('--disable-dev-shm-usage')
         chrome_options.add_argument('--disable-gpu')
+        chrome_options.add_argument('--disable-extensions')
+        chrome_options.add_argument('--disable-software-rasterizer')  # 禁用软件光栅化
+        chrome_options.add_argument('--disable-features=VizDisplayCompositor')  # 禁用显示合成器
+        chrome_options.add_argument('--mute-audio')  # 静音，避免声音相关问题
+        
+        # 从配置中获取是否使用有界面模式
+        if not self.crawler_config.get('headless', True):
+            # 移除无头模式参数
+            chrome_options.arguments = [arg for arg in chrome_options.arguments if not arg.startswith('--headless')]
+            logger.debug("使用有界面模式")
         
         try:
-            # 获取ChromeDriver路径，使用相对于当前脚本的路径
+            # 获取项目根目录路径
             base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-            chromedriver_path = os.path.join(base_dir, 'drivers', 'chromedriver')
-            if platform.system().lower() == 'windows':
-                chromedriver_path += '.exe'
             
-            # 尝试使用已安装的chrome-headless-shell
+            # 从配置文件获取驱动路径
             config_path = os.path.join(base_dir, 'drivers', 'webdriver_config.json')
-            if os.path.exists(config_path):
-                with open(config_path, 'r') as f:
-                    config = json.load(f)
-                
-                chrome_path = config.get('chrome_path')
-                if chrome_path and os.path.exists(chrome_path):
-                    chrome_options.binary_location = chrome_path
-                    logger.debug(f"使用chrome-headless-shell: {chrome_path}")
             
-            # 尝试多种方式初始化WebDriver
+            if not os.path.exists(config_path):
+                logger.error(f"WebDriver配置文件不存在: {config_path}")
+                logger.error("请先运行 'bash scripts/setup_latest_driver.sh' 安装驱动")
+                raise FileNotFoundError(f"WebDriver配置文件不存在: {config_path}")
+            
+            with open(config_path, 'r') as f:
+                config = json.load(f)
+            
+            chrome_path = config.get('chrome_path')
+            chromedriver_path = config.get('chromedriver_path')
+            chrome_version = config.get('version')
+            
+            # 验证路径是否存在
+            if not chrome_path or not os.path.exists(chrome_path):
+                logger.error(f"chrome-headless-shell不存在: {chrome_path}")
+                logger.error("请先运行 'bash scripts/setup_latest_driver.sh' 安装驱动")
+                raise FileNotFoundError(f"chrome-headless-shell不存在: {chrome_path}")
+            
+            if not chromedriver_path or not os.path.exists(chromedriver_path):
+                logger.error(f"chromedriver不存在: {chromedriver_path}")
+                logger.error("请先运行 'bash scripts/setup_latest_driver.sh' 安装驱动")
+                raise FileNotFoundError(f"chromedriver不存在: {chromedriver_path}")
+            
+            # 验证驱动程序是否可执行
             try:
-                # 方法1: 使用我们自己下载的chromedriver
-                if os.path.exists(chromedriver_path):
-                    logger.debug(f"使用已下载的ChromeDriver: {chromedriver_path}")
-                    service = Service(executable_path=chromedriver_path)
-                    self.driver = webdriver.Chrome(options=chrome_options, service=service)
-                    logger.debug("方法1成功：使用下载的ChromeDriver初始化WebDriver")
-                else:
-                    raise FileNotFoundError(f"ChromeDriver不存在: {chromedriver_path}")
-            except Exception as e1:
-                logger.warning(f"方法1失败: {e1}")
+                import subprocess
+                result = subprocess.run([chrome_path, '--version'], capture_output=True, text=True, timeout=5)
+                if result.stdout:
+                    logger.debug(f"chrome-headless-shell版本: {result.stdout.strip()}")
                 
-                try:
-                    # 方法2: 直接使用Service()，让系统查找ChromeDriver
-                    service = Service()
-                    self.driver = webdriver.Chrome(options=chrome_options, service=service)
-                    logger.debug("方法2成功：使用默认Service初始化WebDriver")
-                except Exception as e2:
-                    logger.warning(f"方法2失败: {e2}")
+                if result.returncode != 0:
+                    error_msg = result.stderr.strip() if result.stderr else "未知错误"
+                    if "error while loading shared libraries" in error_msg:
+                        missing_lib = error_msg.split("error while loading shared libraries:")[1].split(":")[0].strip()
+                        logger.error(f"chrome-headless-shell缺少系统依赖库: {missing_lib}")
+                        logger.error("请运行 'bash scripts/setup_latest_driver.sh' 查看并安装缺少的依赖")
+                        raise RuntimeError(f"chrome-headless-shell缺少系统依赖库: {missing_lib}")
+                    else:
+                        logger.warning(f"chrome-headless-shell执行测试发出警告: {error_msg}")
+            except subprocess.TimeoutExpired:
+                logger.warning("chrome-headless-shell版本检测超时，继续执行")
+            except Exception as e:
+                logger.warning(f"chrome-headless-shell版本检测失败: {e}，继续执行")
+            
+            # 设置chrome二进制文件位置
+            chrome_options.binary_location = chrome_path
+            logger.debug(f"使用chrome-headless-shell: {chrome_path}, 版本: {chrome_version}")
+            
+            # 初始化WebDriver (添加更多错误处理)
+            service = Service(executable_path=chromedriver_path)
+            try:
+                self.driver = webdriver.Chrome(options=chrome_options, service=service)
+                logger.debug(f"使用ChromeDriver: {chromedriver_path}, 版本: {chrome_version}")
+            except Exception as e:
+                # 如果使用--no-sandbox仍然失败，则尝试几种备选方案
+                if "--no-sandbox" in chrome_options.arguments:
+                    logger.warning(f"使用--no-sandbox模式初始化WebDriver失败: {e}")
+                    logger.warning("尝试使用其他配置...")
                     
+                    # 尝试方案1: 移除--headless参数
                     try:
-                        # 方法3: 使用webdriver_manager自动下载
-                        from webdriver_manager.chrome import ChromeDriverManager
-                        service = Service(ChromeDriverManager().install())
-                        self.driver = webdriver.Chrome(options=chrome_options, service=service)
-                        logger.debug("方法3成功：使用webdriver_manager初始化WebDriver")
-                    except Exception as e3:
-                        logger.warning(f"方法3失败: {e3}")
+                        logger.debug("尝试方案1: 移除--headless参数")
+                        alt_options = Options()
+                        alt_options.binary_location = chrome_path
+                        alt_options.add_argument('--no-sandbox')
+                        alt_options.add_argument('--disable-dev-shm-usage')
+                        alt_options.add_argument('--disable-gpu')
+                        self.driver = webdriver.Chrome(options=alt_options, service=service)
+                        logger.debug("方案1成功：非无头模式")
+                    except Exception as e1:
+                        logger.warning(f"方案1失败: {e1}")
                         
+                        # 尝试方案2: 仅使用基本参数
                         try:
-                            # 方法4: 尝试使用系统Chrome/Chromium
-                            potential_paths = []
-                            
-                            if platform.system().lower() == 'darwin':  # macOS
-                                potential_paths = [
-                                    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-                                    "/Applications/Chromium.app/Contents/MacOS/Chromium"
-                                ]
-                            elif platform.system().lower() == 'linux':
-                                potential_paths = [
-                                    "/usr/bin/google-chrome",
-                                    "/usr/bin/chromium-browser",
-                                    "/usr/bin/chromium"
-                                ]
-                            elif platform.system().lower() == 'windows':
-                                potential_paths = [
-                                    r"C:\Program Files\Google\Chrome\Application\chrome.exe",
-                                    r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
-                                ]
-                                
-                            for path in potential_paths:
-                                if os.path.exists(path):
-                                    chrome_options.binary_location = path
-                                    self.driver = webdriver.Chrome(options=chrome_options)
-                                    logger.debug(f"方法4成功：使用系统Chrome: {path}")
-                                    break
-                            else:
-                                raise Exception("未找到系统Chrome")
-                        except Exception as e4:
-                            logger.error(f"方法4失败: {e4}")
-                            raise Exception(f"无法初始化WebDriver: 所有方法都失败")
+                            logger.debug("尝试方案2: 仅使用基本参数")
+                            alt_options = Options()
+                            alt_options.binary_location = chrome_path
+                            alt_options.add_argument('--no-sandbox')
+                            alt_options.add_argument('--disable-dev-shm-usage')
+                            self.driver = webdriver.Chrome(options=alt_options, service=service)
+                            logger.debug("方案2成功：使用最小参数集")
+                        except Exception as e2:
+                            logger.warning(f"方案2失败: {e2}")
+                            raise Exception(f"无法初始化WebDriver: 所有方法都失败。\n原始错误: {e}\n尝试运行 'bash scripts/setup_latest_driver.sh' 检查并修复依赖问题。")
+                else:
+                    raise
             
             # 设置不同类型的超时
             self.driver.set_page_load_timeout(self.crawler_config.get('page_load_timeout', 45))
@@ -146,6 +169,14 @@ class BaseCrawler(ABC):
             logger.debug(f"WebDriver初始化成功，配置了多级超时机制")
         except Exception as e:
             logger.error(f"WebDriver初始化失败: {e}")
+            if "cannot find Chrome binary" in str(e):
+                logger.error(f"无法找到Chrome二进制文件。请确保chrome-headless-shell已正确安装并且具有执行权限。")
+                logger.error(f"尝试运行 'bash scripts/setup_latest_driver.sh' 重新安装驱动。")
+            elif "session not created" in str(e) and "user data directory" in str(e):
+                logger.error(f"WebDriver会话创建失败。这可能是由于Chrome配置文件问题导致的。")
+                logger.error(f"请尝试在启动脚本之前关闭所有Chrome实例，或者运行 'rm -rf ~/.config/google-chrome' 清理配置文件。")
+            elif "error while loading shared libraries" in str(e):
+                logger.error(f"缺少系统依赖库。请运行 'bash scripts/setup_latest_driver.sh' 检测并安装缺少的依赖。")
             raise
     
     def _close_driver(self) -> None:

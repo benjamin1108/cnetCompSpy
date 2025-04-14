@@ -8,8 +8,13 @@ BLUE='\033[0;34m'
 PURPLE='\033[0;35m'
 NC='\033[0m' # 无颜色
 
-# 驱动目录
-DRIVERS_DIR="drivers"
+# 获取脚本所在目录
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# 获取项目根目录（假设脚本在scripts子目录下）
+PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
+
+# 驱动目录（相对于项目根目录）
+DRIVERS_DIR="$PROJECT_ROOT/drivers"
 
 # 确保驱动目录存在
 mkdir -p "$DRIVERS_DIR"
@@ -111,6 +116,82 @@ download_file() {
     
     echo -e "${GREEN}下载完成${NC}"
     return 0
+}
+
+# 检查系统依赖
+check_dependencies() {
+    echo -e "${BLUE}检查系统依赖...${NC}"
+    
+    if [[ "$OS" == "linux" ]]; then
+        # 提供Chrome运行所需的完整依赖库列表
+        echo -e "${YELLOW}Chrome headless shell 在Linux系统上需要以下依赖库:${NC}"
+        echo -e "${YELLOW}=======================================${NC}"
+        echo -e "${YELLOW}- libatk-1.0-0           # ATK库${NC}"
+        echo -e "${YELLOW}- libatk-bridge-2.0-0    # ATK桥接库${NC}"
+        echo -e "${YELLOW}- libasound2             # ALSA音频库${NC}"
+        echo -e "${YELLOW}- libcups2               # CUPS打印系统${NC}"
+        echo -e "${YELLOW}- libdrm2                # Direct Rendering Manager${NC}"
+        echo -e "${YELLOW}- libgtk-3-0             # GTK+3${NC}"
+        echo -e "${YELLOW}- libgbm1                # Mesa GBM库${NC}"
+        echo -e "${YELLOW}- libnss3                # NSS安全库${NC}"
+        echo -e "${YELLOW}- libxcomposite1         # X Composite扩展${NC}"
+        echo -e "${YELLOW}- libxdamage1            # X Damage扩展${NC}"
+        echo -e "${YELLOW}- libxfixes3             # X Fixes扩展${NC}"
+        echo -e "${YELLOW}- libxrandr2             # X Resize, Rotate and Reflection扩展${NC}"
+        echo -e "${YELLOW}- libxshmfence1          # X shared memory fences${NC}"
+        echo -e "${YELLOW}- libpango-1.0-0         # Pango文本布局库${NC}"
+        echo -e "${YELLOW}- libpangocairo-1.0-0    # Pango Cairo渲染${NC}"
+        echo -e "${YELLOW}- libcairo2              # Cairo绘图库${NC}"
+        echo -e "${YELLOW}- libatspi2.0-0          # AT-SPI库${NC}"
+        echo -e "${YELLOW}- libxkbcommon0          # XKB库${NC}"
+        echo -e "${YELLOW}- libxss1                # XScreenSaver扩展库${NC}"
+        echo -e "${YELLOW}- libxtst6               # X Test扩展库${NC}"
+        echo -e "${YELLOW}- libexpat1              # Expat XML解析库${NC}"
+        echo -e "${YELLOW}- libfontconfig1         # 字体配置库${NC}"
+        echo -e "${YELLOW}- libxi6                 # X11 Input扩展库${NC}"
+        echo -e "${YELLOW}- libx11-6               # X11客户端库${NC}"
+        echo -e "${YELLOW}- libxcursor1            # X光标管理库${NC}"
+        echo -e "${YELLOW}- libxext6               # X11扩展库${NC}"
+        echo -e "${YELLOW}- libxrender1            # X Rendering扩展${NC}"
+        echo -e "${YELLOW}- libglib2.0-0           # GLib库${NC}"
+        echo -e "${YELLOW}- libnspr4               # Netscape可移植运行时${NC}"
+        echo -e "${YELLOW}- libu2f-udev            # U2F设备支持${NC}"
+        echo -e "${YELLOW}- libvulkan1             # Vulkan加载器${NC}"
+        echo -e "${YELLOW}- libdbus-1-3            # D-Bus IPC系统${NC}"
+        echo -e "${YELLOW}- libwayland-client0     # Wayland客户端库${NC}"
+        echo -e "${YELLOW}- libwayland-egl1        # Wayland EGL库${NC}"
+        echo -e "${YELLOW}- libwayland-cursor0     # Wayland光标库${NC}"
+        echo -e "${YELLOW}=======================================${NC}"
+        
+        # 根据不同发行版提供安装命令
+        if [[ -f /etc/debian_version ]]; then
+            # Debian/Ubuntu系
+            echo -e "${GREEN}在Debian/Ubuntu系统上，请尝试运行以下命令安装依赖:${NC}"
+            echo -e "sudo apt-get update"
+            echo -e "sudo apt-get install -y libatk1.0-0 libatk-bridge2.0-0 libasound2 libcups2 libdrm2 libgtk-3-0 libgbm1 libnss3 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libxshmfence1 libpango-1.0-0 libpangocairo-1.0-0 libcairo2 libatspi2.0-0 libxkbcommon0 libxss1 libxtst6 libexpat1 libfontconfig1 libxi6 libx11-6 libxcursor1 libxext6 libxrender1 libglib2.0-0 libnspr4 libu2f-udev libvulkan1 libdbus-1-3 libwayland-client0 libwayland-egl1 libwayland-cursor0"
+        elif [[ -f /etc/redhat-release ]]; then
+            # RHEL/CentOS/Fedora系
+            echo -e "${GREEN}在RHEL/CentOS/Fedora系统上，请尝试运行以下命令安装依赖:${NC}"
+            echo -e "sudo yum install -y atk at-spi2-atk alsa-lib cups-libs libdrm gtk3 mesa-libgbm nss libXcomposite libXdamage libXfixes libXrandr libxshmfence pango pango-cairo cairo at-spi2-core libxkbcommon libXScrnSaver libXtst expat fontconfig libXi libX11 libXcursor libXext libXrender glib2 nspr libu2f-host vulkan-loader dbus-libs wayland-libs"
+        elif [[ -f /etc/arch-release ]]; then
+            # Arch系
+            echo -e "${GREEN}在Arch系统上，请尝试运行以下命令安装依赖:${NC}"
+            echo -e "sudo pacman -S --needed atk at-spi2-atk alsa-lib cups libdrm gtk3 libgbm nss libxcomposite libxdamage libxfixes libxrandr libxshmfence pango cairo at-spi2-core libxkbcommon libxss libxtst expat fontconfig libxi libx11 libxcursor libxext libxrender glib2 nspr libu2f-host vulkan-icd-loader dbus wayland"
+        else
+            echo -e "${GREEN}请使用系统的包管理器安装上述列出的库${NC}"
+        fi
+        
+        # 试运行--no-sandbox模式作为备选方案
+        echo -e "${YELLOW}作为临时解决方案，您也可以尝试使用--no-sandbox模式:${NC}"
+        echo -e "在src/crawlers/common/base_crawler.py文件中找到_init_driver函数，确保chrome_options中包含'--no-sandbox'参数"
+    elif [[ "$OS" == "mac" ]]; then
+        echo -e "${YELLOW}在macOS上，大多数依赖由操作系统提供，但您可能需要确保XQuartz已安装（用于X11支持）${NC}"
+        echo -e "${GREEN}您可以通过Homebrew安装XQuartz:${NC}"
+        echo -e "brew install --cask xquartz"
+    elif [[ "$OS" == "win" ]]; then
+        echo -e "${YELLOW}在Windows上，大多数依赖已包含在安装包中${NC}"
+        echo -e "${YELLOW}请确保已安装Visual C++ Redistributable包${NC}"
+    fi
 }
 
 # 下载chrome-headless-shell
@@ -281,6 +362,9 @@ main() {
     
     # 创建配置文件
     create_config_file
+    
+    # 检查系统依赖
+    check_dependencies
     
     # 清理下载目录
     rm -rf "$DRIVERS_DIR/download"

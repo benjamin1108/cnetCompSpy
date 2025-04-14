@@ -2,6 +2,7 @@
 venv/
 env/
 ENV/
+cnet_env/
 .venv/
 .env/
 virtualenv/
