@@ -633,33 +633,8 @@ class GcpBlogCrawler(BaseCrawler):
                 for el in content_elem.select(selector):
                     el.decompose()
             
-            # 处理图片 - 使用原始URL
-            for img in content_elem.find_all('img'):
-                if not img.get('src'):
-                    continue
-                
-                # 将相对URL转换为绝对URL
-                img_url = urljoin(self.start_url, img['src'])
-                img['src'] = img_url
-                
-                # 处理srcset属性，优先选择webp格式
-                if img.get('srcset'):
-                    srcset = img['srcset']
-                    # 保存srcset值用于调试
-                    logger.debug(f"Found image with srcset: {srcset}")
-                    
-                    # 尝试从srcset中提取webp格式的URL
-                    webp_match = re.search(r'(https?://[^\s]+\.webp)', srcset)
-                    if webp_match:
-                        webp_url = webp_match.group(1)
-                        logger.info(f"选择webp格式图片URL: {webp_url}")
-                        img['src'] = webp_url
-                        
-                    # 删除srcset和sizes属性，以防html2text无法正确处理
-                    if img.has_attr('srcset'):
-                        del img['srcset']
-                    if img.has_attr('sizes'):
-                        del img['sizes']
+            # 修复图片和链接
+            self._fix_images_and_links(content_elem)
             
             # 转换为Markdown
             content_html = str(content_elem)
@@ -671,6 +646,82 @@ class GcpBlogCrawler(BaseCrawler):
             return content_markdown
         
         return "无法提取文章内容。"
+    
+    def _fix_images_and_links(self, content_elem: BeautifulSoup) -> None:
+        """
+        修复文章中的图片和链接
+        
+        Args:
+            content_elem: 文章内容元素
+        """
+        # 处理图片
+        for img in content_elem.find_all('img'):
+            # 获取图片的src属性
+            src = img.get('src', '')
+            data_src = img.get('data-src', '')
+            lazy_src = img.get('data-lazy-src', '')
+            srcset = img.get('srcset', '')
+            
+            # 尝试从各种可能的属性中获取图片链接
+            img_url = src or data_src or lazy_src
+            
+            # 如果没有找到图片链接，尝试从srcset中提取
+            if not img_url and srcset:
+                parts = srcset.split(',')
+                if parts:
+                    first_part = parts[0].strip()
+                    img_url = first_part.split(' ')[0]
+            
+            # 如果找到了图片链接
+            if img_url:
+                # 检查图片链接是否为相对路径
+                if not img_url.startswith(('http://', 'https://', '//')):
+                    # 将相对路径转为绝对路径
+                    img_url = urljoin(self.start_url, img_url)
+                    
+                # 处理以//开头的链接
+                if img_url.startswith('//'):
+                    img_url = 'https:' + img_url
+                
+                # 如果是数据URL（base64），保留原样
+                if img_url.startswith('data:'):
+                    continue
+                
+                # 更新alt属性，如果没有alt，使用空字符串
+                alt_text = img.get('alt', '') or ''
+                
+                # 创建Markdown格式的图片链接
+                img_markdown = f'![{alt_text}]({img_url})'
+                img.replace_with(BeautifulSoup(img_markdown, 'html.parser'))
+        
+        # 处理链接
+        for a in content_elem.find_all('a'):
+            href = a.get('href', '')
+            # 如果链接不为空且不是锚点链接
+            if href and not href.startswith('#'):
+                # 处理相对路径的链接
+                if not href.startswith(('http://', 'https://', '//')):
+                    href = urljoin(self.start_url, href)
+                
+                # 处理以//开头的链接
+                if href.startswith('//'):
+                    href = 'https:' + href
+                    
+                # 获取链接文本，如果为空，使用链接本身
+                link_text = a.get_text().strip() or href
+                
+                # 检查链接是否指向图片文件
+                img_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp', '.tiff', '.ico']
+                is_image_link = any(href.lower().endswith(ext) for ext in img_extensions)
+                
+                if is_image_link:
+                    # 将图片链接转换为Markdown图片
+                    img_markdown = f'![{link_text}]({href})'
+                    a.replace_with(BeautifulSoup(img_markdown, 'html.parser'))
+                else:
+                    # 将链接转换为Markdown链接
+                    a_markdown = f'[{link_text}]({href})'
+                    a.replace_with(BeautifulSoup(a_markdown, 'html.parser'))
     
     def _clean_markdown(self, markdown_content: str) -> str:
         """

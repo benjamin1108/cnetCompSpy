@@ -152,6 +152,36 @@
             z-index: 0;
             pointer-events: none;
         }
+
+        .doc-meta .date {
+            display: inline-block;
+            padding: 3px 10px;
+            background-color: rgba(0, 120, 212, 0.1);
+            border-radius: 4px;
+            color: #0078d4;
+            font-size: 0.85rem;
+            margin-right: 10px;
+        }
+        
+        .doc-meta .source-type {
+            display: inline-block;
+            padding: 3px 10px;
+            background-color: rgba(76, 175, 80, 0.1);
+            border-radius: 4px;
+            color: #4CAF50;
+            font-size: 0.85rem;
+            margin-right: 10px;
+            text-transform: capitalize;
+        }
+        
+        .doc-meta .author {
+            display: inline-block;
+            padding: 3px 10px;
+            background-color: rgba(255, 152, 0, 0.1);
+            border-radius: 4px;
+            color: #FF9800;
+            font-size: 0.85rem;
+        }
     </style>
 </head>
 <body>
@@ -165,6 +195,10 @@
         <div class="doc-meta">
             {% if meta and meta.date %}
                 <span class="date">{{ meta.date }}</span>
+            {% endif %}
+            
+            {% if meta and meta.source_type %}
+                <span class="source-type">{{ meta.source_type }}</span>
             {% endif %}
             
             {% if meta and meta.author %}

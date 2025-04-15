@@ -2,5 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from src.crawlers.vendors.azure.blog_crawler import AzureBlogCrawler
+from src.crawlers.vendors.azure.tech_blog_crawler import AzureTechBlogCrawler
 
-__all__ = ['AzureBlogCrawler'] 
+__all__ = ['AzureBlogCrawler', 'AzureTechBlogCrawler'] 

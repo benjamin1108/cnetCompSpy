@@ -25,10 +25,15 @@ sources:
       url: "https://docs.aws.amazon.com/"
       type: "documentation"
   azure:
-    blog:
-      url: "https://azure.microsoft.com/en-us/blog/category/networking/"
-      type: "blog"
+    # blog:
+    #   url: "https://azure.microsoft.com/en-us/blog/category/networking/"
+    #   type: "blog"
+    #   test_mode: false
+    tech-blog:
+      url: "https://techcommunity.microsoft.com/category/azure/blog/azurenetworkingblog"
+      type: "tech-blog"
       test_mode: false
+      max_pages: 10  # 最大爬取页数
     docs:
       url: "https://learn.microsoft.com/en-us/azure/"
       type: "documentation"
@@ -96,7 +101,7 @@ ai_analyzer:
 
     标题：使用#来表示标题，#的数量表示标题的级别（例如，#表示H1，##表示H2等）。
     粗体和斜体：支持粗体（**text**）和斜体（*text*）。
-    列表：支持有序列表（1. ）和无序列表（- ）。
+    列表：支持有序列表（1. ）和无序列表（- ）。如果输出的列表有层级，请自动添加缩进，用下一级列表来表示
     代码块：可以使用三个反引号（```）来高亮代码块，或使用单个反引号（`）来内联代码。
     链接：使用[text](url)来创建链接。
     表格：使用| 语法来创建表格。
@@ -119,14 +124,13 @@ ai_analyzer:
         5. 格式示例：
            - [解决方案] 云网络安全最佳实践指南
            - [新产品] 全新云网络流量分析服务正式发布
-        
         请直接输出带前缀的翻译标题，不要添加任何格式标记或额外解释。
 
     - type: "AI竞争分析"
       output: true
       prompt: |
         请基于文档内容进行详细的竞争分析，并使用简体中文输出所有分析结果。首先判断文档类型（解决方案或产品功能/新产品发布），然后只使用对应的模板进行分析。
-        
+        支持有序列表（1. ）和无序列表（- ）。如果输出的列表有层级，请自动添加缩进，用下一级列表来表示
         请注意：
         1. 必须使用中文输出所有分析内容，即使原文是英文
         2. 不要在输出中包含模板说明、任务指南和格式规范等指导性内容，仅输出实际分析结果

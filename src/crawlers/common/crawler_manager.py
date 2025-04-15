@@ -39,9 +39,17 @@ class CrawlerManager:
             爬虫类
         """
         try:
-            # 尝试加载特定爬虫类 (e.g., AwsBlogCrawler)
-            module_name = f"src.crawlers.vendors.{vendor}.{source_type}_crawler"
-            class_name = f"{vendor.capitalize()}{source_type.capitalize()}Crawler"
+            # 处理source_type中的连字符，转换为下划线格式
+            module_source_type = source_type.replace('-', '_')
+            
+            # 组装模块名和类名
+            module_name = f"src.crawlers.vendors.{vendor}.{module_source_type}_crawler"
+            
+            # 首字母大写，并移除连字符
+            class_source_type = ''.join(word.capitalize() for word in source_type.split('-'))
+            class_name = f"{vendor.capitalize()}{class_source_type}Crawler"
+            
+            logger.debug(f"尝试加载模块: {module_name}, 类: {class_name}")
             
             module = importlib.import_module(module_name)
             crawler_class = getattr(module, class_name)

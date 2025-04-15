@@ -1,16 +1,22 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import argparse
+import importlib
+import json
 import logging
 import os
+import re
+import shutil
 import sys
 import time
-import json
 import yaml
-from typing import Dict, Any, List
-import shutil
+from typing import Dict, Any, List, Optional
 from copy import deepcopy
+
+import tqdm
+
+from src.utils.colored_logger import setup_colored_logging
 
 # 添加项目根目录到路径
 sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
@@ -18,15 +24,7 @@ sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 from src.crawlers.common.crawler_manager import CrawlerManager
 from src.ai_analyzer.analyzer import AIAnalyzer
 
-# 配置日志
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler(os.path.join(os.path.dirname(os.path.dirname(__file__)), "cnetCompSpy.log")),
-        logging.StreamHandler()
-    ]
-)
+# 移除原有的日志配置代码，由main函数中的setup_colored_logging替代
 logger = logging.getLogger(__name__)
 
 # 配置第三方库的日志级别
@@ -109,8 +107,10 @@ def load_yaml_file(file_path: str) -> Dict[str, Any]:
         logger.error(f"加载配置文件时出错: {e}")
         return {}
 
-def get_config() -> Dict[str, Any]:
-    """获取合并后的配置"""
+def get_config(args: argparse.Namespace) -> Dict[str, Any]:
+    """
+    Load config from yaml file and merge with command line arguments.
+    """
     config = DEFAULT_CONFIG.copy()
     
     # 获取项目根目录路径
@@ -137,7 +137,9 @@ def get_config() -> Dict[str, Any]:
     return config
 
 def parse_arguments() -> argparse.Namespace:
-    """解析命令行参数"""
+    """
+    Parse command line arguments.
+    """
     parser = argparse.ArgumentParser(description="云计算竞争情报爬虫")
     parser.add_argument("--mode", choices=["crawl", "analyze", "test"], help="运行模式: crawl(爬取数据), analyze(分析数据), test(测试模式)")
     parser.add_argument("--vendor", help="爬取指定厂商的数据, 如aws, azure等")
@@ -147,8 +149,10 @@ def parse_arguments() -> argparse.Namespace:
     
     return parser.parse_args()
 
-def clean_data_dir():
-    """清理所有数据目录"""
+def clean_data_dir(data_dir: str, dry_run: bool = False) -> None:
+    """
+    Clean data directory.
+    """
     logger.info("开始清理数据目录...")
     
     # 获取项目根目录
@@ -162,7 +166,8 @@ def clean_data_dir():
             vendor_dir = os.path.join(raw_dir, vendor)
             if os.path.exists(vendor_dir):
                 logger.info(f"删除目录: {vendor_dir}")
-                shutil.rmtree(vendor_dir)
+                if not dry_run:
+                    shutil.rmtree(vendor_dir)
     
     # 清理analyzed目录下的各个厂商目录
     analysis_dir = os.path.join(data_dir, "analysis")
@@ -171,31 +176,34 @@ def clean_data_dir():
             vendor_dir = os.path.join(analysis_dir, vendor)
             if os.path.exists(vendor_dir):
                 logger.info(f"删除目录: {vendor_dir}")
-                shutil.rmtree(vendor_dir)
+                if not dry_run:
+                    shutil.rmtree(vendor_dir)
     
     logger.info("所有数据目录清理完成")
 
-def crawl_main(vendor: str = None, article_limit: int = 0):
-    """爬取主函数"""
-    config = get_config()
+def crawl_main(args: argparse.Namespace) -> None:
+    """
+    Main function for crawling.
+    """
+    config = get_config(args)
     
     # 如果指定了厂商，过滤配置
-    if vendor:
+    if args.vendor:
         sources = config.get('sources', {})
         # 只保留指定厂商的配置
-        filtered_sources = {vendor: sources.get(vendor, {})} if vendor in sources else {}
+        filtered_sources = {args.vendor: sources.get(args.vendor, {})} if args.vendor in sources else {}
         # 如果厂商不存在，给出警告
         if not filtered_sources:
-            logger.warning(f"未找到厂商 {vendor} 的配置，请检查配置文件和厂商名称")
+            logger.warning(f"未找到厂商 {args.vendor} 的配置，请检查配置文件和厂商名称")
             return
         config['sources'] = filtered_sources
     
     # 如果设置了文章数量限制，更新配置
-    if article_limit > 0:
-        logger.info(f"设置每个来源的文章数量限制为: {article_limit}")
+    if args.limit > 0:
+        logger.info(f"设置每个来源的文章数量限制为: {args.limit}")
         if 'crawler' not in config:
             config['crawler'] = {}
-        config['crawler']['article_limit'] = article_limit
+        config['crawler']['article_limit'] = args.limit
     
     # 创建并运行爬虫管理器
     crawler_manager = CrawlerManager(config)
@@ -207,13 +215,15 @@ def crawl_main(vendor: str = None, article_limit: int = 0):
             file_count = len(files)
             logger.info(f"爬取完成: {vendor_name} {source_type}, 共 {file_count} 个文件")
 
-def test_main(vendor: str = None):
-    """测试主函数"""
+def test_main(args: argparse.Namespace) -> None:
+    """
+    Main function for testing.
+    """
     # 清理数据
-    clean_data_dir()
+    clean_data_dir(os.path.dirname(os.path.dirname(__file__)), True)
     
     # 加载配置并设置测试模式
-    config = get_config()
+    config = get_config(args)
     
     # 为所有厂商和来源设置测试模式
     for vendor_name, vendor_config in config.get('sources', {}).items():
@@ -221,45 +231,62 @@ def test_main(vendor: str = None):
             source_config['test_mode'] = True
     
     # 爬取
-    crawl_main(vendor)
+    crawl_main(args)
     
     # 分析
-    analyze_main()
+    analyze_main(args)
 
-def analyze_main():
-    """分析主函数"""
+def analyze_main(args: argparse.Namespace) -> None:
+    """
+    Main function for analyzing.
+    """
     # 加载配置
-    config = get_config()
+    config = get_config(args)
     
     # 创建并运行AI分析器
     analyzer = AIAnalyzer(config)
     analyzer.analyze_all()
 
-def main():
-    """主函数"""
-    # 加载配置
-    config = get_config()
+def main() -> None:
+    """
+    Main entry point.
+    """
+    # 使用彩色日志替换原有的日志配置
+    log_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "cnetCompSpy.log")
+    setup_colored_logging(
+        level=logging.INFO,
+        log_file=log_file,
+        fmt='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+    
+    # 设置第三方库的日志级别
+    logging.getLogger("urllib3").setLevel(logging.WARNING)
+    logging.getLogger("matplotlib").setLevel(logging.WARNING)
+    logging.getLogger("PIL").setLevel(logging.WARNING)
+    logging.getLogger('selenium').setLevel(logging.WARNING)
+    logging.getLogger('filelock').setLevel(logging.WARNING)
     
     # 解析命令行参数
     args = parse_arguments()
     
     # 如果指定了clean参数，清理数据目录
     if args.clean:
-        clean_data_dir()
+        clean_data_dir(os.path.dirname(os.path.dirname(__file__)), True)
         if not args.mode:
             return
     
     # 根据运行模式执行相应操作
     if args.mode == "crawl":
         logger.info("运行模式: crawl")
-        crawl_main(args.vendor, args.limit)
+        crawl_main(args)
     elif args.mode == "analyze":
         logger.info("运行模式: analyze")
-        analyze_main()
+        analyze_main(args)
     elif args.mode == "test":
         logger.info("运行模式: test")
         logger.info("启动测试模式")
-        test_main(args.vendor)
+        test_main(args)
     else:
         logger.warning("未指定运行模式，使用 --mode 参数指定运行模式")
 

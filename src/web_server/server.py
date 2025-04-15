@@ -399,7 +399,8 @@ class WebServer:
                             'title': meta.get('title', filename.replace('.md', '')),
                             'date': meta.get('date', ''),
                             'size': os.path.getsize(file_path),
-                            'has_analysis': has_analysis
+                            'has_analysis': has_analysis,
+                            'source_type': doc_type
                         })
                 
                 # 按日期排序，最新的在前面
@@ -452,7 +453,8 @@ class WebServer:
                             'title': title,
                             'date': meta.get('date', ''),
                             'size': os.path.getsize(file_path),
-                            'has_raw': has_raw
+                            'has_raw': has_raw,
+                            'source_type': doc_type
                         })
                 
                 # 按日期排序，最新的在前面
@@ -519,6 +521,11 @@ class WebServer:
             author_match = re.search(r'作者[：:]\s*(.+?)[\r\n]', content, re.MULTILINE)
             if author_match:
                 meta['author'] = author_match.group(1).strip()
+                
+            # 尝试从内容中提取source_type
+            source_type_match = re.search(r'\*\*类型:\*\*\s*([A-Za-z-]+)', content, re.MULTILINE)
+            if source_type_match:
+                meta['source_type'] = source_type_match.group(1).strip().lower()
         
         except Exception as e:
             self.logger.error(f"提取文档元数据时出错: {e}")
