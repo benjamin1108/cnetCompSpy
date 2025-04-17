@@ -3,6 +3,13 @@
 ## 项目介绍
 该项目是一个基于Python的云计算网络竞争动态分析工具。该工具可以从配置文件中指定的URL爬取各大云厂商（如AWS、Azure、GCP、腾讯云、华为云、火山云等）的博客、文档等内容，通过AI进行分析。
 
+## 最近更新
+- **2025-04-18**: 代码优化，移除冗余代码，提高代码复用性
+  - 将HTML到Markdown的转换、日期解析和文件保存功能抽象到BaseCrawler类中
+  - 移除各爬虫实现中的重复代码
+  - 清理未使用的测试目录
+  - 整合所有Shell脚本为一个统一的run.sh脚本，提供更友好的命令行界面
+
 ## 功能特点
 - **多源爬虫**：支持从多个云厂商的不同信息源（博客、文档等）爬取内容
 - **智能分析**：利用AI技术对爬取的内容进行翻译、摘要和竞争分析
@@ -104,8 +111,50 @@ cloud-comp-spy/
 
 6. 运行程序
 
-   a. 运行爬虫、分析
+   使用统一的run.sh脚本运行程序：
+   
+   ```bash
+   # 显示帮助信息
+   ./run.sh help
+   
+   # 设置环境（创建虚拟环境并安装依赖）
+   ./run.sh setup
+   
+   # 下载最新的WebDriver
+   ./run.sh driver
+   
+   # 爬取数据
+   ./run.sh crawl
+   
+   # 分析数据
+   ./run.sh analyze
+   
+   # 启动Web服务器
+   ./run.sh server
    ```
+   
+   高级用法：
+   
+   ```bash
+   # 仅爬取指定厂商的数据
+   ./run.sh crawl --vendor aws
+   
+   # 限制每个来源爬取的文章数量
+   ./run.sh crawl --limit 10
+   
+   # 指定主机和端口启动服务器
+   ./run.sh server --host 0.0.0.0 --port 8080
+   
+   # 启用调试模式
+   ./run.sh server --debug
+   
+   # 清理数据目录
+   ./run.sh crawl --clean
+   ```
+   
+   你仍然可以使用原始的Python命令：
+   
+   ```bash
    # 爬取数据
    python -m src.main --mode crawl
    
@@ -114,27 +163,6 @@ cloud-comp-spy/
    
    # 测试模式：清理所有数据并依次执行爬虫和分析(每个来源只爬取1篇文章)
    python -m src.main --mode test
-   
-   # 仅清理所有数据目录
-   python -m src.main --clean
-   ```
-
-   b. 其他运行选项
-   ```
-   # 指定配置文件
-   python -m src.main --mode analyze --config custom_config.yaml
-   
-   # 仅爬取指定厂商的数据
-   python -m src.main --mode crawl --vendor aws
-   
-   # 限制每个来源爬取的文章数量(例如每个来源只爬取5篇)
-   python -m src.main --mode crawl --limit 5
-   
-   # 指定厂商并限制爬取数量
-   python -m src.main --mode crawl --vendor aws --limit 10
-   
-   # 使用测试模式并指定厂商
-   python -m src.main --mode test --vendor aws
    ```
 
    c. 命令行参数完整说明

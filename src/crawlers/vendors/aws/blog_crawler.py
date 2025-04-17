@@ -31,18 +31,6 @@ class AwsBlogCrawler(BaseCrawler):
         super().__init__(config, vendor, source_type)
         self.source_config = config.get('sources', {}).get(vendor, {}).get(source_type, {})
         self.start_url = self.source_config.get('url')
-        
-        # 初始化HTML到Markdown转换器
-        self.html_converter = html2text.HTML2Text()
-        self.html_converter.ignore_links = False
-        self.html_converter.ignore_images = False
-        self.html_converter.ignore_tables = False
-        self.html_converter.body_width = 0  # 不限制宽度
-        self.html_converter.use_automatic_links = True  # 使用自动链接
-        self.html_converter.emphasis_mark = '*'  # 强调使用星号
-        self.html_converter.strong_mark = '**'  # 加粗使用双星号
-        self.html_converter.wrap_links = False  # 不换行链接
-        self.html_converter.pad_tables = True  # 表格填充
     
     def _crawl(self) -> List[str]:
         """
