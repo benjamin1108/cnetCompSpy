@@ -6,8 +6,12 @@ import os
 import time
 import json
 import platform
+import re
+import hashlib
+import datetime
 from abc import ABC, abstractmethod
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
+from urllib.parse import urljoin, urlparse
 
 import requests
 from bs4 import BeautifulSoup
@@ -18,6 +22,14 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
+
+# 尝试导入html2text，如果不可用则提供一个简单的替代方案
+try:
+    import html2text
+    HTML2TEXT_AVAILABLE = True
+except ImportError:
+    HTML2TEXT_AVAILABLE = False
+    logging.warning("html2text库未安装，将使用简单的HTML到文本转换")
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +64,9 @@ class BaseCrawler(ABC):
         self.metadata_file = os.path.join(base_dir, 'data', 'metadata', f'{vendor}_{source_type}_metadata.json')
         os.makedirs(os.path.dirname(self.metadata_file), exist_ok=True)
         self.metadata = self._load_metadata()
+        
+        # 初始化HTML到Markdown转换器
+        self.html_converter = self._init_html_converter()
     
     def _init_driver(self) -> None:
         """初始化WebDriver"""
@@ -318,35 +333,74 @@ class BaseCrawler(ABC):
         except Exception as e:
             logger.error(f"保存metadata文件失败: {e}")
 
-    def save_to_markdown(self, url: str, title: str, content: str, images: List[Dict[str, str]]) -> str:
+    def _init_html_converter(self):
+        """
+        初始化HTML到Markdown转换器
+        
+        Returns:
+            HTML2Text对象或None
+        """
+        if HTML2TEXT_AVAILABLE:
+            converter = html2text.HTML2Text()
+            converter.ignore_links = False
+            converter.ignore_images = False
+            converter.ignore_tables = False
+            converter.body_width = 0  # 不限制宽度
+            converter.use_automatic_links = True  # 使用自动链接
+            converter.emphasis_mark = '*'  # 强调使用星号
+            converter.strong_mark = '**'  # 加粗使用双星号
+            converter.wrap_links = False  # 不换行链接
+            converter.pad_tables = True  # 表格填充
+            return converter
+        return None
+    
+    def save_to_markdown(self, url: str, title: str, content_and_date: Tuple[str, Optional[str]]) -> str:
         """
         将爬取内容保存为Markdown格式
         
         Args:
             url: 原始URL
             title: 内容标题
-            content: HTML内容
-            images: 图片列表，每个项包含{url, path}
+            content_and_date: 内容和日期的元组 (content, date)
             
         Returns:
             保存的文件路径
         """
-        # 生成文件名
-        filename = f"{self._sanitize_filename(title)}.md"
+        content, pub_date = content_and_date
+        
+        if not pub_date:
+            # 如果没有提取到日期，使用当前日期
+            pub_date = datetime.datetime.now().strftime("%Y_%m_%d")
+        
+        # 创建用于存储的文件名（使用日期和URL哈希）
+        filename = self._create_filename(url, pub_date, ".md")
         filepath = os.path.join(self.output_dir, filename)
         
-        # 构建Markdown内容
-        md_content = f"# {title}\n\n"
-        md_content += f"原始链接: {url}\n\n"
-        md_content += f"爬取时间: {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n"
-        md_content += f"厂商: {self.vendor}\n\n"
-        md_content += f"类型: {self.source_type}\n\n"
-        md_content += "---\n\n"
-        md_content += content
+        # 将日期格式转换为更友好的显示格式（比如 2024-03-02）
+        display_date = pub_date.replace('_', '-') if pub_date else "未知"
         
-        # 保存文件
-        with open(filepath, 'w', encoding='utf-8') as f:
-            f.write(md_content)
+        # 构建Markdown内容（美化格式）
+        metadata = [
+            f"# {title}",
+            "",
+            f"**原始链接:** [{url}]({url})",
+            "",
+            f"**发布时间:** {display_date}",
+            "",
+            f"**厂商:** {self.vendor.upper()}",
+            "",
+            f"**类型:** {self.source_type.upper()}",
+            "",
+            "---",
+            "",
+        ]
+        
+        # 组合最终内容
+        final_content = "\n".join(metadata) + content
+        
+        # 写入文件
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write(final_content)
         
         # 记录metadata
         self.metadata[url] = {
@@ -356,15 +410,295 @@ class BaseCrawler(ABC):
         }
         self._save_metadata()
         
-        logger.info(f"已保存Markdown文件: {filepath}")
+        logging.info(f"已保存Markdown文件: {filepath}")
         return filepath
     
-    def _sanitize_filename(self, filename: str) -> str:
-        """清理文件名，移除非法字符"""
-        invalid_chars = '<>:"/\\|?*'
-        for char in invalid_chars:
-            filename = filename.replace(char, '_')
+    def _create_filename(self, url: str, pub_date: str, ext: str) -> str:
+        """
+        根据发布日期和URL哈希值创建文件名
+        
+        Args:
+            url: 文章URL
+            pub_date: 发布日期（YYYY_MM_DD格式）
+            ext: 文件扩展名（如.md）
+            
+        Returns:
+            格式为: YYYY_MM_DD_URLHASH.md 的文件名
+        """
+        # 生成URL的哈希值（取前8位作为短哈希）
+        url_hash = hashlib.md5(url.encode()).hexdigest()[:8]
+        
+        # 组合日期和哈希值
+        filename = f"{pub_date}_{url_hash}{ext}"
+        
         return filename
+    
+    def _extract_publish_date(self, soup: BeautifulSoup, list_date: Optional[str] = None, url: str = None) -> str:
+        """
+        从文章中提取发布日期
+        
+        Args:
+            soup: BeautifulSoup对象
+            list_date: 从列表页获取的日期（可选）
+            url: 文章URL（可选）
+            
+        Returns:
+            发布日期字符串 (YYYY_MM_DD格式)，如果找不到则返回None
+        """
+        date_format = "%Y_%m_%d"
+        
+        # 特别针对博客的日期提取 - 优先检查time标签
+        time_elements = soup.find_all('time')
+        if time_elements:
+            for time_elem in time_elements:
+                # 检查具有datePublished属性的time标签
+                if time_elem.get('property') == 'datePublished' and time_elem.get('datetime'):
+                    datetime_str = time_elem.get('datetime')
+                    try:
+                        # 处理ISO格式的日期时间 "2025-04-08T17:34:26-07:00"
+                        # 从datetime属性中提取日期部分
+                        date_part = datetime_str.split('T')[0]
+                        parsed_date = datetime.datetime.strptime(date_part, '%Y-%m-%d')
+                        logging.info(f"从time标签的datetime属性解析到日期: {parsed_date.strftime(date_format)}")
+                        return parsed_date.strftime(date_format)
+                    except (ValueError, IndexError) as e:
+                        logging.debug(f"解析time标签的datetime属性失败: {e}")
+                
+                # 如果没有datetime属性或解析失败，尝试解析标签文本
+                date_text = time_elem.get_text().strip()
+                if date_text:
+                    try:
+                        # 尝试解析 "08 APR 2025" 格式
+                        parsed_date = datetime.datetime.strptime(date_text, '%d %b %Y')
+                        logging.info(f"从time标签的文本内容解析到日期: {parsed_date.strftime(date_format)}")
+                        return parsed_date.strftime(date_format)
+                    except ValueError:
+                        try:
+                            # 尝试解析 "April 08, 2025" 格式
+                            parsed_date = datetime.datetime.strptime(date_text, '%B %d, %Y')
+                            logging.info(f"从time标签的文本内容解析到日期: {parsed_date.strftime(date_format)}")
+                            return parsed_date.strftime(date_format)
+                        except ValueError:
+                            continue
+
+        # 查找元数据中的日期
+        meta_published = soup.find('meta', property='article:published_time') or soup.find('meta', property='publish_date')
+        if meta_published and meta_published.get('content'):
+            try:
+                content = meta_published.get('content')
+                # 处理ISO格式日期
+                if 'T' in content:
+                    date_part = content.split('T')[0]
+                    parsed_date = datetime.datetime.strptime(date_part, '%Y-%m-%d')
+                else:
+                    parsed_date = datetime.datetime.strptime(content, '%Y-%m-%d')
+                logging.info(f"从meta标签解析到日期: {parsed_date.strftime(date_format)}")
+                return parsed_date.strftime(date_format)
+            except (ValueError, IndexError) as e:
+                logging.debug(f"解析meta标签日期失败: {e}")
+        
+        # 尝试不同的选择器来定位日期元素
+        date_selectors = [
+            '.lb-blog-header__date', '.blog-date', '.date', '.published-date', '.post-date',
+            '.post-meta time', '.post-meta .date', '.entry-date', '.meta-date',
+            'time', '[itemprop="datePublished"]', '.aws-blog-post-date', '.aws-date'
+        ]
+        
+        # 遍历所有可能的选择器
+        for selector in date_selectors:
+            date_elements = soup.select(selector)
+            
+            if date_elements:
+                for date_elem in date_elements:
+                    # 尝试获取datetime属性
+                    date_str = date_elem.get('datetime') or date_elem.text.strip()
+                    if date_str:
+                        try:
+                            # 尝试多种日期格式
+                            for date_pattern in [
+                                '%Y-%m-%d', '%Y/%m/%d', '%b %d, %Y', '%B %d, %Y',
+                                '%d %b %Y', '%d %B %Y', '%m/%d/%Y', '%d-%m-%Y',
+                                '%Y年%m月%d日', '%Y.%m.%d'
+                            ]:
+                                try:
+                                    # 提取日期字符串
+                                    # 如果字符串中包含时间，只保留日期部分
+                                    if ' ' in date_str and not any(month in date_str for month in ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'January', 'February', 'March', 'April', 'June', 'July', 'August', 'September', 'October', 'November', 'December']):
+                                        date_str = date_str.split(' ')[0]
+                                    
+                                    parsed_date = datetime.datetime.strptime(date_str, date_pattern)
+                                    logging.info(f"从选择器 {selector} 解析到日期: {parsed_date.strftime(date_format)}")
+                                    return parsed_date.strftime(date_format)
+                                except ValueError:
+                                    continue
+                        except Exception as e:
+                            logging.debug(f"日期解析错误: {e}")
+        
+        # 如果通过选择器没找到，尝试在文本中搜索日期模式
+        try:
+            text = soup.get_text()
+            
+            # 常见日期格式的正则表达式
+            date_patterns = [
+                # YYYY-MM-DD
+                r'(\d{4}-\d{1,2}-\d{1,2})',
+                # YYYY/MM/DD
+                r'(\d{4}/\d{1,2}/\d{1,2})',
+                # Month DD, YYYY
+                r'(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},\s+\d{4}',
+                r'(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},\s+\d{4}',
+                # DD Month YYYY
+                r'\d{1,2}\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}',
+                r'\d{1,2}\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{4}',
+                # MM/DD/YYYY
+                r'(\d{1,2}/\d{1,2}/\d{4})',
+            ]
+            
+            for pattern in date_patterns:
+                matches = re.search(pattern, text)
+                if matches:
+                    date_str = matches.group(0)
+                    try:
+                        # 尝试解析找到的日期
+                        if '-' in date_str:
+                            parsed_date = datetime.datetime.strptime(date_str, '%Y-%m-%d')
+                        elif '/' in date_str:
+                            # 尝试两种不同的日期格式（YYYY/MM/DD 或 MM/DD/YYYY）
+                            try:
+                                parsed_date = datetime.datetime.strptime(date_str, '%Y/%m/%d')
+                            except ValueError:
+                                parsed_date = datetime.datetime.strptime(date_str, '%m/%d/%Y')
+                        elif ',' in date_str:
+                            try:
+                                parsed_date = datetime.datetime.strptime(date_str, '%B %d, %Y')
+                            except ValueError:
+                                parsed_date = datetime.datetime.strptime(date_str, '%b %d, %Y')
+                        else:
+                            try:
+                                parsed_date = datetime.datetime.strptime(date_str, '%d %B %Y')
+                            except ValueError:
+                                parsed_date = datetime.datetime.strptime(date_str, '%d %b %Y')
+                        
+                        logging.info(f"从文本内容解析到日期: {parsed_date.strftime(date_format)}")
+                        return parsed_date.strftime(date_format)
+                    except ValueError:
+                        continue
+        except Exception as e:
+            logging.debug(f"从文本提取日期错误: {e}")
+        
+        # 如果从文章中没有找到日期，使用从列表页获取的日期
+        if list_date:
+            logging.info(f"使用从列表页获取的日期: {list_date}")
+            return list_date
+            
+        # 如果从URL中寻找可能的日期模式
+        if url:
+            url_date_match = re.search(r'/(\d{4})/(\d{1,2})/(\d{1,2})/', url)
+            if url_date_match:
+                try:
+                    year, month, day = url_date_match.groups()
+                    parsed_date = datetime.datetime(int(year), int(month), int(day))
+                    logging.info(f"从URL提取到日期: {parsed_date.strftime(date_format)}")
+                    return parsed_date.strftime(date_format)
+                except (ValueError, TypeError) as e:
+                    logging.debug(f"从URL提取日期出错: {e}")
+        
+        # 如果找不到日期，使用当前日期
+        logging.warning("未找到发布日期，使用当前日期")
+        return datetime.datetime.now().strftime(date_format)
+    
+    def _html_to_markdown(self, html_content: str) -> str:
+        """
+        将HTML转换为Markdown
+        
+        Args:
+            html_content: HTML内容
+            
+        Returns:
+            Markdown内容
+        """
+        if self.html_converter:
+            markdown_content = self.html_converter.handle(html_content)
+        else:
+            # 简单的HTML到文本转换
+            soup = BeautifulSoup(html_content, 'lxml')
+            markdown_content = soup.get_text("\n\n", strip=True)
+        
+        # 清理Markdown
+        markdown_content = self._clean_markdown(markdown_content)
+        
+        return markdown_content
+    
+    def _clean_markdown(self, markdown_text: str) -> str:
+        """
+        清理Markdown文本，去除多余内容并美化格式
+        
+        Args:
+            markdown_text: 原始Markdown文本
+            
+        Returns:
+            清理后的Markdown文本
+        """
+        # 去除连续多个空行
+        markdown_text = re.sub(r'\n{3,}', '\n\n', markdown_text)
+        
+        # 美化代码块
+        markdown_text = re.sub(r'```([^`]+)```', r'\n\n```\1```\n\n', markdown_text)
+        
+        # 美化图片格式，确保图片前后有空行
+        markdown_text = re.sub(r'([^\n])!\[', r'\1\n\n![', markdown_text)
+        markdown_text = re.sub(r'\.((?:jpg|jpeg|png|gif|webp|svg))\)([^\n])', r'.\1)\n\n\2', markdown_text)
+        
+        return markdown_text
+    
+    def _is_likely_blog_post(self, url: str) -> bool:
+        """
+        判断URL是否可能是博客文章
+        
+        Args:
+            url: 要检查的URL
+            
+        Returns:
+            True如果URL可能是博客文章，否则False
+        """
+        # 移除协议和域名部分
+        parsed = urlparse(url)
+        path = parsed.path
+        
+        # 博客文章URL的常见模式
+        blog_patterns = [
+            r'/blogs/[^/]+/[^/]+',  # 如 /blogs/networking-and-content-delivery/article-name
+            r'/blog/[^/]+',         # 如 /blog/article-name
+            r'/post/[^/]+',         # 如 /post/article-name
+            r'/\d{4}/\d{2}/[^/]+',  # 如 /2022/01/article-name (日期格式)
+            r'/news/[^/]+',         # 如 /news/article-name
+            r'/announcements/[^/]+', # 如 /announcements/article-name
+        ]
+        
+        # 检查是否匹配任何博客文章模式
+        for pattern in blog_patterns:
+            if re.search(pattern, path):
+                return True
+        
+        # 排除明显的非文章页面
+        exclude_patterns = [
+            r'/tag/', r'/tags/', r'/category/', r'/categories/',
+            r'/author/', r'/about/', r'/contact/', r'/feed/',
+            r'/archive/', r'/archives/', r'/page/\d+', r'/search/'
+        ]
+        
+        for pattern in exclude_patterns:
+            if re.search(pattern, path):
+                return False
+                
+        # 检查是否在URL路径中包含特定关键词
+        blog_keywords = ['post', 'article', 'blog', 'news', 'announcement']
+        for keyword in blog_keywords:
+            if keyword in path.lower():
+                return True
+                
+        # 默认返回False，宁可错过也不要误报
+        return False
     
     def should_crawl(self, url: str) -> bool:
         """
