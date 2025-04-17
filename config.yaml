@@ -73,7 +73,7 @@ sources:
 # AI分析基础配置
 ai_analyzer:
   model: "grok-3-latest" # 使用的AI模型名称
-  max_tokens: 8192 # 最大令牌数
+  max_tokens: 99999 # 最大令牌数
   temperature: 0.5 # 温度参数
   max_workers: 2 # 同时分析的最大文件数
   api_rate_limit: 10 # 每分钟允许的最大API调用次数，避免API过载

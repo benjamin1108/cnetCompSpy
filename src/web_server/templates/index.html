@@ -1,152 +1,353 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title|default('云网络竞争动态分析') }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <style>
-        /* 首页特定样式 */
-        .subtitle {
-            max-width: 700px;
-            margin: 15px auto 0;
-            line-height: 1.7;
+{% extends "base.html" %}
+
+{% block title %}云网络竞争分析平台 - 首页{% endblock %}
+
+{% block head %}
+<style>
+    /* 首页特定样式 */
+    .hero-section {
+        background: linear-gradient(135deg, rgba(0, 120, 212, 0.05), rgba(0, 178, 148, 0.05));
+        border-radius: 12px;
+        padding: 40px;
+        margin-bottom: 40px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        border: 1px solid rgba(0, 120, 212, 0.1);
+    }
+    
+    .hero-section::before {
+        content: "";
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(circle, rgba(0, 178, 148, 0.1) 0%, transparent 70%);
+        z-index: 0;
+    }
+    
+    .hero-section::after {
+        content: "";
+        position: absolute;
+        bottom: -10px;
+        left: 0;
+        right: 0;
+        height: 10px;
+        background: linear-gradient(90deg, #0078d4, #00b294);
+        clip-path: polygon(0 0, 5% 50%, 10% 0, 15% 70%, 20% 0, 25% 50%, 30% 0, 35% 70%, 40% 0, 45% 50%, 50% 0, 55% 70%, 60% 0, 65% 50%, 70% 0, 75% 70%, 80% 0, 85% 50%, 90% 0, 95% 70%, 100% 0);
+    }
+    
+    .hero-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 20px;
+        color: #2c3e50;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .hero-subtitle {
+        font-size: 1.2rem;
+        line-height: 1.6;
+        color: #5b6b7c;
+        max-width: 800px;
+        margin: 0 auto 30px;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .dashboard {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+        margin-bottom: 40px;
+    }
+    
+    .dashboard-card {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e6e9ed;
+        transition: all 0.3s ease;
+    }
+    
+    .dashboard-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+    
+    .dashboard-card h3 {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 15px;
+        color: #2c3e50;
+        display: flex;
+        align-items: center;
+    }
+    
+    .dashboard-card h3 i {
+        margin-right: 10px;
+        color: #0078d4;
+    }
+    
+    .dashboard-card .value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #0078d4;
+        margin-bottom: 10px;
+    }
+    
+    .dashboard-card .description {
+        color: #5b6b7c;
+        font-size: 0.9rem;
+    }
+    
+    .vendor-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 25px;
+        margin-top: 30px;
+    }
+    
+    .vendor-card {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e6e9ed;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .vendor-card::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 100px;
+        height: 100px;
+        background: linear-gradient(135deg, transparent 50%, rgba(0, 120, 212, 0.08) 50%);
+        z-index: 0;
+        border-radius: 0 0 0 100px;
+    }
+    
+    .vendor-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+    
+    .vendor-card h3 {
+        margin-top: 0;
+        margin-bottom: 20px;
+        color: #0078d4;
+        font-size: 1.5rem;
+        font-weight: 600;
+        border-bottom: 1px solid #e6e9ed;
+        padding-bottom: 10px;
+    }
+    
+    .vendor-card h3 a {
+        color: #0078d4;
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+    
+    .vendor-card h3 a:hover {
+        color: #005a9e;
+    }
+    
+    .doc-count p {
+        margin: 10px 0;
+        color: #5b6b7c;
+    }
+    
+    .doc-count strong {
+        color: #2c3e50;
+        font-weight: 600;
+    }
+    
+    .doc-types {
+        list-style-type: none;
+        padding-left: 0;
+        margin-top: 15px;
+    }
+    
+    .doc-types li {
+        margin: 8px 0;
+        color: #5b6b7c;
+        position: relative;
+        padding-left: 18px;
+    }
+    
+    .doc-types li::before {
+        content: "•";
+        color: #0078d4;
+        position: absolute;
+        left: 0;
+        font-size: 1.2em;
+    }
+    
+    .badge {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 20px;
+        background-color: #0078d4;
+        color: white;
+        font-size: 12px;
+        margin-left: 8px;
+        transition: all 0.3s ease;
+        font-weight: 500;
+    }
+    
+    .badge:hover {
+        background-color: #005a9e;
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+    
+    .section-title {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 30px;
+        color: #2c3e50;
+        position: relative;
+        padding-bottom: 10px;
+    }
+    
+    .section-title::after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 50px;
+        height: 4px;
+        background: linear-gradient(90deg, #0078d4, #00b294);
+        border-radius: 2px;
+    }
+    
+    .no-data {
+        text-align: center;
+        padding: 60px 0;
+        color: #5b6b7c;
+        font-size: 1.1rem;
+        background: linear-gradient(135deg, rgba(0, 120, 212, 0.03), rgba(43, 87, 154, 0.03));
+        border-radius: 12px;
+        border: 1px dashed #e6e9ed;
+    }
+    
+    .no-data-subtitle {
+        margin-top: 10px;
+        font-size: 0.9rem;
+        color: #8395a7;
+    }
+    
+    /* 动画效果 */
+    .vendor-card {
+        animation: fadeIn 0.5s ease-out;
+        animation-fill-mode: both;
+    }
+    
+    .vendor-card:nth-child(1) { animation-delay: 0.1s; }
+    .vendor-card:nth-child(2) { animation-delay: 0.2s; }
+    .vendor-card:nth-child(3) { animation-delay: 0.3s; }
+    .vendor-card:nth-child(4) { animation-delay: 0.4s; }
+    .vendor-card:nth-child(5) { animation-delay: 0.5s; }
+    .vendor-card:nth-child(6) { animation-delay: 0.6s; }
+    
+    .dashboard-card {
+        animation: fadeIn 0.5s ease-out;
+        animation-fill-mode: both;
+    }
+    
+    .dashboard-card:nth-child(1) { animation-delay: 0.1s; }
+    .dashboard-card:nth-child(2) { animation-delay: 0.2s; }
+    .dashboard-card:nth-child(3) { animation-delay: 0.3s; }
+    
+    /* 响应式调整 */
+    @media (max-width: 768px) {
+        .hero-title {
+            font-size: 2rem;
+        }
+        
+        .hero-subtitle {
             font-size: 1rem;
         }
         
-        header::after {
-            content: "";
-            position: absolute;
-            bottom: -20px;
-            left: 0;
-            right: 0;
-            height: 20px;
-            background: linear-gradient(to right, rgba(0, 120, 212, 0.2), rgba(0, 178, 148, 0.2));
-            clip-path: polygon(0 0, 5% 40%, 10% 0, 15% 60%, 20% 0, 25% 50%, 30% 0, 35% 70%, 40% 0, 45% 40%, 50% 0, 55% 60%, 60% 0, 65% 50%, 70% 0, 75% 70%, 80% 0, 85% 40%, 90% 0, 95% 60%, 100% 0);
-            z-index: 1;
+        .dashboard, .vendor-cards {
+            grid-template-columns: 1fr;
         }
         
-        .vendor-cards {
-            margin-top: 40px;
-            position: relative;
+        .hero-section {
+            padding: 30px 20px;
         }
-        
-        /* 背景效果 */
-        main::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle at 10% 20%, rgba(0, 120, 212, 0.03) 0%, transparent 20%),
-                        radial-gradient(circle at 90% 80%, rgba(0, 178, 148, 0.03) 0%, transparent 20%);
-            pointer-events: none;
-            z-index: -1;
-        }
-        
-        /* 厂商卡片动画效果 */
-        .vendor-card {
-            animation: fadeIn 0.5s ease-out;
-            animation-fill-mode: both;
-        }
-        
-        .vendor-card:nth-child(1) { animation-delay: 0.1s; }
-        .vendor-card:nth-child(2) { animation-delay: 0.2s; }
-        .vendor-card:nth-child(3) { animation-delay: 0.3s; }
-        .vendor-card:nth-child(4) { animation-delay: 0.4s; }
-        .vendor-card:nth-child(5) { animation-delay: 0.5s; }
-        .vendor-card:nth-child(6) { animation-delay: 0.6s; }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        /* 状态指示器 */
-        .status-indicator {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            margin-right: 8px;
-            background-color: var(--accent-color);
-            position: relative;
-        }
-        
-        .status-indicator::after {
-            content: "";
-            position: absolute;
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
-            border-radius: 50%;
-            background-color: var(--accent-color);
-            opacity: 0.4;
-            animation: pulse 2s infinite;
-            z-index: -1;
-        }
-        
-        @keyframes pulse {
-            0% { transform: scale(1); opacity: 0.4; }
-            50% { transform: scale(1.5); opacity: 0.2; }
-            100% { transform: scale(1); opacity: 0.4; }
-        }
-        
-        section.vendor-list {
-            margin-top: 60px;
-        }
-    </style>
-</head>
-<body>
-    <header>
-        <h1>云网络竞争动态分析</h1>
-        <p class="subtitle">自动收集、翻译并分析各大云服务提供商的最新技术博客和文档，帮助您洞察市场趋势和技术发展方向。</p>
-    </header>
+    }
+</style>
+{% endblock %}
 
-    <main>
-        <section class="vendor-list">
-            <h2>厂商列表 <span class="status-indicator"></span></h2>
-            
-            {% if vendors %}
-                <div class="vendor-cards">
-                    {% for vendor in vendors %}
-                        <div class="vendor-card">
-                            <h3>
-                                <a href="{{ url_for('vendor_page', vendor=vendor.name) }}">
-                                    {{ vendor.name|upper }}
-                                </a>
-                            </h3>
-                            <div class="doc-count">
-                                <p>文档总数: <strong>{{ vendor.doc_count }}</strong></p>
-                                {% if vendor.analysis_count > 0 %}
-                                    <p>AI分析文档: <strong>{{ vendor.analysis_count }}</strong> 
-                                        <a href="{{ url_for('analysis_page', vendor=vendor.name) }}" class="badge">查看分析</a>
-                                    </p>
+{% block content %}
+<section class="hero-section text-center">
+    <h1 class="hero-title">云网络竞争分析平台</h1>
+    <p class="hero-subtitle">自动收集、翻译并分析各大云服务提供商的最新技术博客和文档，帮助您洞察市场趋势和技术发展方向，提升竞争优势。</p>
+</section>
+
+{% if vendors %}
+    <div class="dashboard">
+        <div class="dashboard-card">
+            <h3><i class="bi bi-building"></i> 厂商总数</h3>
+            <div class="value">{{ vendors|length }}</div>
+            <p class="description">监控的云服务提供商数量</p>
+        </div>
+        
+        <div class="dashboard-card">
+            <h3><i class="bi bi-file-earmark-text"></i> 文档总数</h3>
+            <div class="value">{{ vendors|map(attribute='doc_count')|sum }}</div>
+            <p class="description">收集的技术博客和文档总数</p>
+        </div>
+        
+        <div class="dashboard-card">
+            <h3><i class="bi bi-robot"></i> AI智能分析总数</h3>
+            <div class="value">{{ vendors|map(attribute='analysis_count')|sum }}</div>
+            <p class="description">AI智能分析和翻译的文档总数</p>
+        </div>
+    </div>
+
+    <section class="vendor-list">
+        <h2 class="section-title">厂商列表</h2>
+        
+        <div class="vendor-cards">
+            {% for vendor in vendors %}
+                <div class="vendor-card">
+                    <h3>
+                        <a href="{{ url_for('vendor_page', vendor=vendor.name) }}">
+                            {{ vendor.name|upper }}
+                        </a>
+                    </h3>
+                    <div class="doc-count">
+                        <p>文档总数: <strong>{{ vendor.doc_count }}</strong></p>
+                        {% if vendor.analysis_count > 0 %}
+                            <p>AI智能分析: <strong>{{ vendor.analysis_count }}</strong> 
+                                <a href="{{ url_for('analysis_page', vendor=vendor.name) }}" class="badge">查看智能分析</a>
+                            </p>
+                        {% endif %}
+                        <ul class="doc-types">
+                            {% for type, count in vendor.types.items() %}
+                                {% if count > 0 %}
+                                    <li>{{ type|upper }}: {{ count }}</li>
                                 {% endif %}
-                                <ul class="doc-types">
-                                    {% for type, count in vendor.types.items() %}
-                                        {% if count > 0 %}
-                                            <li>{{ type }}: {{ count }}</li>
-                                        {% endif %}
-                                    {% endfor %}
-                                </ul>
-                            </div>
-                        </div>
-                    {% endfor %}
+                            {% endfor %}
+                        </ul>
+                    </div>
                 </div>
-            {% else %}
-                <div class="no-data">
-                    <p>暂无厂商数据</p>
-                    <p class="no-data-subtitle">请先运行爬虫收集数据</p>
-                </div>
-            {% endif %}
-        </section>
-    </main>
-
-    <footer>
-        <p>&copy; {{ now.year|default('2024') }} 云网络竞争动态分析</p>
-    </footer>
-</body>
-</html> 
+            {% endfor %}
+        </div>
+    </section>
+{% else %}
+    <div class="no-data">
+        <p>暂无厂商数据</p>
+        <p class="no-data-subtitle">请先运行爬虫收集数据</p>
+    </div>
+{% endif %}
+{% endblock %}

@@ -1,210 +1,431 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title|default(vendor + ' - 竞争分析') }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <style>
-        .view-options {
-            margin: 20px 0;
-            text-align: center;
+{% extends "base.html" %}
+
+{% block title %}{{ vendor|upper }} - 竞争分析{% endblock %}
+
+{% block head %}
+<style>
+    /* 厂商页面特定样式 */
+    .vendor-header {
+        background: linear-gradient(135deg, rgba(0, 120, 212, 0.9), rgba(43, 87, 154, 0.9));
+        border-radius: 12px;
+        padding: 30px;
+        margin-bottom: 30px;
+        color: white;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+    
+    .vendor-header::before {
+        content: "";
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+        z-index: 0;
+    }
+    
+    .vendor-title {
+        font-size: 2.2rem;
+        font-weight: 700;
+        margin-bottom: 10px;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .vendor-subtitle {
+        font-size: 1.1rem;
+        opacity: 0.9;
+        margin-bottom: 20px;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .view-options {
+        display: flex;
+        justify-content: center;
+        margin: 20px 0;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .view-option {
+        display: inline-block;
+        padding: 10px 20px;
+        margin: 0 8px;
+        background-color: rgba(255, 255, 255, 0.15);
+        border-radius: 30px;
+        color: white;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(5px);
+    }
+    
+    .view-option.active {
+        background-color: rgba(255, 255, 255, 0.25);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .view-option:hover:not(.active) {
+        background-color: rgba(255, 255, 255, 0.2);
+        transform: translateY(-1px);
+    }
+    
+    .doc-section {
+        background-color: white;
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 30px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e6e9ed;
+        transition: all 0.3s ease;
+        animation: fadeIn 0.5s ease-out;
+    }
+    
+    .doc-section:hover {
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        transform: translateY(-3px);
+    }
+    
+    .collapsible-section {
+        border: 1px solid #e6e9ed;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        overflow: hidden;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+    }
+    
+    .collapsible-section:hover {
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+    }
+    
+    .collapsible-header {
+        background-color: #f5f7fa;
+        padding: 15px 20px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: all 0.3s ease;
+        color: #2c3e50;
+        border-bottom: 1px solid transparent;
+        font-size: 1.5rem;
+    }
+    
+    .collapsible-header:hover {
+        background-color: rgba(0, 120, 212, 0.05);
+    }
+    
+    .collapsible-header::after {
+        content: "▼";
+        font-size: 12px;
+        transition: transform 0.3s;
+        opacity: 0.7;
+    }
+    
+    .collapsible-header.collapsed::after {
+        transform: rotate(-90deg);
+    }
+    
+    .doc-list.collapsible-content {
+        max-height: 100000px;
+        overflow: hidden;
+        transition: max-height 0.8s cubic-bezier(0,1,0,1);
+    }
+    
+    .doc-list.collapsible-content.collapsed {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.4s cubic-bezier(1,0,1,0);
+    }
+    
+    .doc-list table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+        margin-top: 20px;
+    }
+    
+    .doc-list th {
+        background-color: #f5f7fa;
+        color: #2c3e50;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.5px;
+        padding: 15px;
+        text-align: left;
+        border-bottom: 1px solid #e6e9ed;
+    }
+    
+    .doc-list td {
+        padding: 15px;
+        border-bottom: 1px solid #e6e9ed;
+        background-color: white;
+        transition: all 0.2s ease;
+    }
+    
+    .doc-list tr:last-child td {
+        border-bottom: none;
+    }
+    
+    .doc-list tr:hover td {
+        background-color: rgba(0, 120, 212, 0.03);
+    }
+    
+    .doc-list .source-type {
+        text-align: center;
+        font-size: 0.85rem;
+        text-transform: capitalize;
+    }
+    
+    .doc-list .date {
+        white-space: nowrap;
+    }
+    
+    .doc-list .size {
+        text-align: right;
+        white-space: nowrap;
+    }
+    
+    .doc-list .actions {
+        text-align: center;
+        white-space: nowrap;
+    }
+    
+    .badge {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 20px;
+        background-color: #0078d4;
+        color: white;
+        font-size: 12px;
+        margin-left: 8px;
+        transition: all 0.3s ease;
+        font-weight: 500;
+    }
+    
+    .badge:hover {
+        background-color: #005a9e;
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+    
+    .view-link {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 4px;
+        background-color: #f0f2f5;
+        color: #5b6b7c;
+        font-size: 12px;
+        transition: all 0.3s ease;
+        text-decoration: none;
+    }
+    
+    .view-link:hover {
+        background-color: #e6e9ed;
+        color: #2c3e50;
+    }
+    
+    .no-data {
+        text-align: center;
+        padding: 60px 0;
+        color: #5b6b7c;
+        font-size: 1.1rem;
+        background: linear-gradient(135deg, rgba(0, 120, 212, 0.03), rgba(43, 87, 154, 0.03));
+        border-radius: 12px;
+        border: 1px dashed #e6e9ed;
+    }
+    
+    /* 过滤和排序控件 */
+    .filter-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-bottom: 20px;
+        padding: 15px;
+        background-color: #f9fafd;
+        border-radius: 8px;
+        border: 1px solid #e6e9ed;
+    }
+    
+    .filter-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .filter-label {
+        font-weight: 500;
+        color: #2c3e50;
+        font-size: 0.9rem;
+    }
+    
+    .filter-select {
+        padding: 8px 12px;
+        border-radius: 6px;
+        border: 1px solid #e6e9ed;
+        background-color: white;
+        color: #2c3e50;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+    }
+    
+    .filter-select:focus {
+        outline: none;
+        border-color: #0078d4;
+        box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.1);
+    }
+    
+    /* 响应式调整 */
+    @media (max-width: 768px) {
+        .vendor-title {
+            font-size: 1.8rem;
+        }
+        
+        .vendor-subtitle {
+            font-size: 1rem;
         }
         
         .view-option {
-            display: inline-block;
-            padding: 10px 20px;
-            margin: 0 8px;
-            background-color: #f0f2f5;
-            border-radius: 4px;
-            color: #666;
-            text-decoration: none;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            border: 1px solid transparent;
+            padding: 8px 15px;
+            font-size: 0.9rem;
         }
         
-        .view-option.active {
-            background-color: #fff;
-            color: #0078d4;
-            border: 1px solid #0078d4;
-            box-shadow: 0 2px 8px rgba(0, 120, 212, 0.1);
+        .doc-section {
+            padding: 20px 15px;
         }
         
-        .view-option:hover:not(.active) {
-            background-color: #e6e9ed;
-            color: #0078d4;
-            text-decoration: none;
+        .filter-controls {
+            flex-direction: column;
+            gap: 10px;
         }
-        
-        .badge {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 4px;
-            background-color: #0078d4;
-            color: white;
-            font-size: 12px;
-            margin-left: 8px;
-            transition: all 0.2s ease;
-        }
-        
-        .badge:hover {
-            background-color: #005a9e;
-            text-decoration: none;
-        }
-        
-        /* 增加科技感的样式 */
-        body {
-            background-color: #f9fafd;
-        }
-        
-        header {
-            background: linear-gradient(135deg, #0078d4, #0051a2);
-            padding: 25px 20px;
-        }
-        
-        section {
-            border-radius: 6px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            border: 1px solid #eaedf2;
-        }
-        
-        thead tr {
-            background-color: #f5f7fa;
-            color: #31456a;
-        }
-        
-        th {
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 0.85rem;
-            letter-spacing: 0.5px;
-        }
-        
-        td {
-            border-bottom: 1px solid #eef1f6;
-        }
-        
-        /* 类型标签样式 */
-        .source-type {
-            text-align: center;
-            font-size: 0.85rem;
-        }
-        
-        .source-type:first-letter {
-            text-transform: uppercase;
-        }
-        
-        section h2 {
-            font-size: 1.25rem;
-            color: #31456a;
-            display: flex;
-            align-items: center;
-        }
-        
-        section h2:after {
-            content: "";
-            flex-grow: 1;
-            height: 1px;
-            background: linear-gradient(to right, #e6e9ed 60%, transparent);
-            margin-left: 15px;
-        }
-    </style>
-</head>
-<body>
-    <header>
-        <h1>{{ vendor|upper }} 竞争分析</h1>
-        <p class="subtitle">
-            {% if view_type == 'analysis' %}
-                AI分析的博客和文档资料
-            {% else %}
-                爬取的博客和文档资料
-            {% endif %}
-        </p>
-        <div class="nav-links">
-            <a href="{{ url_for('index') }}" class="back-link">返回首页</a>
-        </div>
-        
-        {% if has_analysis %}
-        <div class="view-options">
-            <a href="{{ url_for('vendor_page', vendor=vendor) }}" 
-               class="view-option {% if view_type == 'raw' %}active{% endif %}">
-                原始文档
-            </a>
-            <a href="{{ url_for('analysis_page', vendor=vendor) }}" 
-               class="view-option {% if view_type == 'analysis' %}active{% endif %}">
-                AI分析
-            </a>
-        </div>
-        {% endif %}
-    </header>
+    }
+</style>
+{% endblock %}
 
-    <main>
-        {% if docs %}
-            {% for doc_type, doc_list in docs.items() %}
-                {% if doc_list %}
-                    <section class="doc-section">
-                        <h2>{{ doc_type }} ({{ doc_list|length }})</h2>
-                        
-                        <div class="doc-list">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>标题</th>
-                                        <th>类型</th>
-                                        <th>发布日期</th>
-                                        <th>大小</th>
-                                        <th>操作</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for doc in doc_list %}
-                                        <tr>
-                                            <td>
-                                                {% if view_type == 'analysis' %}
-                                                    <a href="{{ url_for('analysis_document_page', vendor=vendor, doc_type=doc_type, filename=doc.filename) }}">
-                                                        {{ doc.title }}
-                                                    </a>
-                                                {% else %}
-                                                    <a href="{{ url_for('document_page', vendor=vendor, doc_type=doc_type, filename=doc.filename) }}">
-                                                        {{ doc.title }}
-                                                    </a>
-                                                    {% if doc.has_analysis %}
-                                                        <a href="{{ url_for('analysis_document_page', vendor=vendor, doc_type=doc_type, filename=doc.filename) }}" 
-                                                           class="badge" title="查看AI分析">AI</a>
-                                                    {% endif %}
-                                                {% endif %}
-                                            </td>
-                                            <td class="source-type">{{ doc.source_type or doc_type }}</td>
-                                            <td class="date">{{ doc.date or '未知' }}</td>
-                                            <td class="size">{{ (doc.size / 1024)|round(1) }} KB</td>
-                                            <td class="actions">
-                                                {% if view_type == 'analysis' %}
-                                                    {% if doc.has_raw %}
-                                                        <a href="{{ url_for('document_page', vendor=vendor, doc_type=doc_type, filename=doc.filename) }}" 
-                                                           class="view-link" title="查看原始文档">
-                                                            原始
-                                                        </a>
-                                                    {% endif %}
-                                                {% endif %}
-                                            </td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </section>
-                {% endif %}
-            {% endfor %}
+{% block content %}
+<header class="vendor-header">
+    <h1 class="vendor-title">{{ vendor|upper }} 竞争分析</h1>
+    <p class="vendor-subtitle">
+        {% if view_type == 'analysis' %}
+            AI智能分析的技术文档与最新动态
         {% else %}
-            <section class="no-data">
-                <p>该厂商暂无文档数据。</p>
+            收集的官方技术文档与最新动态
+        {% endif %}
+    </p>
+    
+    {% if has_analysis %}
+    <div class="view-options">
+        <a href="{{ url_for('vendor_page', vendor=vendor) }}" 
+           class="view-option {% if view_type == 'raw' %}active{% endif %}">
+            <i class="bi bi-file-text"></i> 原始资料
+        </a>
+        <a href="{{ url_for('analysis_page', vendor=vendor) }}" 
+           class="view-option {% if view_type == 'analysis' %}active{% endif %}">
+            <i class="bi bi-robot"></i> AI智能分析
+        </a>
+    </div>
+    {% endif %}
+</header>
+
+{% if docs %}
+
+    {% for doc_type, doc_list in docs.items() %}
+        {% if doc_list %}
+            <section class="collapsible-section" data-doc-type="{{ doc_type }}">
+                <div class="collapsible-header">{{ doc_type|upper }} ({{ doc_list|length }})</div>
+                
+                <div class="doc-list collapsible-content">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>标题</th>
+                                <th>类型</th>
+                                <th>发布日期</th>
+                                <th>大小</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for doc in doc_list %}
+                                <tr data-title="{{ doc.title|lower }}" data-date="{{ doc.date }}">
+                                    <td>
+                                        {% if view_type == 'analysis' %}
+                                            <a href="{{ url_for('analysis_document_page', vendor=vendor, doc_type=doc_type, filename=doc.filename) }}">
+                                                {{ doc.title }}
+                                            </a>
+                                        {% else %}
+                                            <a href="{{ url_for('document_page', vendor=vendor, doc_type=doc_type, filename=doc.filename) }}">
+                                                {{ doc.title }}
+                                            </a>
+                                            {% if doc.has_analysis %}
+                                                <a href="{{ url_for('analysis_document_page', vendor=vendor, doc_type=doc_type, filename=doc.filename) }}" 
+                                                   class="badge" title="查看AI智能分析">AI</a>
+                                            {% endif %}
+                                        {% endif %}
+                                    </td>
+                                    <td class="source-type">{{ (doc.source_type or doc_type)|upper }}</td>
+                                    <td class="date">{{ doc.date or '未知' }}</td>
+                                    <td class="size">{{ (doc.size / 1024)|round(1) }} KB</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </section>
         {% endif %}
-    </main>
+    {% endfor %}
+{% else %}
+    <section class="no-data">
+        <p>该厂商暂无文档数据。</p>
+    </section>
+{% endif %}
 
-    <footer>
-        <p>&copy; {{ now.year|default('2024') }} 云服务厂商竞争分析</p>
-    </footer>
-</body>
-</html> 
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 为所有可折叠标题添加点击事件
+        const headers = document.querySelectorAll('.collapsible-header');
+        
+        headers.forEach(header => {
+            // 获取对应的内容区域
+            const content = header.nextElementSibling;
+            
+            // 默认展开第一个文档类型，其他折叠
+            if (header === headers[0]) {
+                header.classList.remove('collapsed');
+                content.classList.remove('collapsed');
+            } else {
+                header.classList.add('collapsed');
+                content.classList.add('collapsed');
+            }
+            
+            // 添加点击事件
+            header.addEventListener('click', function() {
+                // 切换折叠状态
+                this.classList.toggle('collapsed');
+                content.classList.toggle('collapsed');
+                
+                // 如果展开，确保内容完全显示
+                if (!content.classList.contains('collapsed')) {
+                    content.style.maxHeight = 'none';
+                } else {
+                    content.style.maxHeight = null;
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

@@ -400,7 +400,7 @@ class WebServer:
                             'date': meta.get('date', ''),
                             'size': os.path.getsize(file_path),
                             'has_analysis': has_analysis,
-                            'source_type': doc_type
+                            'source_type': doc_type.upper()
                         })
                 
                 # 按日期排序，最新的在前面
@@ -454,7 +454,7 @@ class WebServer:
                             'date': meta.get('date', ''),
                             'size': os.path.getsize(file_path),
                             'has_raw': has_raw,
-                            'source_type': doc_type
+                            'source_type': doc_type.upper()
                         })
                 
                 # 按日期排序，最新的在前面
@@ -525,7 +525,7 @@ class WebServer:
             # 尝试从内容中提取source_type
             source_type_match = re.search(r'\*\*类型:\*\*\s*([A-Za-z-]+)', content, re.MULTILINE)
             if source_type_match:
-                meta['source_type'] = source_type_match.group(1).strip().lower()
+                meta['source_type'] = source_type_match.group(1).strip().upper()
         
         except Exception as e:
             self.logger.error(f"提取文档元数据时出错: {e}")
@@ -607,4 +607,4 @@ class WebServer:
             
         except Exception as e:
             self.logger.error(f"提取翻译标题时出错: {e}")
-            return None 
+            return None

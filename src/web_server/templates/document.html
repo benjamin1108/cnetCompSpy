@@ -1,417 +1,651 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title|default('文档') }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <style>
-        .view-options {
-            margin: 16px 0;
-            text-align: center;
-        }
-        
-        .view-option {
-            display: inline-block;
-            padding: 10px 20px;
-            margin: 0 6px;
-            background-color: rgba(255, 255, 255, 0.15);
-            border-radius: 24px;
-            color: #fff;
-            text-decoration: none;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        .view-option.active {
-            background-color: rgba(255, 255, 255, 0.25);
-            color: white;
-            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
-            transform: translateY(-2px);
-        }
-        
-        .view-option:hover:not(.active) {
-            background-color: rgba(255, 255, 255, 0.2);
-            transform: translateY(-1px);
-        }
-        
-        .ai-label {
-            display: inline-block;
-            background: linear-gradient(135deg, #0078d4, #00b294);
-            color: white;
-            padding: 3px 12px;
-            border-radius: 20px;
-            font-size: 14px;
-            margin-left: 10px;
-            vertical-align: middle;
-            font-weight: 500;
-            box-shadow: 0 2px 6px rgba(0, 120, 212, 0.2);
-        }
+{% extends "base.html" %}
 
-        /* 警告信息样式 */
-        .warning-message {
-            background-color: rgba(255, 152, 0, 0.1);
-            border-left: 4px solid #ff9800;
-            color: #333;
+{% block title %}{{ title|default('文档') }}{% endblock %}
+
+{% block head %}
+<style>
+    /* 文档页面特定样式 */
+    .document-header {
+        background: linear-gradient(135deg, rgba(0, 120, 212, 0.9), rgba(43, 87, 154, 0.9));
+        border-radius: 12px;
+        padding: 30px;
+        margin-bottom: 30px;
+        color: white;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+    
+    .document-header::before {
+        content: "";
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+        z-index: 0;
+    }
+    
+    .document-title {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 20px;
+        position: relative;
+        z-index: 1;
+        line-height: 1.3;
+    }
+    
+    .ai-label {
+        display: inline-block;
+        background: linear-gradient(135deg, #0078d4, #00b294);
+        color: white;
+        padding: 3px 12px;
+        border-radius: 20px;
+        font-size: 14px;
+        margin-left: 10px;
+        vertical-align: middle;
+        font-weight: 500;
+        box-shadow: 0 2px 6px rgba(0, 120, 212, 0.2);
+    }
+    
+    .doc-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-bottom: 20px;
+        position: relative;
+        z-index: 1;
+        justify-content: center;
+    }
+    
+    .doc-meta span {
+        display: inline-block;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        background-color: rgba(255, 255, 255, 0.25);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .doc-meta .date::before {
+        content: "📅";
+        margin-right: 8px;
+        opacity: 0.8;
+    }
+    
+    .doc-meta .source-type::before {
+        content: "📄";
+        margin-right: 8px;
+        opacity: 0.8;
+    }
+    
+    .doc-meta .author::before {
+        content: "👤";
+        margin-right: 8px;
+        opacity: 0.8;
+    }
+    
+    .view-options {
+        display: flex;
+        justify-content: center;
+        margin: 20px 0 0;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .view-option {
+        display: inline-block;
+        padding: 10px 20px;
+        margin: 0 8px;
+        background-color: rgba(255, 255, 255, 0.15);
+        border-radius: 30px;
+        color: white;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .view-option.active {
+        background-color: rgba(255, 255, 255, 0.25);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .view-option:hover:not(.active) {
+        background-color: rgba(255, 255, 255, 0.2);
+        transform: translateY(-1px);
+    }
+    
+    .nav-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 20px;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .nav-links a {
+        display: inline-block;
+        padding: 8px 16px;
+        background-color: rgba(255, 255, 255, 0.15);
+        border-radius: 6px;
+        color: white;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+    }
+    
+    .nav-links a:hover {
+        background-color: rgba(255, 255, 255, 0.25);
+        transform: translateY(-2px);
+    }
+    
+    .back-link::before {
+        content: "←";
+        margin-right: 8px;
+    }
+    
+    .download-link::before {
+        content: "↓";
+        margin-right: 8px;
+    }
+    
+    .document-content {
+        background-color: white;
+        border-radius: 12px;
+        padding: 40px;
+        margin-bottom: 30px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e6e9ed;
+        line-height: 1.8;
+        position: relative;
+        overflow: hidden;
+        animation: fadeIn 0.5s ease-out;
+    }
+    
+    .document-content::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 100px;
+        height: 100px;
+        background: linear-gradient(135deg, transparent 50%, rgba(0, 120, 212, 0.03) 50%);
+        border-radius: 0 12px 0 100px;
+        z-index: 0;
+        pointer-events: none;
+    }
+    
+    .document-content h1,
+    .document-content h2,
+    .document-content h3,
+    .document-content h4,
+    .document-content h5,
+    .document-content h6 {
+        margin-top: 1.8em;
+        margin-bottom: 0.8em;
+        color: #2c3e50;
+        font-weight: 600;
+        letter-spacing: -0.3px;
+        position: relative;
+    }
+    
+    .document-content h1 {
+        font-size: 28px;
+        border-bottom: 1px solid #e6e9ed;
+        padding-bottom: 12px;
+    }
+    
+    .document-content h2 {
+        font-size: 24px;
+    }
+    
+    .document-content h2::before {
+        content: "";
+        position: absolute;
+        left: -20px;
+        top: 50%;
+        width: 10px;
+        height: 10px;
+        background: linear-gradient(135deg, #0078d4, #00b294);
+        border-radius: 50%;
+        transform: translateY(-50%);
+        opacity: 0.7;
+    }
+    
+    .document-content h3 {
+        font-size: 20px;
+    }
+    
+    .document-content p,
+    .document-content ul,
+    .document-content ol {
+        margin-bottom: 1.2em;
+    }
+    
+    .document-content ul,
+    .document-content ol {
+        padding-left: 2em;
+    }
+    
+    .document-content code {
+        background-color: #f5f7fa;
+        padding: 3px 6px;
+        border-radius: 3px;
+        font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+        font-size: 0.9em;
+        color: #e83e8c;
+    }
+    
+    .document-content pre {
+        background-color: #f5f7fa;
+        border-radius: 8px;
+        padding: 15px;
+        overflow-x: auto;
+        margin: 1.5em 0;
+        border: 1px solid #eef1f6;
+    }
+    
+    .document-content pre code {
+        background-color: transparent;
+        padding: 0;
+        color: inherit;
+    }
+    
+    .document-content blockquote {
+        border-left: 4px solid #0078d4;
+        padding: 12px 20px;
+        margin: 1.5em 0;
+        background-color: #f9fafb;
+        border-radius: 0 8px 8px 0;
+    }
+    
+    .document-content img {
+        max-width: 100%;
+        height: auto;
+        display: block;
+        margin: 1.5em auto;
+        border-radius: 8px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .document-content img:hover {
+        transform: scale(1.01);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+    
+    .document-content table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        border-radius: 8px;
+        overflow: hidden;
+        margin: 1.5em 0;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+        border: 1px solid #e6e9ed;
+    }
+    
+    .document-content th,
+    .document-content td {
+        padding: 12px 15px;
+        text-align: left;
+        border: 1px solid #e6e9ed;
+    }
+    
+    .document-content th {
+        background-color: #f5f7fa;
+        font-weight: 600;
+        color: #2c3e50;
+    }
+    
+    .document-content tr:nth-child(even) {
+        background-color: #f9fafd;
+    }
+    
+    /* 折叠面板样式 */
+    .collapsible-section {
+        border: 1px solid #e6e9ed;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        overflow: hidden;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+    }
+    
+    .collapsible-section:hover {
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+    }
+    
+    .collapsible-header {
+        background-color: #f5f7fa;
+        padding: 15px 20px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: all 0.3s ease;
+        color: #2c3e50;
+        border-bottom: 1px solid transparent;
+    }
+    
+    .collapsible-header:hover {
+        background-color: rgba(0, 120, 212, 0.05);
+    }
+    
+    .collapsible-header::after {
+        content: "▼";
+        font-size: 12px;
+        transition: transform 0.3s;
+        opacity: 0.7;
+    }
+    
+    .collapsible-header.collapsed::after {
+        transform: rotate(-90deg);
+    }
+    
+    .collapsible-content {
+        padding: 20px;
+        max-height: 100000px;
+        overflow: hidden;
+        transition: max-height 0.8s cubic-bezier(0,1,0,1), padding 0.3s;
+    }
+    
+    .collapsible-content.collapsed {
+        max-height: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+        transition: max-height 0.4s cubic-bezier(1,0,1,0), padding 0.3s;
+    }
+    
+    /* 响应式调整 */
+    @media (max-width: 768px) {
+        .document-title {
+            font-size: 1.6rem;
+        }
+        
+        .document-header {
             padding: 20px;
-            margin: 20px 0;
-            border-radius: 4px;
-            font-size: 16px;
-            line-height: 1.5;
-            display: flex;
-            align-items: center;
-        }
-        
-        .warning-message::before {
-            content: "⚠️";
-            font-size: 24px;
-            margin-right: 15px;
-        }
-
-        /* 折叠列表样式 */
-        .collapsible-section {
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
-            margin-bottom: 20px;
-            overflow: hidden;
-            box-shadow: var(--shadow-sm);
-            transition: var(--transition);
-        }
-        
-        .collapsible-section:hover {
-            box-shadow: var(--shadow-md);
-        }
-        
-        .collapsible-header {
-            background-color: var(--bg-dark);
-            padding: 15px 20px;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: var(--transition);
-            color: var(--text-dark);
-            border-bottom: 1px solid transparent;
-        }
-        
-        .collapsible-header:hover {
-            background-color: rgba(0, 120, 212, 0.05);
-        }
-        
-        .collapsible-header::after {
-            content: "▼";
-            font-size: 12px;
-            transition: transform 0.3s;
-            opacity: 0.7;
-        }
-        
-        .collapsible-header.collapsed::after {
-            transform: rotate(-90deg);
-        }
-        
-        .collapsible-content {
-            padding: 0 20px;
-            max-height: 100000px; /* 增加最大高度 */
-            overflow: hidden;
-            transition: max-height 0.8s cubic-bezier(0,1,0,1), padding 0.3s;
-        }
-        
-        .collapsible-content.collapsed {
-            max-height: 0;
-            padding-top: 0;
-            padding-bottom: 0;
-            transition: max-height 0.4s cubic-bezier(1,0,1,0), padding 0.3s;
-        }
-        
-        /* 页面动效 */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        main {
-            animation: fadeIn 0.5s ease-out;
         }
         
         .document-content {
-            position: relative;
+            padding: 20px;
         }
         
-        .document-content::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 100px;
-            height: 100px;
-            background: linear-gradient(135deg, transparent 50%, rgba(0, 120, 212, 0.03) 50%);
-            border-radius: 0 var(--radius-md) 0 100px;
-            z-index: 0;
-            pointer-events: none;
+        .view-option {
+            padding: 8px 15px;
+            font-size: 0.9rem;
         }
+        
+        .nav-links {
+            flex-direction: column;
+        }
+        
+        .doc-meta {
+            flex-direction: column;
+            gap: 10px;
+        }
+    }
+</style>
+{% endblock %}
 
-        .doc-meta .date {
-            display: inline-block;
-            padding: 3px 10px;
-            background-color: rgba(0, 120, 212, 0.1);
-            border-radius: 4px;
-            color: #0078d4;
-            font-size: 0.85rem;
-            margin-right: 10px;
-        }
-        
-        .doc-meta .source-type {
-            display: inline-block;
-            padding: 3px 10px;
-            background-color: rgba(76, 175, 80, 0.1);
-            border-radius: 4px;
-            color: #4CAF50;
-            font-size: 0.85rem;
-            margin-right: 10px;
-            text-transform: capitalize;
-        }
-        
-        .doc-meta .author {
-            display: inline-block;
-            padding: 3px 10px;
-            background-color: rgba(255, 152, 0, 0.1);
-            border-radius: 4px;
-            color: #FF9800;
-            font-size: 0.85rem;
-        }
-    </style>
-</head>
-<body>
-    <header>
-        <h1>
-            {{ title }}
-            {% if view_type == 'analysis' %}
-                <span class="ai-label">AI分析</span>
-            {% endif %}
-        </h1>
-        <div class="doc-meta">
-            {% if meta and meta.date %}
-                <span class="date">{{ meta.date }}</span>
-            {% endif %}
-            
-            {% if meta and meta.source_type %}
-                <span class="source-type">{{ meta.source_type }}</span>
-            {% endif %}
-            
-            {% if meta and meta.author %}
-                <span class="author">{{ meta.author }}</span>
-            {% endif %}
-        </div>
-        
-        {% if view_type == 'raw' and has_analysis %}
-            <div class="view-options">
-                <a href="{{ url_for('document_page', vendor=vendor, doc_type=doc_type, filename=filename) }}" 
-                   class="view-option active">
-                    原始文档
-                </a>
-                <a href="{{ url_for('analysis_document_page', vendor=vendor, doc_type=doc_type, filename=filename) }}" 
-                   class="view-option">
-                    AI分析
-                </a>
-            </div>
-        {% elif view_type == 'analysis' and has_raw %}
-            <div class="view-options">
-                <a href="{{ url_for('document_page', vendor=vendor, doc_type=doc_type, filename=filename) }}" 
-                   class="view-option">
-                    原始文档
-                </a>
-                <a href="{{ url_for('analysis_document_page', vendor=vendor, doc_type=doc_type, filename=filename) }}" 
-                   class="view-option active">
-                    AI分析
-                </a>
-            </div>
+{% block content %}
+<header class="document-header">
+    <h1 class="document-title">
+        {{ title }}
+        {% if view_type == 'analysis' %}
+            <span class="ai-label">AI智能分析</span>
+        {% endif %}
+    </h1>
+    
+    <div class="doc-meta">
+        {% if meta and meta.date %}
+            <span class="date">{{ meta.date }}</span>
         {% endif %}
         
-        <div class="nav-links">
-            {% if view_type == 'analysis' %}
-                <a href="{{ url_for('analysis_page', vendor=vendor) }}" class="back-link">返回 {{ vendor|upper }}</a>
-            {% else %}
-                <a href="{{ url_for('vendor_page', vendor=vendor) }}" class="back-link">返回 {{ vendor|upper }}</a>
-            {% endif %}
-            <a href="{{ url_for('index') }}">返回首页</a>
-            
-            {% if view_type == 'analysis' %}
-                <a href="{{ url_for('analysis_raw_file', vendor=vendor, doc_type=doc_type, filename=filename) }}" class="download-link">
-                    下载AI分析文件
-                </a>
-            {% else %}
-                <a href="{{ url_for('raw_file', vendor=vendor, doc_type=doc_type, filename=filename) }}" class="download-link">
-                    下载原始文件
-                </a>
-            {% endif %}
+        {% if meta and meta.source_type %}
+            <span class="source-type">{{ (meta.source_type)|upper }}</span>
+        {% endif %}
+        
+        {% if meta and meta.author %}
+            <span class="author">{{ meta.author }}</span>
+        {% endif %}
+    </div>
+    
+    {% if view_type == 'raw' and has_analysis %}
+        <div class="view-options">
+            <a href="{{ url_for('document_page', vendor=vendor, doc_type=doc_type, filename=filename) }}" 
+               class="view-option active">
+                <i class="bi bi-file-text"></i> 原始资料
+            </a>
+            <a href="{{ url_for('analysis_document_page', vendor=vendor, doc_type=doc_type, filename=filename) }}" 
+               class="view-option">
+                <i class="bi bi-robot"></i> AI智能分析
+            </a>
         </div>
-    </header>
+    {% elif view_type == 'analysis' and has_raw %}
+        <div class="view-options">
+            <a href="{{ url_for('document_page', vendor=vendor, doc_type=doc_type, filename=filename) }}" 
+               class="view-option">
+                <i class="bi bi-file-text"></i> 原始资料
+            </a>
+            <a href="{{ url_for('analysis_document_page', vendor=vendor, doc_type=doc_type, filename=filename) }}" 
+               class="view-option active">
+                <i class="bi bi-robot"></i> AI智能分析
+            </a>
+        </div>
+    {% endif %}
+    
+    <div class="nav-links">
+        {% if view_type == 'analysis' %}
+            <a href="{{ url_for('analysis_page', vendor=vendor) }}" class="back-link">返回 {{ vendor|upper }}</a>
+        {% else %}
+            <a href="{{ url_for('vendor_page', vendor=vendor) }}" class="back-link">返回 {{ vendor|upper }}</a>
+        {% endif %}
+        <a href="{{ url_for('index') }}">返回首页</a>
+        
+        {% if view_type == 'analysis' %}
+            <a href="{{ url_for('analysis_raw_file', vendor=vendor, doc_type=doc_type, filename=filename) }}" class="download-link">
+                下载AI智能分析报告
+            </a>
+        {% else %}
+            <a href="{{ url_for('raw_file', vendor=vendor, doc_type=doc_type, filename=filename) }}" class="download-link">
+                下载原始技术资料
+            </a>
+        {% endif %}
+    </div>
+</header>
 
-    <main>
-        <article class="document-content">
-            {% if view_type == 'analysis' %}
-                <div id="ai-content-wrapper">
-                    {{ content|safe }}
-                </div>
-            {% else %}
-                {{ content|safe }}
-            {% endif %}
-        </article>
-    </main>
-
-    <footer>
-        <p>&copy; {{ now.year|default('2024') }} 云服务厂商竞争分析</p>
-        <p>
-            文档来源: {{ vendor|upper }} - {{ doc_type }}
-            {% if view_type == 'analysis' %}
-                (AI分析版本)
-            {% endif %}
-        </p>
-    </footer>
-
+<article class="document-content">
     {% if view_type == 'analysis' %}
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // 查找AI分析内容
-            const contentWrapper = document.getElementById('ai-content-wrapper');
-            if (!contentWrapper) return;
-            
-            // 获取原始内容
-            const originalContent = contentWrapper.innerHTML;
-            console.log("原始内容长度: " + originalContent.length + " 字符");
-            
-            // 清空原始内容
-            contentWrapper.innerHTML = '';
-            
-            // 动态检测文档中包含的任务类型
-            const taskTypes = detectTaskTypes(originalContent);
-            console.log("检测到的任务类型: ", taskTypes);
-            
-            // 如果没有检测到任何任务类型，则显示提示信息
-            if (taskTypes.length === 0) {
-                contentWrapper.innerHTML = '<div class="warning-message">未检测到任何AI分析任务内容</div>';
-                return;
+        <div id="ai-content-wrapper">
+            {{ content|safe }}
+        </div>
+    {% else %}
+        {{ content|safe }}
+    {% endif %}
+</article>
+{% endblock %}
+
+{% block scripts %}
+{% if view_type == 'analysis' %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 查找AI分析内容
+        const contentWrapper = document.getElementById('ai-content-wrapper');
+        if (!contentWrapper) return;
+        
+        // 获取原始内容
+        const originalContent = contentWrapper.innerHTML;
+        console.log("原始内容长度: " + originalContent.length + " 字符");
+        
+        // 清空原始内容
+        contentWrapper.innerHTML = '';
+        
+        // 动态检测文档中包含的任务类型
+        const taskTypes = detectTaskTypes(originalContent);
+        console.log("检测到的任务类型: ", taskTypes);
+        
+        // 如果没有检测到任何任务类型，则显示提示信息
+        if (taskTypes.length === 0) {
+            contentWrapper.innerHTML = '<div class="warning-message">未检测到任何AI分析任务内容</div>';
+            return;
+        }
+        
+        // 通过标记精确提取任务内容
+        const tasks = extractTasksByMarkers(originalContent, taskTypes);
+        
+        // 重命名任务类型
+        const renameTask = (taskType) => {
+            if (taskType === "AI竞争分析") {
+                return "AI摘要分析";
             }
+            return taskType;
+        };
+        
+        // 定义任务的优先级顺序
+        const taskPriority = {
+            "AI摘要分析": 1,
+            "AI全文翻译": 2,
+            "AI技术要点": 3,
+            "AI市场影响": 4
+        };
+        
+        // 按照优先级排序任务类型
+        const sortedTaskTypes = [...taskTypes].sort((a, b) => {
+            // 将"AI竞争分析"重命名为"AI摘要分析"进行排序
+            const taskA = a === "AI竞争分析" ? "AI摘要分析" : a;
+            const taskB = b === "AI竞争分析" ? "AI摘要分析" : b;
             
-            // 通过标记精确提取任务内容
-            const tasks = extractTasksByMarkers(originalContent, taskTypes);
-            
-            // 按照默认任务顺序显示
-            taskTypes.forEach((taskType, index) => {
-                const content = tasks[taskType] || '';
-                if (content) {
-                    console.log(`创建任务块: ${taskType}, 内容长度: ${content.length}`);
-                    createCollapsibleSection(contentWrapper, taskType, content, index === 0);
-                } else {
-                    console.log(`任务 ${taskType} 没有找到内容`);
-                    createCollapsibleSection(contentWrapper, taskType, '<p>此部分暂无内容</p>', false);
-                }
-            });
+            const priorityA = taskPriority[taskA] || 999;
+            const priorityB = taskPriority[taskB] || 999;
+            return priorityA - priorityB;
         });
         
-        /**
-         * 动态检测文档中包含的任务类型
-         */
-        function detectTaskTypes(content) {
-            const taskTypes = [];
-            let currentPos = 0;
-            const startToken = "<!-- AI_TASK_START: ";
-            const endToken = " -->";
+        // 按照排序后的任务顺序显示
+        sortedTaskTypes.forEach((taskType, index) => {
+            const content = tasks[taskType] || '';
+            // AI全文翻译默认展开，其他折叠
+            const isExpanded = taskType === "AI全文翻译";
             
-            // 循环查找所有任务开始标记
-            while (true) {
-                const startIndex = content.indexOf(startToken, currentPos);
-                if (startIndex === -1) break;
-                
-                const typeStartIndex = startIndex + startToken.length;
-                const typeEndIndex = content.indexOf(endToken, typeStartIndex);
-                
-                if (typeEndIndex !== -1) {
-                    const taskType = content.substring(typeStartIndex, typeEndIndex);
-                    // 排除"AI标题翻译"任务，因为它只用于网页标题，不需要在页面上显示
-                    if (taskType !== "AI标题翻译" && !taskTypes.includes(taskType)) {
-                        taskTypes.push(taskType);
-                    }
-                    currentPos = typeEndIndex + endToken.length;
-                } else {
-                    break;
-                }
+            // 重命名任务类型显示名称
+            const displayName = renameTask(taskType);
+            
+            if (content) {
+                console.log(`创建任务块: ${displayName}, 内容长度: ${content.length}, 默认展开: ${isExpanded}`);
+                createCollapsibleSection(contentWrapper, displayName, content, isExpanded);
+            } else {
+                console.log(`任务 ${displayName} 没有找到内容`);
+                createCollapsibleSection(contentWrapper, displayName, '<p>此部分暂无内容</p>', false);
             }
+        });
+    });
+    
+    /**
+     * 动态检测文档中包含的任务类型
+     */
+    function detectTaskTypes(content) {
+        const taskTypes = [];
+        let currentPos = 0;
+        const startToken = "<!-- AI_TASK_START: ";
+        const endToken = " -->";
+        
+        // 循环查找所有任务开始标记
+        while (true) {
+            const startIndex = content.indexOf(startToken, currentPos);
+            if (startIndex === -1) break;
             
-            return taskTypes;
+            const typeStartIndex = startIndex + startToken.length;
+            const typeEndIndex = content.indexOf(endToken, typeStartIndex);
+            
+            if (typeEndIndex !== -1) {
+                const taskType = content.substring(typeStartIndex, typeEndIndex);
+                // 排除"AI标题翻译"任务，因为它只用于网页标题，不需要在页面上显示
+                if (taskType !== "AI标题翻译" && !taskTypes.includes(taskType)) {
+                    taskTypes.push(taskType);
+                }
+                currentPos = typeEndIndex + endToken.length;
+            } else {
+                break;
+            }
         }
         
-        /**
-         * 通过HTML注释标记提取任务内容
-         */
-        function extractTasksByMarkers(content, taskTypes) {
-            const tasks = {};
+        return taskTypes;
+    }
+    
+    /**
+     * 通过HTML注释标记提取任务内容
+     */
+    function extractTasksByMarkers(content, taskTypes) {
+        const tasks = {};
+        
+        // 使用简单的字符串搜索查找任务
+        taskTypes.forEach(function(taskType) {
+            const startMarker = `<!-- AI_TASK_START: ${taskType} -->`;
+            const endMarker = `<!-- AI_TASK_END: ${taskType} -->`;
             
-            // 使用简单的字符串搜索查找任务
-            taskTypes.forEach(function(taskType) {
-                const startMarker = `<!-- AI_TASK_START: ${taskType} -->`;
-                const endMarker = `<!-- AI_TASK_END: ${taskType} -->`;
-                
-                const startIndex = content.indexOf(startMarker);
-                const endIndex = content.indexOf(endMarker);
-                
-                if (startIndex !== -1 && endIndex !== -1 && startIndex < endIndex) {
-                    // 提取内容 (加上startMarker的长度，去掉结束标记)
-                    const taskContent = content.substring(startIndex + startMarker.length, endIndex).trim();
-                    console.log(`通过标记提取任务: ${taskType}, 内容长度: ${taskContent.length}`);
-                    tasks[taskType] = taskContent;
-                }
-            });
+            const startIndex = content.indexOf(startMarker);
+            const endIndex = content.indexOf(endMarker);
             
-            return tasks;
+            if (startIndex !== -1 && endIndex !== -1 && startIndex < endIndex) {
+                // 提取内容 (加上startMarker的长度，去掉结束标记)
+                const taskContent = content.substring(startIndex + startMarker.length, endIndex).trim();
+                console.log(`通过标记提取任务: ${taskType}, 内容长度: ${taskContent.length}`);
+                tasks[taskType] = taskContent;
+            }
+        });
+        
+        return tasks;
+    }
+    
+    /**
+     * 创建可折叠的内容部分
+     */
+    function createCollapsibleSection(container, title, content, isExpanded = false) {
+        const section = document.createElement('div');
+        section.className = 'collapsible-section';
+        
+        const header = document.createElement('div');
+        header.className = 'collapsible-header' + (isExpanded ? '' : ' collapsed');
+        header.textContent = title;
+        
+        // 添加点击事件，控制展开/收起
+        header.addEventListener('click', function() {
+            header.classList.toggle('collapsed');
+            contentDiv.classList.toggle('collapsed');
+            
+            // 确保内容完全展开 - 动态设置高度
+            if (!contentDiv.classList.contains('collapsed')) {
+                // 设置为内容的实际高度
+                const actualHeight = contentDiv.scrollHeight + 'px';
+                contentDiv.style.maxHeight = 'none';
+            } else {
+                contentDiv.style.maxHeight = null; // 恢复为 CSS 定义的值
+            }
+        });
+        
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'collapsible-content' + (isExpanded ? '' : ' collapsed');
+        contentDiv.innerHTML = content;
+        
+        // 如果默认展开，确保内容完全显示
+        if (isExpanded) {
+            // 在下一个渲染循环设置高度，确保内容已渲染
+            setTimeout(() => {
+                contentDiv.style.maxHeight = 'none';
+            }, 10);
         }
         
-        /**
-         * 创建可折叠的内容部分
-         */
-        function createCollapsibleSection(container, title, content, isExpanded = false) {
-            const section = document.createElement('div');
-            section.className = 'collapsible-section';
-            
-            const header = document.createElement('div');
-            header.className = 'collapsible-header' + (isExpanded ? '' : ' collapsed');
-            header.textContent = title;
-            
-            // 添加点击事件，控制展开/收起
-            header.addEventListener('click', function() {
-                header.classList.toggle('collapsed');
-                contentDiv.classList.toggle('collapsed');
-                
-                // 确保内容完全展开 - 动态设置高度
-                if (!contentDiv.classList.contains('collapsed')) {
-                    // 设置为内容的实际高度
-                    const actualHeight = contentDiv.scrollHeight + 'px';
-                    contentDiv.style.maxHeight = 'none';
-                } else {
-                    contentDiv.style.maxHeight = null; // 恢复为 CSS 定义的值
-                }
-            });
-            
-            const contentDiv = document.createElement('div');
-            contentDiv.className = 'collapsible-content' + (isExpanded ? '' : ' collapsed');
-            contentDiv.innerHTML = content;
-            
-            // 如果默认展开，确保内容完全显示
-            if (isExpanded) {
-                // 在下一个渲染循环设置高度，确保内容已渲染
-                setTimeout(() => {
-                    contentDiv.style.maxHeight = 'none';
-                }, 10);
-            }
-            
-            section.appendChild(header);
-            section.appendChild(contentDiv);
-            container.appendChild(section);
-        }
-    </script>
-    {% endif %}
-</body>
-</html> 
+        section.appendChild(header);
+        section.appendChild(contentDiv);
+        container.appendChild(section);
+    }
+</script>
+{% endif %}
+{% endblock %}
