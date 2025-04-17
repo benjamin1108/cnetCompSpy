@@ -47,6 +47,11 @@ class BaseCrawler(ABC):
         base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
         self.output_dir = os.path.join(base_dir, 'data', 'raw', vendor, source_type)
         os.makedirs(self.output_dir, exist_ok=True)
+        
+        # 初始化metadata文件路径
+        self.metadata_file = os.path.join(base_dir, 'data', 'metadata', f'{vendor}_{source_type}_metadata.json')
+        os.makedirs(os.path.dirname(self.metadata_file), exist_ok=True)
+        self.metadata = self._load_metadata()
     
     def _init_driver(self) -> None:
         """初始化WebDriver"""
@@ -289,6 +294,30 @@ class BaseCrawler(ABC):
         
         return None
     
+    def _load_metadata(self) -> Dict[str, Dict[str, str]]:
+        """
+        加载metadata文件
+        
+        Returns:
+            metadata字典，包含已爬取的URL和文件路径
+        """
+        if os.path.exists(self.metadata_file):
+            try:
+                with open(self.metadata_file, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except Exception as e:
+                logger.warning(f"加载metadata文件失败: {e}")
+                return {}
+        return {}
+
+    def _save_metadata(self) -> None:
+        """保存metadata到文件"""
+        try:
+            with open(self.metadata_file, 'w', encoding='utf-8') as f:
+                json.dump(self.metadata, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            logger.error(f"保存metadata文件失败: {e}")
+
     def save_to_markdown(self, url: str, title: str, content: str, images: List[Dict[str, str]]) -> str:
         """
         将爬取内容保存为Markdown格式
@@ -319,6 +348,14 @@ class BaseCrawler(ABC):
         with open(filepath, 'w', encoding='utf-8') as f:
             f.write(md_content)
         
+        # 记录metadata
+        self.metadata[url] = {
+            'filepath': filepath,
+            'title': title,
+            'crawl_time': time.strftime('%Y-%m-%d %H:%M:%S')
+        }
+        self._save_metadata()
+        
         logger.info(f"已保存Markdown文件: {filepath}")
         return filepath
     
@@ -329,6 +366,21 @@ class BaseCrawler(ABC):
             filename = filename.replace(char, '_')
         return filename
     
+    def should_crawl(self, url: str) -> bool:
+        """
+        检查是否需要爬取某个URL
+        
+        Args:
+            url: 要检查的URL
+            
+        Returns:
+            True 如果需要爬取，False 如果不需要（已存在）
+        """
+        if url in self.metadata:
+            logger.info(f"跳过已爬取的URL: {url}")
+            return False
+        return True
+
     def run(self) -> List[str]:
         """
         运行爬虫
@@ -355,4 +407,4 @@ class BaseCrawler(ABC):
         Returns:
             保存的文件路径列表
         """
-        pass 
+        pass

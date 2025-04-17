@@ -16,10 +16,14 @@ from copy import deepcopy
 
 import tqdm
 
+# 添加项目根目录到路径
+base_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+sys.path.insert(0, base_dir)
+
 from src.utils.colored_logger import setup_colored_logging
 
-# 添加项目根目录到路径
-sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
+logger = logging.getLogger(__name__)
+logger.info(f"已将项目根目录添加到路径: {base_dir}")
 
 from src.crawlers.common.crawler_manager import CrawlerManager
 from src.ai_analyzer.analyzer import AIAnalyzer
@@ -291,4 +295,4 @@ def main() -> None:
         logger.warning("未指定运行模式，使用 --mode 参数指定运行模式")
 
 if __name__ == "__main__":
-    main() 
+    main()

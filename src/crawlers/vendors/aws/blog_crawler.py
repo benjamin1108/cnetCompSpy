@@ -59,8 +59,34 @@ class AwsBlogCrawler(BaseCrawler):
         
         try:
             # 获取博客列表页
-            logger.info(f"获取博客列表页: {self.start_url}")
-            html = self._get_selenium(self.start_url)
+            logger.info(f"获取AWS博客列表页: {self.start_url}")
+            
+            # 先尝试使用requests库获取页面内容(优先使用更稳定的方式)
+            html = None
+            try:
+                logger.info("使用requests库获取页面内容")
+                headers = {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                    'Accept-Language': 'en-US,en;q=0.5',
+                    'Connection': 'keep-alive',
+                    'Upgrade-Insecure-Requests': '1',
+                    'Cache-Control': 'max-age=0'
+                }
+                response = requests.get(self.start_url, headers=headers, timeout=30)
+                if response.status_code == 200:
+                    html = response.text
+                    logger.info("使用requests库成功获取到页面内容")
+                else:
+                    logger.error(f"请求返回非成功状态码: {response.status_code}")
+            except Exception as e:
+                logger.error(f"使用requests库获取页面失败: {e}")
+            
+            # 只有在requests失败时才尝试使用Selenium
+            if not html:
+                logger.info("requests获取失败，尝试使用Selenium")
+                html = self._get_selenium(self.start_url)
+            
             if not html:
                 logger.error(f"获取博客列表页失败: {self.start_url}")
                 return []
@@ -71,11 +97,32 @@ class AwsBlogCrawler(BaseCrawler):
             
             # 爬取每篇文章
             for idx, (title, url) in enumerate(article_links, 1):
+                if not self.should_crawl(url):
+                    logger.info(f"跳过已爬取的文章: {title} ({url})")
+                    continue
+                
                 logger.info(f"正在爬取第 {idx}/{len(article_links)} 篇文章: {title}")
                 
                 try:
-                    # 获取文章内容
-                    article_html = self._get_selenium(url)
+                    # 尝试获取文章内容 - 优先使用requests
+                    article_html = None
+                    try:
+                        logger.info(f"使用requests库获取文章内容: {url}")
+                        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
+                        response = requests.get(url, headers=headers, timeout=30)
+                        if response.status_code == 200:
+                            article_html = response.text
+                            logger.info("使用requests库成功获取到文章内容")
+                        else:
+                            logger.error(f"请求返回非成功状态码: {response.status_code}")
+                    except Exception as e:
+                        logger.error(f"使用requests库获取文章失败: {e}")
+                    
+                    # 如果requests失败，才尝试Selenium
+                    if not article_html:
+                        logger.info(f"尝试使用Selenium获取文章内容: {url}")
+                        article_html = self._get_selenium(url)
+                    
                     if not article_html:
                         logger.warning(f"获取文章内容失败: {url}")
                         continue
@@ -99,6 +146,9 @@ class AwsBlogCrawler(BaseCrawler):
         except Exception as e:
             logger.error(f"爬取AWS博客过程中发生错误: {e}")
             return saved_files
+        finally:
+            # 关闭WebDriver
+            self._close_driver()
     
     def _parse_article_links(self, html: str) -> List[Tuple[str, str]]:
         """
@@ -720,7 +770,15 @@ class AwsBlogCrawler(BaseCrawler):
         # 写入文件
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(final_content)
-            
+        
+        # 记录metadata
+        self.metadata[url] = {
+            'filepath': filepath,
+            'title': title,
+            'crawl_time': time.strftime('%Y-%m-%d %H:%M:%S')
+        }
+        self._save_metadata()
+        
         return filepath
 
     def _fix_images_and_links(self, content_elem: BeautifulSoup) -> None:

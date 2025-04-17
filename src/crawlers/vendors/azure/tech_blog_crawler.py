@@ -52,6 +52,7 @@ class AzureTechBlogCrawler(BaseCrawler):
             self.h2t.protect_links = True
             self.h2t.unicode_snob = True
             self.h2t.body_width = 0  # 禁用文本折行
+            self.h2t.ignore_emphasis = False  # 保留强调格式
             logger.debug("已初始化html2text转换器")
         except ImportError:
             logger.warning("未找到html2text库，将使用基本转换")
@@ -140,6 +141,10 @@ class AzureTechBlogCrawler(BaseCrawler):
             
             # 爬取每篇文章
             for idx, (title, url, list_date) in enumerate(all_article_info, 1):
+                if not self.should_crawl(url):
+                    logger.info(f"跳过已爬取的文章: {title} ({url})")
+                    continue
+                
                 logger.info(f"正在爬取第 {idx}/{len(all_article_info)} 篇文章: {title}")
                 
                 try:
@@ -688,12 +693,68 @@ class AzureTechBlogCrawler(BaseCrawler):
             article_content = "无法提取文章内容"
             
             # 尝试找到文章内容
-            content_elem = soup.select_one('main article, #main-content, .lia-message-body-content')
+            content_elem = soup.select_one('main article, #main-content, .lia-message-body-content, .lia-message-body, .message-body, .content-body, .post-body')
             
             if content_elem:
+                # 清理非内容元素，但保留正文中的图片
+                for elem in content_elem.select('header, footer, nav, .navigation, .sidebar, aside, .ad, .ads, .comments, .social-share, .share-buttons, .author-info, .author-avatar, .avatar, .kudo-button, .like-button, .reaction-button, button, form, input, [class*="tag"], [class*="label"], [href*="/tag/"], [href*="/category/"], [href*="/users/"], [class*="meta"], [class*="info"], [class*="profile"], [class*="join"], [class*="follow"], [class*="subscribe"]'):
+                    # 检查元素是否包含图片，如果包含则保留
+                    if not elem.find_all('img'):
+                        elem.decompose()
+                
+                # 移除脚本和样式
+                for elem in content_elem.find_all(['script', 'style', 'noscript']):
+                    elem.decompose()
+                
+                # 移除非必要的图标和头像图片，但保留正文图片
+                for img in content_elem.find_all('img'):
+                    src = img.get('src', '')
+                    alt = img.get('alt', '')
+                    # 移除头像、图标、徽标等非必要图片
+                    if any(keyword in src.lower() for keyword in ['avatar', 'icon', 'logo', 'profile']) or \
+                       any(keyword in alt.lower() for keyword in ['avatar', 'icon', 'rank', 'microsoft']):
+                        img.decompose()
+                
+                # 移除包含作者头像的链接
+                for link in content_elem.find_all('a'):
+                    href = link.get('href', '')
+                    if '/users/' in href or 'avatar' in str(link).lower():
+                        link.decompose()
+                
+                # 移除"Blog Post"文本
+                for elem in content_elem.find_all(string=lambda text: text and "Blog Post" in text):
+                    parent = elem.parent
+                    if parent:
+                        if parent.name in ['h2', 'h3', 'p', 'div', 'span']:
+                            parent.decompose()
+                        else:
+                            # 如果父元素不是我们想要移除的，只移除文本本身
+                            elem.replace_with('')
+                
+                # 移除空元素，但保留包含图片的元素
+                for elem in content_elem.find_all(['div', 'span', 'p']):
+                    if not elem.get_text(strip=True) and not elem.find_all('img'):
+                        elem.decompose()
+                
                 # 将HTML转换为Markdown
                 if self.h2t:
                     article_content = self.h2t.handle(str(content_elem))
+                    # 进一步清理Markdown内容中的非必要文本
+                    article_content = re.sub(r'(?i)\d+\s*(MIN|minute)\s*READ', '', article_content)
+                    article_content = re.sub(r'(?i)(Posted|Published|Updated)\s+on\s+.*?(by\s+.*?)?(\n|$)', '', article_content)
+                    article_content = re.sub(r'(?i)(Joined|Follow|Subscribe|View\s+Profile).*?(\n|$)', '', article_content)
+                    article_content = re.sub(r'(?i)(Share\s+to|Comment).*?(\n|$)', '', article_content)
+                    article_content = re.sub(r'\n{3,}', '\n\n', article_content)
+                    # 清理未完成的图片链接或格式错误，但保留有效的图片链接
+                    article_content = re.sub(r'\[ !\[(?:[^\]]*)\](?!\(\S*\))', '', article_content)
+                    article_content = re.sub(r'\[ !\](?!\(\S*\))', '', article_content)
+                    article_content = re.sub(r'(?:\*|\s)*\[ !\[(?:[^\]]*)\](?!\(\S*\))(?:(?:\*|\s)*|$)', '', article_content)
+                    article_content = re.sub(r'(?:\*|\s)*\[ !\](?!\(\S*\))(?:(?:\*|\s)*|$)', '', article_content)
+                    # 截断 Version 字段之后的内容
+                    version_match = re.search(r'(Version\s+\d+\.\d+)', article_content, re.IGNORECASE)
+                    if version_match:
+                        version_index = article_content.find(version_match.group(0)) + len(version_match.group(0))
+                        article_content = article_content[:version_index]
                 else:
                     # 简单的HTML到文本转换
                     article_content = content_elem.get_text("\n\n", strip=True)
@@ -775,6 +836,14 @@ class AzureTechBlogCrawler(BaseCrawler):
         with open(filepath, 'w', encoding='utf-8') as f:
             f.write(md_content)
         
+        # 记录metadata
+        self.metadata[url] = {
+            'filepath': filepath,
+            'title': title,
+            'crawl_time': time.strftime('%Y-%m-%d %H:%M:%S')
+        }
+        self._save_metadata()
+        
         logger.info(f"已保存Markdown文件: {filepath}")
         return filepath
     
@@ -786,4 +855,4 @@ class AzureTechBlogCrawler(BaseCrawler):
         # 组合日期和哈希值
         filename = f"{pub_date}_{url_hash}{ext}"
         
-        return filename 
+        return filename
