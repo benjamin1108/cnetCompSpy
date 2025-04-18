@@ -146,12 +146,20 @@ class AIAnalyzer:
         self.model_name = self.ai_config.get('model', 'gpt-4')
         self.max_tokens = self.ai_config.get('max_tokens', 4000)
         self.temperature = self.ai_config.get('temperature', 0.3)
+        
+        # 尝试从两个可能的位置获取API密钥
         self.api_key = self.ai_config.get('api_key', '')
+        # 如果ai_config中没有api_key，尝试从config.ai_analyzer.api_key获取
+        if not self.api_key and 'ai_analyzer' in config and 'api_key' in config['ai_analyzer']:
+            self.api_key = config['ai_analyzer']['api_key']
+            
         self.api_base = self.ai_config.get('api_base', '')
         self.system_prompt = self.ai_config.get('system_prompt', "你是一个专业的云计算技术分析师，擅长分析和解读各类云计算技术文档。")
         self.tasks = self.ai_config.get('tasks', [])
         self.raw_dir = 'data/raw'
         self.analysis_dir = 'data/analysis'
+        self.metadata_file = 'data/metadata/analysis_metadata.json'
+        self.vendor_filter = self.ai_config.get('vendor_filter', None)
         
         # 初始化频率限制器
         requests_per_minute = self.ai_config.get('api_rate_limit', 10)  # 默认每分钟10个请求
@@ -489,6 +497,43 @@ class AIAnalyzer:
         
         return OpenAICompatibleAI(self.ai_config)
     
+    def _load_metadata(self) -> Dict[str, Dict[str, Any]]:
+        """
+        加载分析元数据
+        
+        Returns:
+            Dict: 分析元数据字典，键为文件路径，值为元数据
+        """
+        if os.path.exists(self.metadata_file):
+            try:
+                with open(self.metadata_file, 'r', encoding='utf-8') as f:
+                    metadata = json.load(f)
+                logger.info(f"已加载分析元数据: {len(metadata)} 条记录")
+                return metadata
+            except Exception as e:
+                logger.error(f"加载分析元数据失败: {e}")
+                return {}
+        else:
+            logger.info("分析元数据文件不存在，将创建新文件")
+            return {}
+    
+    def _save_metadata(self, metadata: Dict[str, Dict[str, Any]]) -> None:
+        """
+        保存分析元数据
+        
+        Args:
+            metadata: 分析元数据字典
+        """
+        try:
+            # 确保目录存在
+            os.makedirs(os.path.dirname(self.metadata_file), exist_ok=True)
+            
+            with open(self.metadata_file, 'w', encoding='utf-8') as f:
+                json.dump(metadata, f, ensure_ascii=False, indent=2)
+            logger.info(f"已保存分析元数据: {len(metadata)} 条记录")
+        except Exception as e:
+            logger.error(f"保存分析元数据失败: {e}")
+    
     def _get_files_to_analyze(self) -> List[str]:
         """
         获取需要分析的文件列表
@@ -497,16 +542,107 @@ class AIAnalyzer:
             文件路径列表
         """
         files = []
-        # 遍历raw目录下的所有md文件
-        for md_file in glob.glob(f"{self.raw_dir}/**/*.md", recursive=True):
-            # 检查是否已经分析过
-            relative_path = os.path.relpath(md_file, self.raw_dir)
-            analysis_file = os.path.join(self.analysis_dir, relative_path)
+        force_mode = self.ai_config.get('force', False)
+        metadata = self._load_metadata()
+        specific_file = self.ai_config.get('specific_file', None)
+        
+        # 如果指定了特定文件，只分析该文件
+        if specific_file:
+            logger.info(f"仅分析指定文件: {specific_file}")
             
-            if not os.path.exists(analysis_file):
+            # 检查文件是否存在
+            if not os.path.exists(specific_file):
+                logger.error(f"指定的文件不存在: {specific_file}")
+                return []
+            
+            # 检查文件是否为markdown文件
+            if not specific_file.endswith('.md'):
+                logger.error(f"指定的文件不是markdown文件: {specific_file}")
+                return []
+            
+            # 强制模式下，直接返回该文件
+            if force_mode:
+                logger.info(f"强制模式已启用，将分析指定文件: {specific_file}")
+                return [specific_file]
+            
+            # 非强制模式下，检查该文件是否需要分析
+            file_needs_analysis = False
+            
+            if specific_file not in metadata:
+                # 元数据中不存在该文件的记录，需要分析
+                file_needs_analysis = True
+            else:
+                # 检查元数据中的分析状态
+                file_metadata = metadata[specific_file]
+                
+                # 检查是否所有任务都成功完成
+                all_tasks_completed = True
+                for task in self.tasks:
+                    task_type = task.get('type')
+                    if not task_type:
+                        continue
+                        
+                    # 检查任务是否成功完成
+                    task_status = file_metadata.get('tasks', {}).get(task_type, {})
+                    if not task_status.get('success', False):
+                        all_tasks_completed = False
+                        break
+                
+                # 如果不是所有任务都成功完成，则需要分析
+                if not all_tasks_completed:
+                    file_needs_analysis = True
+            
+            if file_needs_analysis:
+                logger.info(f"指定文件需要分析: {specific_file}")
+                return [specific_file]
+            else:
+                logger.info(f"指定文件已经分析过，不需要重新分析: {specific_file}")
+                return []
+        
+        # 如果没有指定特定文件，遍历raw目录下的所有md文件
+        for md_file in glob.glob(f"{self.raw_dir}/**/*.md", recursive=True):
+            # 如果设置了vendor_filter，则根据过滤函数筛选文件
+            if self.vendor_filter and not self.vendor_filter(md_file):
+                continue
+                
+            # 检查是否已经成功分析过
+            file_needs_analysis = False
+            
+            if force_mode:
+                # 强制模式下，所有文件都需要分析
+                file_needs_analysis = True
+            elif md_file not in metadata:
+                # 元数据中不存在该文件的记录，需要分析
+                file_needs_analysis = True
+            else:
+                # 检查元数据中的分析状态
+                file_metadata = metadata[md_file]
+                
+                # 检查是否所有任务都成功完成
+                all_tasks_completed = True
+                for task in self.tasks:
+                    task_type = task.get('type')
+                    if not task_type:
+                        continue
+                        
+                    # 检查任务是否成功完成
+                    task_status = file_metadata.get('tasks', {}).get(task_type, {})
+                    if not task_status.get('success', False):
+                        all_tasks_completed = False
+                        break
+                
+                # 如果不是所有任务都成功完成，则需要分析
+                if not all_tasks_completed:
+                    file_needs_analysis = True
+            
+            if file_needs_analysis:
                 files.append(md_file)
         
-        logger.info(f"找到 {len(files)} 个文件需要分析")
+        if force_mode:
+            logger.info(f"强制模式已启用，将分析所有 {len(files)} 个文件")
+        else:
+            logger.info(f"找到 {len(files)} 个文件需要分析")
+        
         return files
     
     def analyze_file(self, file_path: str) -> Dict[str, Any]:
@@ -521,6 +657,14 @@ class AIAnalyzer:
         """
         logger.info(f"开始分析文件: {file_path}")
         
+        # 加载元数据
+        metadata = self._load_metadata()
+        file_metadata = metadata.get(file_path, {
+            'file': file_path,
+            'last_analyzed': None,
+            'tasks': {}
+        })
+        
         try:
             # 读取文件内容
             logger.debug(f"读取文件内容: {file_path}")
@@ -530,8 +674,9 @@ class AIAnalyzer:
             
             # 获取元数据
             logger.debug(f"提取文件元数据")
-            metadata = self._extract_metadata(content)
-            logger.debug(f"提取的元数据: {metadata}")
+            file_info = self._extract_metadata(content)
+            file_metadata['info'] = file_info
+            logger.debug(f"提取的元数据: {file_info}")
             
             # 准备输出文件
             relative_path = os.path.relpath(file_path, self.raw_dir)
@@ -544,6 +689,9 @@ class AIAnalyzer:
             
             analysis_results = {}
             logger.info(f"将执行 {len(self.tasks)} 个分析任务")
+            
+            # 记录任务执行状态
+            tasks_status = {}
             
             # 打开文件，使用'w'模式覆盖任何现有内容
             with open(md_path, 'w', encoding='utf-8') as f:
@@ -559,43 +707,69 @@ class AIAnalyzer:
                     
                     logger.info(f"执行任务 [{i+1}/{len(self.tasks)}]: {task_type}")
                     
-                    # 构建完整提示
-                    full_prompt = f"{prompt}\n\n{content}"
-                    logger.debug(f"完整提示词长度: {len(full_prompt)} 字符")
+                    # 初始化任务状态
+                    task_status = {
+                        'success': False,
+                        'error': None,
+                        'timestamp': time.strftime('%Y-%m-%d %H:%M:%S')
+                    }
                     
-                    # 调用AI模型获取结果
-                    logger.info(f"开始调用AI模型进行 {task_type} 分析...")
-                    logger.info(f"[{time.strftime('%H:%M:%S')}] 正在发送请求至API服务器...")
-                    start_time = time.time()
-                    result = self._analyze_content(full_prompt, task_type)
-                    end_time = time.time()
-                    logger.info(f"AI模型调用完成，耗时: {end_time - start_time:.2f} 秒")
-                    logger.info(f"[{time.strftime('%H:%M:%S')}] 已接收{len(result)}字符的响应")
+                    try:
+                        # 构建完整提示
+                        full_prompt = f"{prompt}\n\n{content}"
+                        logger.debug(f"完整提示词长度: {len(full_prompt)} 字符")
+                        
+                        # 调用AI模型获取结果
+                        logger.info(f"开始调用AI模型进行 {task_type} 分析...")
+                        logger.info(f"[{time.strftime('%H:%M:%S')}] 正在发送请求至API服务器...")
+                        start_time = time.time()
+                        result = self._analyze_content(full_prompt, task_type)
+                        end_time = time.time()
+                        logger.info(f"AI模型调用完成，耗时: {end_time - start_time:.2f} 秒")
+                        logger.info(f"[{time.strftime('%H:%M:%S')}] 已接收{len(result)}字符的响应")
+                        
+                        # 检查结果是否包含错误信息
+                        if result.startswith("API调用失败") or result.startswith("API调用异常") or len(result.strip()) < 10:
+                            raise ValueError(f"API调用结果无效: {result}")
+                        
+                        # 清理AI模型输出中的额外文本
+                        cleaned_result = self._clean_ai_output(result, task_type)
+                        
+                        # 保存分析结果到内存
+                        analysis_results[task_type] = cleaned_result
+                        
+                        # 特殊处理：标题翻译总是需要保存，因为它用于网页标题显示
+                        if task_type == "AI标题翻译" or output:
+                            # 添加任务开始标记 - 使用特殊的HTML注释作为分隔符
+                            task_start = f"\n<!-- AI_TASK_START: {task_type} -->\n"
+                            f.write(task_start)
+                            f.flush()
+                            
+                            # 立即写入结果到文件
+                            f.write(f"{cleaned_result}\n")
+                            f.flush()
+                            os.fsync(f.fileno())  # 确保数据完全写入磁盘
+                            
+                            # 添加任务结束标记
+                            task_end = f"\n<!-- AI_TASK_END: {task_type} -->\n\n"
+                            f.write(task_end)
+                            f.flush()
+                            os.fsync(f.fileno())  # 确保数据完全写入磁盘
+                            
+                            logger.info(f"已将任务 {task_type} 的分析结果写入文件，并进行了同步")
+                        else:
+                            logger.info(f"任务 {task_type} 设置为不输出到文件，结果仅保存在内存中")
+                        
+                        # 标记任务成功
+                        task_status['success'] = True
+                    except Exception as e:
+                        # 记录任务失败
+                        error_msg = str(e)
+                        logger.error(f"任务 {task_type} 执行失败: {error_msg}")
+                        task_status['error'] = error_msg
                     
-                    # 保存分析结果到内存
-                    analysis_results[task_type] = result
-                    
-                    # 特殊处理：标题翻译总是需要保存，因为它用于网页标题显示
-                    if task_type == "AI标题翻译" or output:
-                        # 添加任务开始标记 - 使用特殊的HTML注释作为分隔符
-                        task_start = f"\n<!-- AI_TASK_START: {task_type} -->\n"
-                        f.write(task_start)
-                        f.flush()
-                        
-                        # 立即写入结果到文件
-                        f.write(f"{result}\n")
-                        f.flush()
-                        os.fsync(f.fileno())  # 确保数据完全写入磁盘
-                        
-                        # 添加任务结束标记
-                        task_end = f"\n<!-- AI_TASK_END: {task_type} -->\n\n"
-                        f.write(task_end)
-                        f.flush()
-                        os.fsync(f.fileno())  # 确保数据完全写入磁盘
-                        
-                        logger.info(f"已将任务 {task_type} 的分析结果写入文件，并进行了同步")
-                    else:
-                        logger.info(f"任务 {task_type} 设置为不输出到文件，结果仅保存在内存中")
+                    # 保存任务状态
+                    tasks_status[task_type] = task_status
             
             # 设置文件权限 - 使用完全开放的权限以确保Windows可访问
             try:
@@ -606,21 +780,138 @@ class AIAnalyzer:
             except Exception as e:
                 logger.warning(f"设置文件权限失败: {e}")
             
+            # 更新元数据
+            file_metadata['last_analyzed'] = time.strftime('%Y-%m-%d %H:%M:%S')
+            file_metadata['tasks'] = tasks_status
+            metadata[file_path] = file_metadata
+            
+            # 保存元数据
+            self._save_metadata(metadata)
+            
             logger.info(f"文件分析完成: {file_path}")
             
             return {
                 'file': file_path,
-                'metadata': metadata,
-                'analysis': analysis_results
+                'metadata': file_info,
+                'analysis': analysis_results,
+                'tasks_status': tasks_status
             }
             
         except Exception as e:
             logger.error(f"分析文件失败: {file_path} - {e}")
             logger.exception("详细错误信息:")
+            
+            # 更新元数据，记录错误
+            file_metadata['last_error'] = str(e)
+            file_metadata['last_error_time'] = time.strftime('%Y-%m-%d %H:%M:%S')
+            metadata[file_path] = file_metadata
+            
+            # 保存元数据
+            self._save_metadata(metadata)
+            
             return {
                 'file': file_path,
                 'error': str(e)
             }
+    
+    def _clean_ai_output(self, result: str, task_type: str) -> str:
+        """
+        清理AI模型输出中的额外文本
+        
+        Args:
+            result: AI模型的原始输出
+            task_type: 任务类型
+            
+        Returns:
+            清理后的输出
+        """
+        # 如果是AI标题翻译，使用更精确的方法提取标题
+        if task_type == "AI标题翻译":
+            # 首先尝试查找常见的解释性文本后面的标题
+            explanation_patterns = [
+                "Here is the result:", "Here's the result:", 
+                "Here is the translated title:", "Here's the translated title:",
+                "The translated title is:", "Translated title:",
+                "Here is my translation:", "Here's my translation:"
+            ]
+            
+            for pattern in explanation_patterns:
+                if pattern in result:
+                    # 找到解释文本后的内容
+                    title_part = result.split(pattern, 1)[1].strip()
+                    if title_part:
+                        return title_part
+            
+            # 如果没有找到解释性文本，尝试直接提取带标签的标题
+            # 查找形如"[标签] 标题内容"的模式
+            import re
+            title_match = re.search(r'\[(解决方案|新功能|新产品|产品更新|技术更新|案例分析)\](.*?)($|\n)', result)
+            if title_match:
+                tag = title_match.group(1)
+                title_content = title_match.group(2).strip()
+                return f"[{tag}] {title_content}"
+            
+            # 如果没有找到标签，但结果很短且没有多行，可能就是标题本身
+            if len(result.strip().split('\n')) == 1 and len(result.strip()) < 100:
+                return result.strip()
+            
+            # 最后一种情况：尝试找到最后一个包含标签的行
+            lines = result.strip().split('\n')
+            for line in reversed(lines):
+                if '[' in line and ']' in line:
+                    tag_match = re.search(r'\[(.*?)\](.*?)$', line)
+                    if tag_match:
+                        tag = tag_match.group(1)
+                        content = tag_match.group(2).strip()
+                        if any(keyword in tag for keyword in ["解决方案", "新功能", "新产品", "产品更新", "技术更新", "案例分析"]):
+                            return f"[{tag}] {content}"
+        
+        # 对于其他任务类型，使用更强大的方法去除解释性前缀
+        # 首先尝试识别常见的解释性段落模式
+        explanation_patterns = [
+            r"^I understand.*?Here is.*?\n\n",
+            r"^Based on.*?Here is.*?\n\n",
+            r"^As requested.*?Here is.*?\n\n",
+            r"^I've analyzed.*?Here's my.*?\n\n",
+            r"^Here is.*?analysis.*?\n\n"
+        ]
+        
+        import re
+        cleaned_result = result
+        for pattern in explanation_patterns:
+            cleaned_result = re.sub(pattern, "", cleaned_result, flags=re.DOTALL | re.IGNORECASE)
+        
+        # 如果清理后的结果为空或者与原始结果相同，尝试行级别的清理
+        if not cleaned_result.strip() or cleaned_result == result:
+            lines = result.split('\n')
+            cleaned_lines = []
+            skip_block = False
+            
+            for i, line in enumerate(lines):
+                # 检测解释性开头行
+                if i == 0 and any(explanation in line.lower() for explanation in [
+                    "i understand", "here is", "based on", "as requested", "i've analyzed", "here's my"
+                ]):
+                    skip_block = True
+                    continue
+                
+                # 如果遇到空行，可能是解释段落的结束
+                if not line.strip() and skip_block:
+                    skip_block = False
+                    continue
+                
+                # 如果不在跳过模式，添加该行
+                if not skip_block:
+                    cleaned_lines.append(line)
+            
+            # 重新组合清理后的行
+            cleaned_result = '\n'.join(cleaned_lines).strip()
+        
+        # 如果清理后的结果为空，则返回原始结果
+        if not cleaned_result.strip():
+            return result.strip()
+        
+        return cleaned_result.strip()
     
     def _extract_metadata(self, content: str) -> Dict[str, Any]:
         """
@@ -871,4 +1162,4 @@ class AIAnalyzer:
         Returns:
             List[Dict[str, Any]]: 分析结果列表
         """
-        return self.run() 
+        return self.run()

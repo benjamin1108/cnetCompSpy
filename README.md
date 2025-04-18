@@ -4,7 +4,13 @@
 该项目是一个基于Python的云计算网络竞争动态分析工具。该工具可以从配置文件中指定的URL爬取各大云厂商（如AWS、Azure、GCP、腾讯云、华为云、火山云等）的博客、文档等内容，通过AI进行分析。
 
 ## 最近更新
-- **2025-04-18**: 代码优化，移除冗余代码，提高代码复用性
+- **2025-04-18 (2)**: 分析模块功能增强
+  - 为analyze模块增加metadata功能，实现智能防重复分析
+  - 给分析模块运行脚本增加vendor参数选项，支持只分析特定厂商数据
+  - 增加指定文件的分析参数，支持只分析特定文件
+  - 优化AI模型输出处理，自动清理额外文本，提高分析结果质量
+
+- **2025-04-18 (1)**: 代码优化，移除冗余代码，提高代码复用性
   - 将HTML到Markdown的转换、日期解析和文件保存功能抽象到BaseCrawler类中
   - 移除各爬虫实现中的重复代码
   - 清理未使用的测试目录
@@ -19,6 +25,8 @@
 - **模块化设计**：爬虫和分析可以分离运行，提高灵活性
 - **灵活配置**：可通过命令行参数和配置文件灵活控制爬取数量和测试模式
 - **统一文件格式**：使用统一的文件命名和元数据格式，便于管理和查询
+- **智能防重复**：使用metadata记录分析状态，避免重复分析已处理的文件
+- **精细控制**：支持按厂商或特定文件进行分析，提高工作效率
 
 ## 项目结构
 ```
@@ -26,18 +34,28 @@ cloud-comp-spy/
 ├── data/               # 数据存储目录
 │   ├── raw/            # 原始爬取数据
 │   └── analysis/       # 分析结果
+├── logs/               # 日志文件目录
 ├── scripts/            # 脚本文件
-│   └── setup_latest_driver.sh  # WebDriver和ChromeDriver自动下载脚本
+│   ├── setup_latest_driver.sh  # WebDriver和ChromeDriver自动下载脚本
+│   ├── run_crawl.sh    # 爬虫运行脚本
+│   ├── run_analyze.sh  # 分析运行脚本
+│   ├── run_server.sh   # Web服务器运行脚本
+│   ├── setup_env.sh    # 环境设置脚本
+│   ├── venv.sh         # 虚拟环境激活脚本
+│   ├── daily_crawl_and_analyze.sh  # 每日自动爬取与分析脚本
+│   └── daily_crawl_and_analyze_README.md  # 每日脚本使用说明
 ├── src/                # 源代码
 │   ├── crawlers/       # 爬虫模块
 │   │   ├── common/     # 通用爬虫组件
 │   │   └── vendors/    # 厂商特定爬虫
-│   └── ai_analyzer/    # AI分析模块
-├── tests/              # 测试文件
+│   ├── ai_analyzer/    # AI分析模块
+│   ├── utils/          # 工具类
+│   └── web_server/     # Web服务器模块
 ├── requirements.txt    # 项目依赖
 ├── setup.py            # 安装脚本（仅开发用途）
 ├── config.yaml         # 基本配置文件（不包含敏感信息）
 ├── config.secret.yaml  # 敏感配置文件（包含API密钥等）
+├── run.sh              # 主运行脚本（统一入口）
 └── README.md           # 项目说明
 ```
 
@@ -142,6 +160,21 @@ cloud-comp-spy/
    # 限制每个来源爬取的文章数量
    ./run.sh crawl --limit 10
    
+   # 强制爬取所有数据，忽略本地metadata
+   ./run.sh crawl --force
+   
+   # 强制分析所有数据，忽略metadata记录
+   ./run.sh analyze --force
+   
+   # 仅分析指定厂商的数据
+   ./run.sh analyze --vendor aws
+   
+   # 分析特定文件
+   ./run.sh analyze --file data/raw/aws/blog/2025_03_10_8c2b1da4.md
+   
+   # 强制分析特定文件
+   ./run.sh analyze --force --file data/raw/aws/blog/2025_03_10_8c2b1da4.md
+   
    # 指定主机和端口启动服务器
    ./run.sh server --host 0.0.0.0 --port 8080
    
@@ -150,6 +183,9 @@ cloud-comp-spy/
    
    # 清理数据目录
    ./run.sh crawl --clean
+   
+   # 每日自动爬取与分析
+   ./scripts/daily_crawl_and_analyze.sh
    ```
    
    你仍然可以使用原始的Python命令：
@@ -173,6 +209,7 @@ cloud-comp-spy/
      --clean                    清理所有中间文件
      --limit LIMIT              爬取的文章数量限制，如设置为5则每个来源只爬取5篇，0表示使用配置文件中的默认值
      --config CONFIG            指定配置文件路径(默认为根目录下的config.yaml)
+     --force                    强制执行，忽略本地metadata或文件是否已存在
      -h, --help                 显示帮助信息
    ```
 
@@ -187,6 +224,12 @@ cloud-comp-spy/
    python -m src.main --mode crawl --vendor aws       # 只爬取AWS
    python -m src.main --mode crawl --limit 20         # 每个来源爬取20篇
    python -m src.main --mode crawl --vendor aws --limit 5  # 只爬取AWS且限制5篇
+   python -m src.main --mode crawl --force            # 强制爬取所有数据，忽略本地metadata
+   
+   # 分析控制
+   python -m src.main --mode analyze --force          # 强制分析所有数据，忽略metadata记录
+   python -m src.main --mode analyze --vendor aws     # 只分析AWS的数据
+   python -m src.main --mode analyze --file path/to/file.md  # 只分析特定文件
    
    # 配置和清理
    python -m src.main --config production.yaml --mode crawl  # 使用自定义配置文件
@@ -365,6 +408,22 @@ crawler:
   retry: 3               # 请求失败重试次数
   interval: 2            # 请求间隔时间(秒)
 ```
+
+### 分析模块元数据功能
+
+分析模块现在使用metadata记录每个文件的分析状态，提供以下优势：
+
+1. **智能防重复分析**：系统会记录每个文件的分析状态，包括每个任务是否成功完成，避免重复分析已处理的文件
+2. **任务级别跟踪**：对每个分析任务（如标题翻译、竞争分析、全文翻译等）单独跟踪成功状态
+3. **错误恢复**：如果某个任务失败，下次运行时只会重新执行失败的任务
+4. **强制模式**：使用`--force`参数可以忽略metadata记录，强制重新分析所有文件
+
+metadata文件存储在`data/metadata/analysis_metadata.json`中，包含以下信息：
+- 文件路径
+- 最后分析时间
+- 每个任务的状态（成功/失败）
+- 任务执行时间戳
+- 文件的元数据信息
 
 ### AI分析功能详细说明
 

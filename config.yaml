@@ -77,24 +77,9 @@ ai_analyzer:
   temperature: 0.5 # 温度参数
   max_workers: 2 # 同时分析的最大文件数
   api_rate_limit: 10 # 每分钟允许的最大API调用次数，避免API过载
-  
-  # API错误重试策略配置
-  max_retries: 3  # API调用失败时的最大重试次数
-  initial_retry_delay: 2.0  # 初始重试延迟(秒)
-  max_retry_delay: 30.0  # 最大重试延迟(秒)
-  
-  # API基础URL（请选择您使用的模型服务提供商的API端点）
-  # 示例:
-  # - 阿里云通义千问: "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
-  # - OpenAI: "https://api.openai.com/v1"
-  # - Azure OpenAI: "https://your-resource-name.openai.azure.com/openai/deployments/your-deployment-name"
-  # - 百度文心一言: "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop"
-  # - 讯飞星火: "https://spark-api.xf-yun.com/v1"
-  # - X.AI Grok: "https://api.x.ai"
   api_base: "https://api.x.ai"
-
-  # 请替换为您的API密钥
-
+  # api_key在config.secret.yaml中配置
+  
   system_prompt: |
     你是一个专业的云计算技术分析师，擅长分析和解读各类云计算技术文档。请以简洁有力、专业清晰的风格回答问题。
     输出要求：使用Notion风格的Markdown格式，结果紧凑，无过多空行，不要输出任何解释，只输出结果。

@@ -150,6 +150,8 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("--clean", action="store_true", help="清理所有中间文件")
     parser.add_argument("--limit", type=int, default=0, help="爬取的文章数量限制，如设置为5则每个来源只爬取5篇")
     parser.add_argument("--config", help="指定配置文件路径")
+    parser.add_argument("--force", action="store_true", help="强制执行，忽略本地metadata或文件是否已存在")
+    parser.add_argument("--file", help="指定要分析的文件路径，仅在analyze模式下有效")
     
     return parser.parse_args()
 
@@ -209,6 +211,13 @@ def crawl_main(args: argparse.Namespace) -> None:
             config['crawler'] = {}
         config['crawler']['article_limit'] = args.limit
     
+    # 如果设置了force参数，更新配置
+    if args.force:
+        logger.info("启用强制模式，忽略本地metadata或文件是否已存在")
+        if 'crawler' not in config:
+            config['crawler'] = {}
+        config['crawler']['force'] = True
+    
     # 创建并运行爬虫管理器
     crawler_manager = CrawlerManager(config)
     result = crawler_manager.run()
@@ -246,6 +255,36 @@ def analyze_main(args: argparse.Namespace) -> None:
     """
     # 加载配置
     config = get_config(args)
+    
+    # 如果指定了厂商，过滤配置
+    if args.vendor:
+        # 创建一个过滤函数，用于筛选指定厂商的文件
+        def vendor_filter(file_path):
+            return f"/{args.vendor}/" in file_path
+        
+        logger.info(f"仅分析厂商 {args.vendor} 的数据")
+        if 'ai_analyzer' not in config:
+            config['ai_analyzer'] = {}
+        config['ai_analyzer']['vendor_filter'] = vendor_filter
+    
+    # 如果设置了force参数，更新配置
+    if args.force:
+        logger.info("启用强制模式，忽略文件是否已存在")
+        if 'ai_analyzer' not in config:
+            config['ai_analyzer'] = {}
+        config['ai_analyzer']['force'] = True
+    
+    # 如果指定了文件路径，只分析该文件
+    if args.file:
+        file_path = args.file
+        # 如果文件路径不是绝对路径，则转换为相对于当前工作目录的路径
+        if not os.path.isabs(file_path):
+            file_path = os.path.abspath(file_path)
+        
+        logger.info(f"仅分析指定文件: {file_path}")
+        if 'ai_analyzer' not in config:
+            config['ai_analyzer'] = {}
+        config['ai_analyzer']['specific_file'] = file_path
     
     # 创建并运行AI分析器
     analyzer = AIAnalyzer(config)

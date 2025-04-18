@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# 获取脚本所在目录和项目根目录
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
+
+# 切换到项目根目录
+cd "$PROJECT_ROOT"
+
 # 检查当前目录是否存在venv目录
 if [ -d "venv" ]; then
     echo "找到venv目录，正在激活..."
