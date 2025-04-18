@@ -497,6 +497,33 @@ class AIAnalyzer:
         
         return OpenAICompatibleAI(self.ai_config)
     
+    def _normalize_file_path(self, file_path: str) -> str:
+        """
+        标准化文件路径，确保使用相对路径
+        
+        Args:
+            file_path: 文件路径（可能是相对路径或绝对路径）
+            
+        Returns:
+            标准化后的文件路径（相对于项目根目录）
+        """
+        # 获取项目根目录的绝对路径
+        base_dir = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+        
+        # 如果是绝对路径，转换为相对于项目根目录的路径
+        if os.path.isabs(file_path):
+            try:
+                # 尝试将绝对路径转换为相对于项目根目录的路径
+                rel_path = os.path.relpath(file_path, base_dir)
+                logger.debug(f"将绝对路径 {file_path} 转换为相对路径 {rel_path}")
+                return rel_path
+            except ValueError:
+                # 如果路径在不同的驱动器上（Windows），则保留原始路径
+                logger.warning(f"无法将路径 {file_path} 转换为相对路径，保留原始路径")
+                return file_path
+        
+        return file_path
+    
     def _load_metadata(self) -> Dict[str, Dict[str, Any]]:
         """
         加载分析元数据
@@ -507,7 +534,17 @@ class AIAnalyzer:
         if os.path.exists(self.metadata_file):
             try:
                 with open(self.metadata_file, 'r', encoding='utf-8') as f:
-                    metadata = json.load(f)
+                    raw_metadata = json.load(f)
+                
+                # 标准化元数据中的文件路径
+                metadata = {}
+                for file_path, file_data in raw_metadata.items():
+                    normalized_path = self._normalize_file_path(file_path)
+                    metadata[normalized_path] = file_data
+                    # 如果标准化后的路径与原始路径不同，记录日志
+                    if normalized_path != file_path:
+                        logger.debug(f"元数据路径标准化: {file_path} -> {normalized_path}")
+                
                 logger.info(f"已加载分析元数据: {len(metadata)} 条记录")
                 return metadata
             except Exception as e:
@@ -528,9 +565,18 @@ class AIAnalyzer:
             # 确保目录存在
             os.makedirs(os.path.dirname(self.metadata_file), exist_ok=True)
             
+            # 标准化元数据中的文件路径
+            normalized_metadata = {}
+            for file_path, file_data in metadata.items():
+                normalized_path = self._normalize_file_path(file_path)
+                # 更新文件数据中的file字段，确保与键一致
+                if 'file' in file_data:
+                    file_data['file'] = normalized_path
+                normalized_metadata[normalized_path] = file_data
+            
             with open(self.metadata_file, 'w', encoding='utf-8') as f:
-                json.dump(metadata, f, ensure_ascii=False, indent=2)
-            logger.info(f"已保存分析元数据: {len(metadata)} 条记录")
+                json.dump(normalized_metadata, f, ensure_ascii=False, indent=2)
+            logger.info(f"已保存分析元数据: {len(normalized_metadata)} 条记录")
         except Exception as e:
             logger.error(f"保存分析元数据失败: {e}")
     
@@ -548,7 +594,9 @@ class AIAnalyzer:
         
         # 如果指定了特定文件，只分析该文件
         if specific_file:
-            logger.info(f"仅分析指定文件: {specific_file}")
+            # 标准化文件路径
+            normalized_specific_file = self._normalize_file_path(specific_file)
+            logger.info(f"仅分析指定文件: {normalized_specific_file}")
             
             # 检查文件是否存在
             if not os.path.exists(specific_file):
@@ -562,18 +610,19 @@ class AIAnalyzer:
             
             # 强制模式下，直接返回该文件
             if force_mode:
-                logger.info(f"强制模式已启用，将分析指定文件: {specific_file}")
+                logger.info(f"强制模式已启用，将分析指定文件: {normalized_specific_file}")
                 return [specific_file]
             
             # 非强制模式下，检查该文件是否需要分析
             file_needs_analysis = False
             
-            if specific_file not in metadata:
+            if normalized_specific_file not in metadata:
                 # 元数据中不存在该文件的记录，需要分析
                 file_needs_analysis = True
+                logger.info(f"元数据中不存在该文件的记录: {normalized_specific_file}")
             else:
                 # 检查元数据中的分析状态
-                file_metadata = metadata[specific_file]
+                file_metadata = metadata[normalized_specific_file]
                 
                 # 检查是否所有任务都成功完成
                 all_tasks_completed = True
@@ -586,6 +635,7 @@ class AIAnalyzer:
                     task_status = file_metadata.get('tasks', {}).get(task_type, {})
                     if not task_status.get('success', False):
                         all_tasks_completed = False
+                        logger.info(f"任务 {task_type} 未成功完成")
                         break
                 
                 # 如果不是所有任务都成功完成，则需要分析
@@ -593,16 +643,19 @@ class AIAnalyzer:
                     file_needs_analysis = True
             
             if file_needs_analysis:
-                logger.info(f"指定文件需要分析: {specific_file}")
+                logger.info(f"指定文件需要分析: {normalized_specific_file}")
                 return [specific_file]
             else:
-                logger.info(f"指定文件已经分析过，不需要重新分析: {specific_file}")
+                logger.info(f"指定文件已经分析过，不需要重新分析: {normalized_specific_file}")
                 return []
         
         # 如果没有指定特定文件，遍历raw目录下的所有md文件
         for md_file in glob.glob(f"{self.raw_dir}/**/*.md", recursive=True):
+            # 标准化文件路径
+            normalized_md_file = self._normalize_file_path(md_file)
+            
             # 如果设置了vendor_filter，则根据过滤函数筛选文件
-            if self.vendor_filter and not self.vendor_filter(md_file):
+            if self.vendor_filter and not self.vendor_filter(normalized_md_file):
                 continue
                 
             # 检查是否已经成功分析过
@@ -611,12 +664,12 @@ class AIAnalyzer:
             if force_mode:
                 # 强制模式下，所有文件都需要分析
                 file_needs_analysis = True
-            elif md_file not in metadata:
+            elif normalized_md_file not in metadata:
                 # 元数据中不存在该文件的记录，需要分析
                 file_needs_analysis = True
             else:
                 # 检查元数据中的分析状态
-                file_metadata = metadata[md_file]
+                file_metadata = metadata[normalized_md_file]
                 
                 # 检查是否所有任务都成功完成
                 all_tasks_completed = True
@@ -655,12 +708,14 @@ class AIAnalyzer:
         Returns:
             分析结果
         """
-        logger.info(f"开始分析文件: {file_path}")
+        # 标准化文件路径
+        normalized_file_path = self._normalize_file_path(file_path)
+        logger.info(f"开始分析文件: {normalized_file_path}")
         
         # 加载元数据
         metadata = self._load_metadata()
-        file_metadata = metadata.get(file_path, {
-            'file': file_path,
+        file_metadata = metadata.get(normalized_file_path, {
+            'file': normalized_file_path,
             'last_analyzed': None,
             'tasks': {}
         })
@@ -783,7 +838,7 @@ class AIAnalyzer:
             # 更新元数据
             file_metadata['last_analyzed'] = time.strftime('%Y-%m-%d %H:%M:%S')
             file_metadata['tasks'] = tasks_status
-            metadata[file_path] = file_metadata
+            metadata[normalized_file_path] = file_metadata
             
             # 保存元数据
             self._save_metadata(metadata)
@@ -804,7 +859,7 @@ class AIAnalyzer:
             # 更新元数据，记录错误
             file_metadata['last_error'] = str(e)
             file_metadata['last_error_time'] = time.strftime('%Y-%m-%d %H:%M:%S')
-            metadata[file_path] = file_metadata
+            metadata[normalized_file_path] = file_metadata
             
             # 保存元数据
             self._save_metadata(metadata)
