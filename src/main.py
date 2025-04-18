@@ -274,6 +274,13 @@ def analyze_main(args: argparse.Namespace) -> None:
             config['ai_analyzer'] = {}
         config['ai_analyzer']['force'] = True
     
+    # 如果设置了文章数量限制，更新配置
+    if args.limit > 0:
+        logger.info(f"设置分析文件数量限制为: {args.limit}")
+        if 'ai_analyzer' not in config:
+            config['ai_analyzer'] = {}
+        config['ai_analyzer']['file_limit'] = args.limit
+    
     # 如果指定了文件路径，只分析该文件
     if args.file:
         file_path = args.file

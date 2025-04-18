@@ -7,15 +7,17 @@ PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 # 切换到项目根目录
 cd "$PROJECT_ROOT"
 
-# 检查当前目录是否存在venv目录
-if [ -d "venv" ]; then
-    echo "找到venv目录，正在激活..."
-    source venv/bin/activate
+# 检查是否存在名为venv的conda环境
+if conda env list | grep -q "^venv "; then
+    echo "找到venv环境，正在激活..."
+    eval "$(conda shell.bash hook)"
+    conda activate venv
 else
-    echo "未找到venv目录，正在创建..."
-    python3 -m venv venv
-    echo "venv目录已创建，正在激活..."
-    source venv/bin/activate
+    echo "未找到venv环境，正在创建..."
+    eval "$(conda shell.bash hook)"
+    conda create -y -n venv python=3.11
+    echo "venv环境已创建，正在激活..."
+    conda activate venv
 fi
 
 echo "Python虚拟环境已激活"

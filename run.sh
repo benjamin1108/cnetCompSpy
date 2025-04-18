@@ -49,18 +49,20 @@ show_help() {
 
 # 激活虚拟环境
 activate_venv() {
-    # 检查当前目录是否存在venv目录
-    if [ -d "venv" ]; then
-        echo -e "${GREEN}找到venv目录，正在激活...${NC}"
-        source venv/bin/activate
+    # 检查是否存在名为venv的conda环境
+    if conda env list | grep -q "^venv "; then
+        echo -e "${GREEN}找到venv环境，正在激活...${NC}"
+        eval "$(conda shell.bash hook)"
+        conda activate venv
     else
-        echo -e "${YELLOW}未找到venv目录，正在创建...${NC}"
-        python3 -m venv venv
+        echo -e "${YELLOW}未找到venv环境，正在创建...${NC}"
+        eval "$(conda shell.bash hook)"
+        conda create -y -n venv python=3.11
         if [ $? -eq 0 ]; then
-            echo -e "${GREEN}venv目录已创建，正在激活...${NC}"
-            source venv/bin/activate
+            echo -e "${GREEN}venv环境已创建，正在激活...${NC}"
+            conda activate venv
         else
-            echo -e "${RED}创建venv失败，请检查python3和venv模块是否可用。${NC}"
+            echo -e "${RED}创建venv环境失败，请检查miniforge安装是否正确。${NC}"
             exit 1
         fi
     fi

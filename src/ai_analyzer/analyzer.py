@@ -591,6 +591,7 @@ class AIAnalyzer:
         force_mode = self.ai_config.get('force', False)
         metadata = self._load_metadata()
         specific_file = self.ai_config.get('specific_file', None)
+        file_limit = self.ai_config.get('file_limit', 0)  # 获取文件数量限制
         
         # 如果指定了特定文件，只分析该文件
         if specific_file:
@@ -691,8 +692,13 @@ class AIAnalyzer:
             if file_needs_analysis:
                 files.append(md_file)
         
+        # 如果设置了文件数量限制，则只返回指定数量的文件
+        if file_limit > 0 and len(files) > file_limit:
+            logger.info(f"应用文件数量限制: {file_limit}/{len(files)}")
+            files = files[:file_limit]
+        
         if force_mode:
-            logger.info(f"强制模式已启用，将分析所有 {len(files)} 个文件")
+            logger.info(f"强制模式已启用，将分析 {len(files)} 个文件")
         else:
             logger.info(f"找到 {len(files)} 个文件需要分析")
         

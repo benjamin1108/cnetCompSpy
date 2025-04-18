@@ -2,7 +2,7 @@
 #
 # 激活虚拟环境（相对于项目根目录）
 cd "$(dirname "$0")/.."
-source venv/bin/activate
+source "$(dirname "$0")/venv.sh"
 
 # 检查是否有--force参数
 FORCE_FLAG=""

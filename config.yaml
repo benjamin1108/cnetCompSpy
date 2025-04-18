@@ -1,3 +1,13 @@
+# 邮件通知配置
+email:
+  enabled: true  # 启用邮件通知功能
+  smtp_server: "smtp.gmail.com"  # Gmail SMTP服务器地址
+  smtp_port: 587  # Gmail SMTP端口（TLS）
+  use_tls: true  # 启用TLS加密
+  sender: "cloudnetworkspy@gmail.com"  # 您的Gmail邮箱地址
+  recipients: ["21586750@qq.com"]  # 收件人邮箱列表
+  subject_prefix: "[云计算网络竞争动态分析]"  # 邮件主题前缀
+
 # 爬虫配置
 crawler:
   timeout: 30 # 基本请求超时时间（秒）

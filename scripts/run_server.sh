@@ -2,7 +2,7 @@
 #
 # 激活虚拟环境（相对于项目根目录）
 cd "$(dirname "$0")/.."
-source venv/bin/activate
+source "$(dirname "$0")/venv.sh"
 
 # 传递所有参数给Python脚本，如果没有指定参数，则使用默认值
 if [ $# -eq 0 ]; then

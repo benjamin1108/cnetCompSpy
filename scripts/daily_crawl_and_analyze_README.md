@@ -34,7 +34,15 @@
 
 # 强制执行，忽略本地metadata或文件是否已存在
 ./scripts/daily_crawl_and_analyze.sh --force
+
+# 限制分析的文件数量为5个
+./scripts/daily_crawl_and_analyze.sh --limit 5
+
+# 组合使用多个参数
+./scripts/daily_crawl_and_analyze.sh --vendor aws --limit 10 --force
 ```
+
+注意：`--limit`参数同时适用于爬虫和分析功能。在爬虫阶段，它限制每个来源最多爬取的文章数量；在分析阶段，它限制要分析的文件总数。
 
 ### 日志文件
 

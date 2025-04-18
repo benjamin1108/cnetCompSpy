@@ -43,17 +43,13 @@ log() {
 # 激活虚拟环境
 activate_venv() {
     log "INFO" "正在激活Python虚拟环境..."
-    if [ -d "$PROJECT_ROOT/venv" ]; then
-        source "$PROJECT_ROOT/venv/bin/activate"
-        if [ $? -eq 0 ]; then
-            log "INFO" "Python虚拟环境已激活"
-            return 0
-        else
-            log "ERROR" "激活Python虚拟环境失败"
-            return 1
-        fi
+    # 使用venv.sh脚本激活conda环境
+    source "$SCRIPT_DIR/venv.sh" > /dev/null
+    if [ $? -eq 0 ]; then
+        log "INFO" "Python虚拟环境已激活"
+        return 0
     else
-        log "ERROR" "未找到venv目录，请先运行 ./scripts/run.sh setup 设置环境"
+        log "ERROR" "激活Python虚拟环境失败"
         return 1
     fi
 }
@@ -69,9 +65,9 @@ run_crawler() {
         shift
     done
     
-    # 运行爬虫
+    # 运行爬虫，并将输出重定向到日志文件
     log "INFO" "执行命令: python -m src.main --mode crawl $crawler_args"
-    python -m src.main --mode crawl $crawler_args
+    python -m src.main --mode crawl $crawler_args 2>&1 | tee -a "$LOG_FILE"
     
     local exit_code=$?
     if [ $exit_code -eq 0 ]; then
@@ -87,16 +83,38 @@ run_crawler() {
 run_analyzer() {
     log "INFO" "开始运行分析功能..."
     
-    # 解析命令行参数
+    # 初始化参数
     local analyzer_args=""
+    local limit_flag=""
+    local limit_value=""
+    
+    # 解析命令行参数
     while [[ $# -gt 0 ]]; do
-        analyzer_args="$analyzer_args $1"
-        shift
+        # 检查是否有--limit参数
+        if [[ "$1" == "--limit" ]]; then
+            limit_flag="--limit"
+            if [[ $# -gt 1 ]]; then
+                limit_value="$2"
+                shift 2
+            else
+                shift
+            fi
+        else
+            analyzer_args="$analyzer_args $1"
+            shift
+        fi
     done
     
-    # 运行分析
-    log "INFO" "执行命令: python -m src.main --mode analyze $analyzer_args"
-    python -m src.main --mode analyze $analyzer_args
+    # 构建完整的命令参数
+    local full_args="$analyzer_args"
+    if [[ "$limit_flag" != "" && "$limit_value" != "" ]]; then
+        full_args="$full_args $limit_flag $limit_value"
+        log "INFO" "设置分析文件数量限制为: $limit_value"
+    fi
+    
+    # 运行分析，并将输出重定向到日志文件
+    log "INFO" "执行命令: python -m src.main --mode analyze $full_args"
+    python -m src.main --mode analyze $full_args 2>&1 | tee -a "$LOG_FILE"
     
     local exit_code=$?
     if [ $exit_code -eq 0 ]; then
