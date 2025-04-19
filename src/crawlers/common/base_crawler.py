@@ -9,6 +9,7 @@ import platform
 import re
 import hashlib
 import datetime
+import threading
 from abc import ABC, abstractmethod
 from typing import Dict, Any, List, Optional, Tuple
 from urllib.parse import urljoin, urlparse
@@ -35,6 +36,11 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+# 全局锁，用于保护元数据管理器的访问
+metadata_lock = threading.RLock()
+# WebDriver管理锁，防止同时创建多个driver实例
+webdriver_init_lock = threading.RLock()
+
 class BaseCrawler(ABC):
     """爬虫基类，提供基础爬虫功能"""
     
@@ -57,155 +63,171 @@ class BaseCrawler(ABC):
         self.headers = self.crawler_config.get('headers', {})
         self.driver = None
         
+        # 创建每个爬虫实例的线程锁
+        self.lock = threading.RLock()
+        
         # 创建保存目录，使用相对于项目根目录的路径
         base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
         self.output_dir = os.path.join(base_dir, 'data', 'raw', vendor, source_type)
         os.makedirs(self.output_dir, exist_ok=True)
         
-        # 初始化元数据管理器
-        self.metadata_manager = MetadataManager(base_dir)
-        self.metadata = self.metadata_manager.get_crawler_metadata(vendor, source_type)
+        # 初始化元数据管理器 - 使用线程安全的方式
+        with metadata_lock:
+            self.metadata_manager = MetadataManager(base_dir)
+            self.metadata = self.metadata_manager.get_crawler_metadata(vendor, source_type)
         
         # 初始化HTML到Markdown转换器
         self.html_converter = self._init_html_converter()
     
     def _init_driver(self) -> None:
-        """初始化WebDriver"""
-        chrome_options = Options()
-        chrome_options.add_argument('--headless=new')  # 使用新的无头模式
-        chrome_options.add_argument('--no-sandbox')
-        chrome_options.add_argument('--disable-dev-shm-usage')
-        chrome_options.add_argument('--disable-gpu')
-        chrome_options.add_argument('--disable-extensions')
-        chrome_options.add_argument('--disable-software-rasterizer')  # 禁用软件光栅化
-        chrome_options.add_argument('--disable-features=VizDisplayCompositor')  # 禁用显示合成器
-        chrome_options.add_argument('--mute-audio')  # 静音，避免声音相关问题
+        """
+        初始化WebDriver，使用全局锁确保线程安全
         
-        # 从配置中获取是否使用有界面模式
-        if not self.crawler_config.get('headless', True):
-            # 移除无头模式参数
-            chrome_options.arguments = [arg for arg in chrome_options.arguments if not arg.startswith('--headless')]
-            logger.debug("使用有界面模式")
-        
-        try:
-            # 获取项目根目录路径
-            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+        在多线程环境下，确保一次只有一个线程在初始化WebDriver
+        """
+        # 使用全局锁确保WebDriver初始化的线程安全
+        with webdriver_init_lock:
+            if self.driver:
+                # 如果已经有WebDriver实例，直接返回
+                return
+
+            # 下面的内容与原方法相同
+            chrome_options = Options()
+            chrome_options.add_argument('--headless=new')  # 使用新的无头模式
+            chrome_options.add_argument('--no-sandbox')
+            chrome_options.add_argument('--disable-dev-shm-usage')
+            chrome_options.add_argument('--disable-gpu')
+            chrome_options.add_argument('--disable-extensions')
+            chrome_options.add_argument('--disable-software-rasterizer')  # 禁用软件光栅化
+            chrome_options.add_argument('--disable-features=VizDisplayCompositor')  # 禁用显示合成器
+            chrome_options.add_argument('--mute-audio')  # 静音，避免声音相关问题
             
-            # 从配置文件获取驱动路径
-            config_path = os.path.join(base_dir, 'drivers', 'webdriver_config.json')
+            # 从配置中获取是否使用有界面模式
+            if not self.crawler_config.get('headless', True):
+                # 移除无头模式参数
+                chrome_options.arguments = [arg for arg in chrome_options.arguments if not arg.startswith('--headless')]
+                logger.debug("使用有界面模式")
             
-            if not os.path.exists(config_path):
-                logger.error(f"WebDriver配置文件不存在: {config_path}")
-                logger.error("请先运行 'bash scripts/setup_latest_driver.sh' 安装驱动")
-                raise FileNotFoundError(f"WebDriver配置文件不存在: {config_path}")
-            
-            with open(config_path, 'r') as f:
-                config = json.load(f)
-            
-            chrome_path = config.get('chrome_path')
-            chromedriver_path = config.get('chromedriver_path')
-            chrome_version = config.get('version')
-            
-            # 验证路径是否存在
-            if not chrome_path or not os.path.exists(chrome_path):
-                logger.error(f"chrome-headless-shell不存在: {chrome_path}")
-                logger.error("请先运行 'bash scripts/setup_latest_driver.sh' 安装驱动")
-                raise FileNotFoundError(f"chrome-headless-shell不存在: {chrome_path}")
-            
-            if not chromedriver_path or not os.path.exists(chromedriver_path):
-                logger.error(f"chromedriver不存在: {chromedriver_path}")
-                logger.error("请先运行 'bash scripts/setup_latest_driver.sh' 安装驱动")
-                raise FileNotFoundError(f"chromedriver不存在: {chromedriver_path}")
-            
-            # 验证驱动程序是否可执行
             try:
-                import subprocess
-                result = subprocess.run([chrome_path, '--version'], capture_output=True, text=True, timeout=5)
-                if result.stdout:
-                    logger.debug(f"chrome-headless-shell版本: {result.stdout.strip()}")
+                # 获取项目根目录路径
+                base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
                 
-                if result.returncode != 0:
-                    error_msg = result.stderr.strip() if result.stderr else "未知错误"
-                    if "error while loading shared libraries" in error_msg:
-                        missing_lib = error_msg.split("error while loading shared libraries:")[1].split(":")[0].strip()
-                        logger.error(f"chrome-headless-shell缺少系统依赖库: {missing_lib}")
-                        logger.error("请运行 'bash scripts/setup_latest_driver.sh' 查看并安装缺少的依赖")
-                        raise RuntimeError(f"chrome-headless-shell缺少系统依赖库: {missing_lib}")
-                    else:
-                        logger.warning(f"chrome-headless-shell执行测试发出警告: {error_msg}")
-            except subprocess.TimeoutExpired:
-                logger.warning("chrome-headless-shell版本检测超时，继续执行")
-            except Exception as e:
-                logger.warning(f"chrome-headless-shell版本检测失败: {e}，继续执行")
-            
-            # 设置chrome二进制文件位置
-            chrome_options.binary_location = chrome_path
-            logger.debug(f"使用chrome-headless-shell: {chrome_path}, 版本: {chrome_version}")
-            
-            # 初始化WebDriver (添加更多错误处理)
-            service = Service(executable_path=chromedriver_path)
-            try:
-                self.driver = webdriver.Chrome(options=chrome_options, service=service)
-                logger.debug(f"使用ChromeDriver: {chromedriver_path}, 版本: {chrome_version}")
-            except Exception as e:
-                # 如果使用--no-sandbox仍然失败，则尝试几种备选方案
-                if "--no-sandbox" in chrome_options.arguments:
-                    logger.warning(f"使用--no-sandbox模式初始化WebDriver失败: {e}")
-                    logger.warning("尝试使用其他配置...")
+                # 从配置文件获取驱动路径
+                config_path = os.path.join(base_dir, 'drivers', 'webdriver_config.json')
+                
+                if not os.path.exists(config_path):
+                    logger.error(f"WebDriver配置文件不存在: {config_path}")
+                    logger.error("请先运行 'bash scripts/setup_latest_driver.sh' 安装驱动")
+                    raise FileNotFoundError(f"WebDriver配置文件不存在: {config_path}")
+                
+                with open(config_path, 'r') as f:
+                    config = json.load(f)
+                
+                chrome_path = config.get('chrome_path')
+                chromedriver_path = config.get('chromedriver_path')
+                chrome_version = config.get('version')
+                
+                # 验证路径是否存在
+                if not chrome_path or not os.path.exists(chrome_path):
+                    logger.error(f"chrome-headless-shell不存在: {chrome_path}")
+                    logger.error("请先运行 'bash scripts/setup_latest_driver.sh' 安装驱动")
+                    raise FileNotFoundError(f"chrome-headless-shell不存在: {chrome_path}")
+                
+                if not chromedriver_path or not os.path.exists(chromedriver_path):
+                    logger.error(f"chromedriver不存在: {chromedriver_path}")
+                    logger.error("请先运行 'bash scripts/setup_latest_driver.sh' 安装驱动")
+                    raise FileNotFoundError(f"chromedriver不存在: {chromedriver_path}")
+                
+                # 验证驱动程序是否可执行
+                try:
+                    import subprocess
+                    result = subprocess.run([chrome_path, '--version'], capture_output=True, text=True, timeout=5)
+                    if result.stdout:
+                        logger.debug(f"chrome-headless-shell版本: {result.stdout.strip()}")
                     
-                    # 尝试方案1: 移除--headless参数
-                    try:
-                        logger.debug("尝试方案1: 移除--headless参数")
-                        alt_options = Options()
-                        alt_options.binary_location = chrome_path
-                        alt_options.add_argument('--no-sandbox')
-                        alt_options.add_argument('--disable-dev-shm-usage')
-                        alt_options.add_argument('--disable-gpu')
-                        self.driver = webdriver.Chrome(options=alt_options, service=service)
-                        logger.debug("方案1成功：非无头模式")
-                    except Exception as e1:
-                        logger.warning(f"方案1失败: {e1}")
+                    if result.returncode != 0:
+                        error_msg = result.stderr.strip() if result.stderr else "未知错误"
+                        if "error while loading shared libraries" in error_msg:
+                            missing_lib = error_msg.split("error while loading shared libraries:")[1].split(":")[0].strip()
+                            logger.error(f"chrome-headless-shell缺少系统依赖库: {missing_lib}")
+                            logger.error("请运行 'bash scripts/setup_latest_driver.sh' 查看并安装缺少的依赖")
+                            raise RuntimeError(f"chrome-headless-shell缺少系统依赖库: {missing_lib}")
+                        else:
+                            logger.warning(f"chrome-headless-shell执行测试发出警告: {error_msg}")
+                except subprocess.TimeoutExpired:
+                    logger.warning("chrome-headless-shell版本检测超时，继续执行")
+                except Exception as e:
+                    logger.warning(f"chrome-headless-shell版本检测失败: {e}，继续执行")
+                
+                # 设置chrome二进制文件位置
+                chrome_options.binary_location = chrome_path
+                logger.debug(f"使用chrome-headless-shell: {chrome_path}, 版本: {chrome_version}")
+                
+                # 初始化WebDriver (添加更多错误处理)
+                service = Service(executable_path=chromedriver_path)
+                try:
+                    self.driver = webdriver.Chrome(options=chrome_options, service=service)
+                    logger.debug(f"使用ChromeDriver: {chromedriver_path}, 版本: {chrome_version}")
+                except Exception as e:
+                    # 如果使用--no-sandbox仍然失败，则尝试几种备选方案
+                    if "--no-sandbox" in chrome_options.arguments:
+                        logger.warning(f"使用--no-sandbox模式初始化WebDriver失败: {e}")
+                        logger.warning("尝试使用其他配置...")
                         
-                        # 尝试方案2: 仅使用基本参数
+                        # 尝试方案1: 移除--headless参数
                         try:
-                            logger.debug("尝试方案2: 仅使用基本参数")
+                            logger.debug("尝试方案1: 移除--headless参数")
                             alt_options = Options()
                             alt_options.binary_location = chrome_path
                             alt_options.add_argument('--no-sandbox')
                             alt_options.add_argument('--disable-dev-shm-usage')
+                            alt_options.add_argument('--disable-gpu')
                             self.driver = webdriver.Chrome(options=alt_options, service=service)
-                            logger.debug("方案2成功：使用最小参数集")
-                        except Exception as e2:
-                            logger.warning(f"方案2失败: {e2}")
-                            raise Exception(f"无法初始化WebDriver: 所有方法都失败。\n原始错误: {e}\n尝试运行 'bash scripts/setup_latest_driver.sh' 检查并修复依赖问题。")
-                else:
-                    raise
-            
-            # 设置不同类型的超时
-            self.driver.set_page_load_timeout(self.crawler_config.get('page_load_timeout', 45))
-            self.driver.set_script_timeout(self.crawler_config.get('script_timeout', 30))
-            # 设置隐式等待 - 所有元素查找操作的基础等待
-            self.driver.implicitly_wait(self.crawler_config.get('implicit_wait', 10))
-            
-            logger.debug(f"WebDriver初始化成功，配置了多级超时机制")
-        except Exception as e:
-            logger.error(f"WebDriver初始化失败: {e}")
-            if "cannot find Chrome binary" in str(e):
-                logger.error(f"无法找到Chrome二进制文件。请确保chrome-headless-shell已正确安装并且具有执行权限。")
-                logger.error(f"尝试运行 'bash scripts/setup_latest_driver.sh' 重新安装驱动。")
-            elif "session not created" in str(e) and "user data directory" in str(e):
-                logger.error(f"WebDriver会话创建失败。这可能是由于Chrome配置文件问题导致的。")
-                logger.error(f"请尝试在启动脚本之前关闭所有Chrome实例，或者运行 'rm -rf ~/.config/google-chrome' 清理配置文件。")
-            elif "error while loading shared libraries" in str(e):
-                logger.error(f"缺少系统依赖库。请运行 'bash scripts/setup_latest_driver.sh' 检测并安装缺少的依赖。")
-            raise
+                            logger.debug("方案1成功：非无头模式")
+                        except Exception as e1:
+                            logger.warning(f"方案1失败: {e1}")
+                            
+                            # 尝试方案2: 仅使用基本参数
+                            try:
+                                logger.debug("尝试方案2: 仅使用基本参数")
+                                alt_options = Options()
+                                alt_options.binary_location = chrome_path
+                                alt_options.add_argument('--no-sandbox')
+                                alt_options.add_argument('--disable-dev-shm-usage')
+                                self.driver = webdriver.Chrome(options=alt_options, service=service)
+                                logger.debug("方案2成功：使用最小参数集")
+                            except Exception as e2:
+                                logger.warning(f"方案2失败: {e2}")
+                                raise Exception(f"无法初始化WebDriver: 所有方法都失败。\n原始错误: {e}\n尝试运行 'bash scripts/setup_latest_driver.sh' 检查并修复依赖问题。")
+                    else:
+                        raise
+                
+                # 设置不同类型的超时
+                self.driver.set_page_load_timeout(self.crawler_config.get('page_load_timeout', 45))
+                self.driver.set_script_timeout(self.crawler_config.get('script_timeout', 30))
+                # 设置隐式等待 - 所有元素查找操作的基础等待
+                self.driver.implicitly_wait(self.crawler_config.get('implicit_wait', 10))
+                
+                logger.debug(f"WebDriver初始化成功，配置了多级超时机制")
+            except Exception as e:
+                logger.error(f"WebDriver初始化失败: {e}")
+                if "cannot find Chrome binary" in str(e):
+                    logger.error(f"无法找到Chrome二进制文件。请确保chrome-headless-shell已正确安装并且具有执行权限。")
+                    logger.error(f"尝试运行 'bash scripts/setup_latest_driver.sh' 重新安装驱动。")
+                elif "session not created" in str(e) and "user data directory" in str(e):
+                    logger.error(f"WebDriver会话创建失败。这可能是由于Chrome配置文件问题导致的。")
+                    logger.error(f"请尝试在启动脚本之前关闭所有Chrome实例，或者运行 'rm -rf ~/.config/google-chrome' 清理配置文件。")
+                elif "error while loading shared libraries" in str(e):
+                    logger.error(f"缺少系统依赖库。请运行 'bash scripts/setup_latest_driver.sh' 检测并安装缺少的依赖。")
+                raise
     
     def _close_driver(self) -> None:
-        """关闭WebDriver"""
-        if self.driver:
-            self.driver.quit()
-            self.driver = None
-            logger.debug("WebDriver已关闭")
+        """关闭WebDriver，使用锁确保线程安全"""
+        with self.lock:
+            if self.driver:
+                self.driver.quit()
+                self.driver = None
+                logger.debug("WebDriver已关闭")
     
     def _get_http(self, url: str) -> Optional[str]:
         """
@@ -335,66 +357,55 @@ class BaseCrawler(ABC):
     
     def save_to_markdown(self, url: str, title: str, content_and_date: Tuple[str, Optional[str]]) -> str:
         """
-        将爬取内容保存为Markdown格式
+        将爬取的内容保存为Markdown文件
         
         Args:
-            url: 原始URL
-            title: 内容标题
-            content_and_date: 内容和日期的元组 (content, date)
+            url: 文章URL
+            title: 文章标题
+            content_and_date: 文章内容和发布日期元组
             
         Returns:
             保存的文件路径
         """
         content, pub_date = content_and_date
         
-        if not pub_date:
-            # 如果没有提取到日期，使用当前日期
-            pub_date = datetime.datetime.now().strftime("%Y_%m_%d")
+        # 创建文件名
+        filename = self._create_filename(url, pub_date, 'md')
+        file_path = os.path.join(self.output_dir, filename)
         
-        # 创建用于存储的文件名（使用日期和URL哈希）
-        filename = self._create_filename(url, pub_date, ".md")
-        filepath = os.path.join(self.output_dir, filename)
+        # 格式化Markdown内容
+        # 添加元数据头
+        md_content = f"""---
+title: {title}
+date: {pub_date or 'Unknown'}
+vendor: {self.vendor}
+source_type: {self.source_type}
+source_url: {url}
+---
+
+{content}
+"""
         
-        # 将日期格式转换为更友好的显示格式（比如 2024-03-02）
-        display_date = pub_date.replace('_', '-') if pub_date else "未知"
+        # 线程安全地写入文件
+        with self.lock:
+            # 确保目录存在
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(md_content)
+            
+            # 更新元数据
+            with metadata_lock:
+                self.metadata[url] = {
+                    'filename': filename,
+                    'filepath': file_path,
+                    'title': title,
+                    'pub_date': pub_date,
+                    'crawl_date': datetime.datetime.now().isoformat()
+                }
+                self.metadata_manager.update_crawler_metadata(self.vendor, self.source_type, self.metadata)
         
-        # 构建Markdown内容（美化格式）
-        metadata = [
-            f"# {title}",
-            "",
-            f"**原始链接:** [{url}]({url})",
-            "",
-            f"**发布时间:** {display_date}",
-            "",
-            f"**厂商:** {self.vendor.upper()}",
-            "",
-            f"**类型:** {self.source_type.upper()}",
-            "",
-            "---",
-            "",
-        ]
-        
-        # 组合最终内容
-        final_content = "\n".join(metadata) + content
-        
-        # 写入文件
-        with open(filepath, "w", encoding="utf-8") as f:
-            f.write(final_content)
-        
-        # 记录metadata
-        self.metadata[url] = {
-            'filepath': filepath,
-            'title': title,
-            'crawl_time': time.strftime('%Y-%m-%d %H:%M:%S')
-        }
-        self.metadata_manager.update_crawler_metadata(self.vendor, self.source_type, url, {
-            'filepath': filepath,
-            'title': title,
-            'crawl_time': time.strftime('%Y-%m-%d %H:%M:%S')
-        })
-        
-        logging.info(f"已保存Markdown文件: {filepath}")
-        return filepath
+        return file_path
     
     def _create_filename(self, url: str, pub_date: str, ext: str) -> str:
         """
@@ -687,16 +698,21 @@ class BaseCrawler(ABC):
         """
         检查是否需要爬取某个URL
         
+        注意：此方法不推荐在爬取流程中直接使用，因为这样会导致先请求网页内容再检查URL，
+        浪费网络资源。推荐的做法是在解析URL列表后，立即过滤掉已爬取的URL，然后再进行爬取。
+        
         Args:
             url: 要检查的URL
             
         Returns:
             True 如果需要爬取，False 如果不需要（已存在）
         """
-        if url in self.metadata:
-            logger.info(f"跳过已爬取的URL: {url}")
-            return False
-        return True
+        # 使用线程安全的方式检查元数据
+        with metadata_lock:
+            if url in self.metadata:
+                logger.info(f"跳过已爬取的URL: {url}")
+                return False
+            return True
 
     def run(self) -> List[str]:
         """

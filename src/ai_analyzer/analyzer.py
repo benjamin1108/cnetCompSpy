@@ -8,13 +8,12 @@ import json
 import requests
 import sys
 from typing import Dict, Any, List, Optional
-from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
 import yaml
 from copy import deepcopy
 import re
 import copy
-import threading  # 添加线程安全支持
+import threading  # 保留线程安全支持（用于RateLimiter）
 import random
 
 # 添加项目根目录到路径
@@ -617,7 +616,13 @@ class AIAnalyzer:
             # 非强制模式下，检查该文件是否需要分析
             file_needs_analysis = False
             
-            if normalized_specific_file not in metadata:
+            # 检查分析结果文件是否存在
+            relative_path = os.path.relpath(specific_file, self.raw_dir)
+            analysis_file_path = os.path.join(self.analysis_dir, relative_path)
+            if not os.path.exists(analysis_file_path):
+                file_needs_analysis = True
+                logger.info(f"分析结果文件不存在: {analysis_file_path}")
+            elif normalized_specific_file not in metadata:
                 # 元数据中不存在该文件的记录，需要分析
                 file_needs_analysis = True
                 logger.info(f"元数据中不存在该文件的记录: {normalized_specific_file}")
@@ -665,29 +670,36 @@ class AIAnalyzer:
             if force_mode:
                 # 强制模式下，所有文件都需要分析
                 file_needs_analysis = True
-            elif normalized_md_file not in metadata:
-                # 元数据中不存在该文件的记录，需要分析
-                file_needs_analysis = True
             else:
-                # 检查元数据中的分析状态
-                file_metadata = metadata[normalized_md_file]
-                
-                # 检查是否所有任务都成功完成
-                all_tasks_completed = True
-                for task in self.tasks:
-                    task_type = task.get('type')
-                    if not task_type:
-                        continue
-                        
-                    # 检查任务是否成功完成
-                    task_status = file_metadata.get('tasks', {}).get(task_type, {})
-                    if not task_status.get('success', False):
-                        all_tasks_completed = False
-                        break
-                
-                # 如果不是所有任务都成功完成，则需要分析
-                if not all_tasks_completed:
+                # 检查分析结果文件是否存在
+                relative_path = os.path.relpath(md_file, self.raw_dir)
+                analysis_file_path = os.path.join(self.analysis_dir, relative_path)
+                if not os.path.exists(analysis_file_path):
                     file_needs_analysis = True
+                    logger.debug(f"分析结果文件不存在: {analysis_file_path}")
+                elif normalized_md_file not in metadata:
+                    # 元数据中不存在该文件的记录，需要分析
+                    file_needs_analysis = True
+                else:
+                    # 检查元数据中的分析状态
+                    file_metadata = metadata[normalized_md_file]
+                    
+                    # 检查是否所有任务都成功完成
+                    all_tasks_completed = True
+                    for task in self.tasks:
+                        task_type = task.get('type')
+                        if not task_type:
+                            continue
+                            
+                        # 检查任务是否成功完成
+                        task_status = file_metadata.get('tasks', {}).get(task_type, {})
+                        if not task_status.get('success', False):
+                            all_tasks_completed = False
+                            break
+                    
+                    # 如果不是所有任务都成功完成，则需要分析
+                    if not all_tasks_completed:
+                        file_needs_analysis = True
             
             if file_needs_analysis:
                 files.append(md_file)
@@ -1151,7 +1163,7 @@ class AIAnalyzer:
     
     def run(self) -> List[Dict[str, Any]]:
         """
-        运行分析
+        运行分析（单线程顺序执行）
         
         Returns:
             分析结果列表
@@ -1163,39 +1175,21 @@ class AIAnalyzer:
             return []
         
         results = []
-        max_workers = self.config.get('ai_analyzer', {}).get('max_workers', 2)
+        logger.info(f"使用单线程顺序分析 {len(files)} 个文件")
         
-        # 计算合理的线程数，避免API请求过载
-        api_rate_limit = self.config.get('ai_analyzer', {}).get('api_rate_limit', 10)
-        # 根据API频率限制调整线程数，确保不超过API调用限制
-        # 这里假设每个线程平均每30秒发起一个API请求
-        # 30秒内可以处理的请求数 = 频率限制 / 2 (留出安全余量)
-        safe_max_workers = max(1, min(max_workers, api_rate_limit // 2))
-        
-        if safe_max_workers < max_workers:
-            logger.warning(f"由于API频率限制({api_rate_limit}/分钟)，将线程数从{max_workers}调整为{safe_max_workers}")
-            max_workers = safe_max_workers
-        
-        logger.info(f"使用 {max_workers} 个线程进行并行分析")
-        
-        # 使用线程池并行处理文件
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            future_to_file = {
-                executor.submit(self.analyze_file, file): file 
-                for file in files
-            }
-            
-            for future in as_completed(future_to_file):
-                file = future_to_file[future]
-                try:
-                    result = future.result()
-                    results.append(result)
-                except Exception as e:
-                    logger.error(f"处理文件时发生异常: {file} - {e}")
-                    results.append({
-                        'file': file,
-                        'error': str(e)
-                    })
+        # 顺序处理每个文件
+        for file in files:
+            logger.info(f"开始分析文件: {file}")
+            try:
+                result = self.analyze_file(file)
+                results.append(result)
+                logger.info(f"文件分析完成: {file}")
+            except Exception as e:
+                logger.error(f"处理文件时发生异常: {file} - {e}")
+                results.append({
+                    'file': file,
+                    'error': str(e)
+                })
         
         # 分析完成后，对整个分析目录应用权限，确保Windows用户可以访问
         try:

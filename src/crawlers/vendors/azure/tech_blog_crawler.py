@@ -16,7 +16,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-from src.crawlers.common.base_crawler import BaseCrawler
+from src.crawlers.common.base_crawler import BaseCrawler, metadata_lock
 
 logger = logging.getLogger(__name__)
 
@@ -137,15 +137,33 @@ class AzureTechBlogCrawler(BaseCrawler):
                 logger.info(f"爬取模式：限制爬取{article_limit}篇文章")
                 all_article_info = all_article_info[:article_limit]
             
-            logger.info(f"共有 {len(all_article_info)} 篇文章等待爬取")
+            logger.info(f"共有 {len(all_article_info)} 篇文章等待检查")
             
-            # 爬取每篇文章
-            for idx, (title, url, list_date) in enumerate(all_article_info, 1):
-                if not self.should_crawl(url):
-                    logger.info(f"跳过已爬取的文章: {title} ({url})")
-                    continue
-                
-                logger.info(f"正在爬取第 {idx}/{len(all_article_info)} 篇文章: {title}")
+            # 修改：先过滤已爬取的文章链接，避免不必要的网络请求
+            filtered_article_info = []
+            already_crawled_count = 0
+            
+            with metadata_lock:  # 使用锁确保线程安全
+                for title, url, list_date in all_article_info:
+                    # 只有当URL在metadata中存在且文件也存在时才跳过
+                    if (url in self.metadata and 
+                        'filepath' in self.metadata[url] and 
+                        os.path.exists(self.metadata[url]['filepath'])):
+                        # 文章已爬取过且文件存在，直接添加到结果中
+                        already_crawled_count += 1
+                        logger.info(f"跳过已爬取的文章: {title} ({url})")
+                        saved_files.append(self.metadata[url]['filepath'])
+                    else:
+                        # 文章未爬取过或文件不存在，添加到待爬取列表
+                        if url in self.metadata:
+                            logger.info(f"文章元数据存在但文件缺失，将重新爬取: {title} ({url})")
+                        filtered_article_info.append((title, url, list_date))
+            
+            logger.info(f"过滤后: {len(filtered_article_info)} 篇新文章需要爬取，{already_crawled_count} 篇文章已存在")
+            
+            # 爬取每篇新文章
+            for idx, (title, url, list_date) in enumerate(filtered_article_info, 1):
+                logger.info(f"正在爬取第 {idx}/{len(filtered_article_info)} 篇文章: {title}")
                 
                 try:
                     # 尝试获取文章内容 - 优先使用requests
@@ -182,7 +200,7 @@ class AzureTechBlogCrawler(BaseCrawler):
                     logger.info(f"已保存文章: {title} -> {file_path}")
                     
                     # 间隔一段时间再爬取下一篇
-                    if idx < len(all_article_info):
+                    if idx < len(filtered_article_info):
                         time.sleep(self.interval)
                     
                 except Exception as e:
@@ -842,7 +860,7 @@ class AzureTechBlogCrawler(BaseCrawler):
             'title': title,
             'crawl_time': time.strftime('%Y-%m-%d %H:%M:%S')
         }
-        self.metadata_manager.update_crawler_metadata(self.vendor, self.source_type, url, {
+        self.metadata_manager.update_crawler_metadata_entry(self.vendor, self.source_type, url, {
             'filepath': filepath,
             'title': title,
             'crawl_time': time.strftime('%Y-%m-%d %H:%M:%S')

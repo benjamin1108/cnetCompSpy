@@ -5,7 +5,9 @@ import importlib
 import logging
 import os
 import sys
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import threading
+import queue
+import concurrent.futures
 from typing import Dict, Any, List
 
 # 确保src目录在路径中
@@ -25,7 +27,12 @@ class CrawlerManager:
         """
         self.config = config
         self.sources = config.get('sources', {})
-        self.max_workers = config.get('crawler', {}).get('max_workers', 4)
+        # 获取最大工作线程数，默认为1（单线程）
+        self.max_workers = config.get('crawler', {}).get('max_workers', 1)
+        # 创建线程锁，用于保护共享资源
+        self.lock = threading.RLock()
+        # 创建结果队列，用于线程安全地收集结果
+        self.result_queue = queue.Queue()
     
     def _get_crawler_class(self, vendor: str, source_type: str):
         """
@@ -107,38 +114,91 @@ class CrawlerManager:
         crawler = crawler_class(config_copy, vendor, source_type)
         return crawler.run()
     
-    def run(self) -> Dict[str, Dict[str, List[str]]]:
+    def _worker(self, vendor: str, source_type: str, source_config: Dict[str, Any]):
         """
-        运行所有爬虫
+        工作线程函数，用于执行爬虫任务
+        
+        Args:
+            vendor: 厂商名称
+            source_type: 源类型
+            source_config: 源配置
+        """
+        try:
+            logger.info(f"线程开始执行爬虫任务: {vendor}/{source_type}")
+            result = self.run_crawler(vendor, source_type, source_config)
+            
+            # 线程安全地将结果放入队列
+            self.result_queue.put((vendor, source_type, result))
+            logger.info(f"爬虫任务完成并添加到结果队列: {vendor}/{source_type}, 获取了 {len(result)} 个文件")
+        except Exception as e:
+            logger.error(f"爬虫任务异常: {vendor} {source_type} - {e}")
+            self.result_queue.put((vendor, source_type, []))
+    
+    def run_multi_threaded(self) -> Dict[str, Dict[str, List[str]]]:
+        """
+        使用线程池运行所有爬虫（多线程并行执行）
         
         Returns:
             爬取结果，格式为 {vendor: {source_type: [file_paths]}}
         """
         results = {}
-        futures = []
+        crawl_tasks = []
         
-        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
-            # 遍历所有数据源
-            for vendor, vendor_sources in self.sources.items():
-                results[vendor] = {}
-                
-                for source_type, source_config in vendor_sources.items():
-                    # 提交爬虫任务
-                    future = executor.submit(
-                        self.run_crawler,
-                        vendor,
-                        source_type,
-                        source_config
-                    )
-                    futures.append((future, vendor, source_type))
+        # 收集所有爬虫任务
+        for vendor, vendor_sources in self.sources.items():
+            for source_type, source_config in vendor_sources.items():
+                crawl_tasks.append((vendor, source_type, source_config))
+        
+        logger.info(f"共有 {len(crawl_tasks)} 个爬虫任务，使用 {self.max_workers} 个线程执行")
+        
+        # 使用线程池执行爬虫任务
+        with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            for vendor, source_type, source_config in crawl_tasks:
+                executor.submit(self._worker, vendor, source_type, source_config)
+        
+        # 处理队列中的所有结果
+        while not self.result_queue.empty():
+            vendor, source_type, result = self.result_queue.get()
             
-            # 收集结果
-            for future, vendor, source_type in futures:
+            # 线程安全地更新结果字典
+            with self.lock:
+                if vendor not in results:
+                    results[vendor] = {}
+                results[vendor][source_type] = result
+        
+        return results
+    
+    def run(self) -> Dict[str, Dict[str, List[str]]]:
+        """
+        运行所有爬虫
+        
+        如果max_workers > 1则使用多线程执行，否则使用单线程顺序执行
+        
+        Returns:
+            爬取结果，格式为 {vendor: {source_type: [file_paths]}}
+        """
+        # 根据配置决定使用多线程还是单线程
+        if self.max_workers > 1:
+            logger.info(f"使用多线程模式运行爬虫，线程数: {self.max_workers}")
+            return self.run_multi_threaded()
+        
+        # 单线程执行模式
+        logger.info("使用单线程模式顺序运行爬虫")
+        results = {}
+        
+        # 遍历所有数据源
+        for vendor, vendor_sources in self.sources.items():
+            results[vendor] = {}
+            
+            for source_type, source_config in vendor_sources.items():
+                logger.info(f"开始执行爬虫任务: {vendor}/{source_type}")
                 try:
-                    result = future.result()
+                    # 直接运行爬虫，不使用线程池
+                    result = self.run_crawler(vendor, source_type, source_config)
                     results[vendor][source_type] = result
+                    logger.info(f"爬虫任务完成: {vendor}/{source_type}, 获取了 {len(result)} 个文件")
                 except Exception as e:
                     logger.error(f"爬虫任务异常: {vendor} {source_type} - {e}")
                     results[vendor][source_type] = []
         
-        return results 
+        return results

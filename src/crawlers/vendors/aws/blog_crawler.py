@@ -19,7 +19,7 @@ import html2text
 # 添加项目根目录到路径
 sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))))
 
-from src.crawlers.common.base_crawler import BaseCrawler
+from src.crawlers.common.base_crawler import BaseCrawler, metadata_lock
 
 logger = logging.getLogger(__name__)
 
@@ -83,13 +83,42 @@ class AwsBlogCrawler(BaseCrawler):
             article_links = self._parse_article_links(html)
             logger.info(f"解析到 {len(article_links)} 篇文章链接")
             
-            # 爬取每篇文章
-            for idx, (title, url) in enumerate(article_links, 1):
-                if not self.should_crawl(url):
-                    logger.info(f"跳过已爬取的文章: {title} ({url})")
-                    continue
-                
-                logger.info(f"正在爬取第 {idx}/{len(article_links)} 篇文章: {title}")
+            # 如果是测试模式或有文章数量限制，截取所需数量的文章链接
+            test_mode = self.source_config.get('test_mode', False)
+            article_limit = self.crawler_config.get('article_limit', 50)
+            
+            if test_mode:
+                logger.info("爬取模式：限制爬取1篇文章")
+                article_links = article_links[:1]
+            elif article_limit > 0:
+                logger.info(f"爬取模式：限制爬取{article_limit}篇文章")
+                article_links = article_links[:article_limit]
+            
+            # 修改：先过滤已爬取的文章链接，避免不必要的网络请求
+            filtered_article_links = []
+            already_crawled_count = 0
+            
+            with metadata_lock:  # 使用锁确保线程安全
+                for title, url in article_links:
+                    # 只有当URL在metadata中存在且文件也存在时才跳过
+                    if (url in self.metadata and 
+                        'filepath' in self.metadata[url] and 
+                        os.path.exists(self.metadata[url]['filepath'])):
+                        # 文章已爬取过且文件存在，直接添加到结果中
+                        already_crawled_count += 1
+                        logger.info(f"跳过已爬取的文章: {title} ({url})")
+                        saved_files.append(self.metadata[url]['filepath'])
+                    else:
+                        # 文章未爬取过或文件不存在，添加到待爬取列表
+                        if url in self.metadata:
+                            logger.info(f"文章元数据存在但文件缺失，将重新爬取: {title} ({url})")
+                        filtered_article_links.append((title, url))
+            
+            logger.info(f"过滤后: {len(filtered_article_links)} 篇新文章需要爬取，{already_crawled_count} 篇文章已存在")
+            
+            # 爬取每篇新文章
+            for idx, (title, url) in enumerate(filtered_article_links, 1):
+                logger.info(f"正在爬取第 {idx}/{len(filtered_article_links)} 篇文章: {title}")
                 
                 try:
                     # 尝试获取文章内容 - 优先使用requests
@@ -124,7 +153,7 @@ class AwsBlogCrawler(BaseCrawler):
                     logger.info(f"已保存文章: {title} -> {file_path}")
                     
                     # 间隔一段时间再爬取下一篇
-                    if idx < len(article_links):
+                    if idx < len(filtered_article_links):
                         time.sleep(self.interval)
                     
                 except Exception as e:
@@ -765,7 +794,7 @@ class AwsBlogCrawler(BaseCrawler):
             'title': title,
             'crawl_time': time.strftime('%Y-%m-%d %H:%M:%S')
         }
-        self.metadata_manager.update_crawler_metadata(self.vendor, self.source_type, url, {
+        self.metadata_manager.update_crawler_metadata_entry(self.vendor, self.source_type, url, {
             'filepath': filepath,
             'title': title,
             'crawl_time': time.strftime('%Y-%m-%d %H:%M:%S')
