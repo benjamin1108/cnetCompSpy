@@ -1,0 +1,324 @@
+/* 基础样式 */
+body {
+    background-color: #f8f9fa;
+}
+
+.page-header {
+    padding: 1.5rem 0;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.page-title {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: #2b579a;
+    margin-bottom: 0.5rem;
+}
+
+.page-subtitle {
+    font-size: 1rem;
+    color: #6c757d;
+}
+
+/* 卡片样式 */
+.stats-card {
+    background-color: #fff;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    margin-bottom: 1.5rem;
+    border: none;
+}
+
+.stats-card-header {
+    padding: 1rem 1.25rem;
+    background-color: #fff;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+    border-radius: 0.5rem 0.5rem 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.stats-card-title {
+    margin-bottom: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #212529;
+}
+
+.stats-card-body {
+    padding: 1.25rem;
+}
+
+/* 统计数字卡片 */
+.stat-box {
+    background-color: #fff;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid #0078d4;
+    transition: transform 0.2s ease-in-out;
+}
+
+.stat-box:hover {
+    transform: translateY(-3px);
+}
+
+.stat-box.warning {
+    border-left-color: #ffc107;
+}
+
+.stat-box.danger {
+    border-left-color: #dc3545;
+}
+
+.stat-box.success {
+    border-left-color: #28a745;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: #212529;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-bottom: 0;
+}
+
+.stat-icon {
+    float: right;
+    font-size: 2.5rem;
+    opacity: 0.2;
+    color: #0078d4;
+}
+
+/* 表格样式 */
+.table-container {
+    overflow-x: auto;
+}
+
+.stats-table {
+    width: 100%;
+    margin-bottom: 0;
+}
+
+.stats-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    border-top: none;
+    white-space: nowrap;
+}
+
+.stats-table td {
+    vertical-align: middle;
+}
+
+/* 状态标签 */
+.status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 0.25rem;
+}
+
+.status-badge-success {
+    background-color: #d1e7dd;
+    color: #0f5132;
+}
+
+.status-badge-warning {
+    background-color: #fff3cd;
+    color: #664d03;
+}
+
+.status-badge-danger {
+    background-color: #f8d7da;
+    color: #842029;
+}
+
+/* 工具栏样式 */
+.toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.toolbar-left, .toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* 过滤器样式 */
+.filter-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.filter-dropdown-toggle {
+    background-color: #fff;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.filter-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 1000;
+    display: none;
+    min-width: 10rem;
+    padding: 0.5rem 0;
+    margin: 0.125rem 0 0;
+    font-size: 0.875rem;
+    color: #212529;
+    text-align: left;
+    list-style: none;
+    background-color: #fff;
+    background-clip: padding-box;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 0.25rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.filter-dropdown-menu.show {
+    display: block;
+}
+
+.filter-dropdown-item {
+    display: block;
+    width: 100%;
+    padding: 0.25rem 1.5rem;
+    clear: both;
+    font-weight: 400;
+    color: #212529;
+    text-align: inherit;
+    white-space: nowrap;
+    background-color: transparent;
+    border: 0;
+}
+
+.filter-dropdown-item:hover {
+    color: #16181b;
+    text-decoration: none;
+    background-color: #f8f9fa;
+}
+
+/* 加载动画 */
+.loading-spinner {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 0.2rem solid rgba(0, 0, 0, 0.1);
+    border-left-color: #0078d4;
+    border-radius: 50%;
+    animation: spinner 0.75s linear infinite;
+}
+
+@keyframes spinner {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* 文件名样式 */
+.filename {
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 0.85rem;
+    color: #0066cc;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+}
+
+/* 标题样式 */
+.file-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 250px;
+}
+
+/* 日期样式 */
+.date {
+    white-space: nowrap;
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+/* 状态图标 */
+.status-icon {
+    font-size: 1rem;
+}
+
+.status-icon-success {
+    color: #28a745;
+}
+
+.status-icon-danger {
+    color: #dc3545;
+}
+
+/* 标签页样式 */
+.nav-tabs {
+    border-bottom: 1px solid #dee2e6;
+    margin-bottom: 1rem;
+}
+
+.nav-tabs .nav-link {
+    margin-bottom: -1px;
+    border: 1px solid transparent;
+    border-top-left-radius: 0.25rem;
+    border-top-right-radius: 0.25rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.nav-tabs .nav-link:hover {
+    border-color: #e9ecef #e9ecef #dee2e6;
+}
+
+.nav-tabs .nav-link.active {
+    color: #0078d4;
+    background-color: #fff;
+    border-color: #dee2e6 #dee2e6 #fff;
+    font-weight: 600;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .toolbar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .toolbar-left, .toolbar-right {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .stat-box {
+        margin-bottom: 1rem;
+    }
+}

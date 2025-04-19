@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}文件统计 - {{ super() }}{% endblock %}
+
+{% block head %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/datatables.net-bs5@1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+<link href="/static/css/stats.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1 class="page-title">文件统计</h1>
+        <p class="page-subtitle">查看元数据、原始文件和分析文件的统计信息</p>
+    </div>
+    
+    <!-- 统计摘要 -->
+    <div class="row" id="summary-stats">
+        <div class="col-md-3">
+            <div class="stat-box">
+                <i class="bi bi-file-earmark-text stat-icon"></i>
+                <div class="stat-value" id="total-metadata">-</div>
+                <div class="stat-label">元数据总数</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-box">
+                <i class="bi bi-file-earmark stat-icon"></i>
+                <div class="stat-value" id="total-raw">-</div>
+                <div class="stat-label">原始文件总数</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-box">
+                <i class="bi bi-file-earmark-code stat-icon"></i>
+                <div class="stat-value" id="total-analysis">-</div>
+                <div class="stat-label">分析文件总数</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-box" id="mismatch-box">
+                <i class="bi bi-exclamation-triangle stat-icon"></i>
+                <div class="stat-value" id="total-mismatch">-</div>
+                <div class="stat-label">不匹配文件数</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 标签页导航 -->
+    <ul class="nav nav-tabs" id="statsTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="summary-tab" data-bs-toggle="tab" data-bs-target="#summary" type="button" role="tab" aria-controls="summary" aria-selected="true">
+                <i class="bi bi-bar-chart-line me-1"></i> 摘要视图
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="details-tab" data-bs-toggle="tab" data-bs-target="#details" type="button" role="tab" aria-controls="details" aria-selected="false">
+                <i class="bi bi-list-ul me-1"></i> 详细视图
+            </button>
+        </li>
+    </ul>
+    
+    <!-- 标签页内容 -->
+    <div class="tab-content" id="statsTabsContent">
+        <!-- 摘要视图 -->
+        <div class="tab-pane fade show active" id="summary" role="tabpanel" aria-labelledby="summary-tab">
+            <div class="stats-card">
+                <div class="stats-card-header">
+                    <h5 class="stats-card-title">厂商文件统计</h5>
+                    <button id="refreshBtn" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-arrow-clockwise"></i> 刷新
+                    </button>
+                </div>
+                <div class="stats-card-body">
+                    <div class="table-container">
+                        <table class="table stats-table" id="summaryTable">
+                            <thead>
+                                <tr>
+                                    <th>Vendor</th>
+                                    <th>Type</th>
+                                    <th>Files</th>
+                                    <th>Meta-C</th>
+                                    <th>Meta-A</th>
+                                    <th>AIFileExist</th>
+                                    <th>AITaskDone</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="7" class="text-center">加载中...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 详细视图 -->
+        <div class="tab-pane fade" id="details" role="tabpanel" aria-labelledby="details-tab">
+            <div class="toolbar">
+                <div class="toolbar-left">
+                    <div class="filter-dropdown" id="vendorFilter">
+                        <button class="filter-dropdown-toggle">
+                            <i class="bi bi-funnel"></i> 厂商
+                            <i class="bi bi-chevron-down"></i>
+                        </button>
+                        <div class="filter-dropdown-menu">
+                            <div class="filter-dropdown-item">
+                                <input type="checkbox" id="vendor-all" checked> 全部
+                            </div>
+                            <!-- 厂商选项将通过JavaScript动态添加 -->
+                        </div>
+                    </div>
+                    <div class="filter-dropdown" id="typeFilter">
+                        <button class="filter-dropdown-toggle">
+                            <i class="bi bi-funnel"></i> 类型
+                            <i class="bi bi-chevron-down"></i>
+                        </button>
+                        <div class="filter-dropdown-menu">
+                            <div class="filter-dropdown-item">
+                                <input type="checkbox" id="type-all" checked> 全部
+                            </div>
+                            <!-- 类型选项将通过JavaScript动态添加 -->
+                        </div>
+                    </div>
+                </div>
+                <div class="toolbar-right">
+                    <div class="input-group">
+                        <input type="text" id="detailSearch" class="form-control form-control-sm" placeholder="搜索...">
+                        <button class="btn btn-sm btn-outline-secondary" type="button">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stats-card">
+                <div class="stats-card-header">
+                    <h5 class="stats-card-title">文件详细信息</h5>
+                </div>
+                <div class="stats-card-body">
+                    <div class="table-container">
+                        <table class="table stats-table" id="detailsTable">
+                            <thead>
+                                <tr>
+                                    <th>Vendor</th>
+                                    <th>Type</th>
+                                    <th>File</th>
+                                    <th>Meta-C</th>
+                                    <th>Meta-A</th>
+                                    <th>AIFileExist</th>
+                                    <th>AITaskDone</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="8" class="text-center">加载中...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 对比视图已移除 -->
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/datatables.net@1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/datatables.net-bs5@1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script src="/static/js/stats.js"></script>
+{% endblock %}

@@ -86,6 +86,27 @@ class WebServer:
                 title='云服务厂商竞争分析',
                 vendors=vendors
             )
+            
+        # 统计页面 - 显示文件统计对比
+        @self.app.route('/stats')
+        def stats_page():
+            return render_template(
+                'stats.html',
+                title='文件统计对比'
+            )
+        
+        # API: 获取统计数据
+        @self.app.route('/api/stats')
+        def api_stats():
+            detailed = request.args.get('detailed', 'false').lower() == 'true'
+            
+            try:
+                # 直接在服务器中分析metadata和文件差异
+                stats_data = self._analyze_metadata_files(detailed)
+                return jsonify(stats_data)
+            except Exception as e:
+                self.logger.error(f"获取统计数据失败: {e}")
+                return jsonify({'error': str(e)}), 500
         
         # 厂商页面 - 显示特定厂商的所有文档
         @self.app.route('/vendor/<vendor>')
@@ -562,6 +583,24 @@ class WebServer:
         except Exception as e:
             self.logger.error(f"渲染文档时出错: {e}")
             return f"<p>无法渲染文档: {e}</p>"
+    
+    def _analyze_metadata_files(self, detailed: bool = False) -> Dict[str, Any]:
+        """
+        分析metadata和文件差异
+        
+        Args:
+            detailed: 是否返回详细信息
+            
+        Returns:
+            分析结果
+        """
+        from src.utils.stats_analyzer import StatsAnalyzer
+        
+        # 创建统计分析器
+        analyzer = StatsAnalyzer(base_dir=os.path.dirname(self.data_dir))
+        
+        # 分析数据
+        return analyzer.generate_json_data(detailed)
     
     def _extract_translated_title(self, file_path: str) -> Optional[str]:
         """

@@ -40,20 +40,6 @@ log() {
     echo -e "${color}[$(date +'%Y-%m-%d %H:%M:%S')] [$level] $message${NC}" | tee -a "$LOG_FILE"
 }
 
-# 激活虚拟环境
-activate_venv() {
-    log "INFO" "正在激活Python虚拟环境..."
-    # 使用venv.sh脚本激活conda环境
-    source "$SCRIPT_DIR/venv.sh" > /dev/null
-    if [ $? -eq 0 ]; then
-        log "INFO" "Python虚拟环境已激活"
-        return 0
-    else
-        log "ERROR" "激活Python虚拟环境失败"
-        return 1
-    fi
-}
-
 # 运行爬虫功能
 run_crawler() {
     log "INFO" "开始运行爬虫功能..."
@@ -66,8 +52,8 @@ run_crawler() {
     done
     
     # 运行爬虫，并将输出重定向到日志文件
-    log "INFO" "执行命令: python -m src.main --mode crawl $crawler_args"
-    python -m src.main --mode crawl $crawler_args 2>&1 | tee -a "$LOG_FILE"
+    log "INFO" "执行命令: $PROJECT_ROOT/run.sh crawl $crawler_args"
+    $PROJECT_ROOT/run.sh crawl $crawler_args 2>&1 | tee -a "$LOG_FILE"
     
     local exit_code=$?
     if [ $exit_code -eq 0 ]; then
@@ -113,8 +99,8 @@ run_analyzer() {
     fi
     
     # 运行分析，并将输出重定向到日志文件
-    log "INFO" "执行命令: python -m src.main --mode analyze $full_args"
-    python -m src.main --mode analyze $full_args 2>&1 | tee -a "$LOG_FILE"
+    log "INFO" "执行命令: $PROJECT_ROOT/run.sh analyze $full_args"
+    $PROJECT_ROOT/run.sh analyze $full_args 2>&1 | tee -a "$LOG_FILE"
     
     local exit_code=$?
     if [ $exit_code -eq 0 ]; then
@@ -162,14 +148,6 @@ send_notification() {
 # 主函数
 main() {
     log "INFO" "===== 开始每日爬取与分析任务 ====="
-    
-    # 激活虚拟环境
-    activate_venv
-    if [ $? -ne 0 ]; then
-        send_notification "失败" "无法激活Python虚拟环境"
-        log "ERROR" "任务终止"
-        exit 1
-    fi
     
     # 运行爬虫
     log "INFO" "开始爬取数据..."

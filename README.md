@@ -4,6 +4,14 @@
 该项目是一个基于Python的云计算网络竞争动态分析工具。该工具可以从配置文件中指定的URL爬取各大云厂商（如AWS、Azure、GCP、腾讯云、华为云、火山云等）的博客、文档等内容，通过AI进行分析。
 
 ## 最近更新
+- **2025-04-19**: 脚本系统重构
+  - 重构脚本系统，解决虚拟环境激活问题
+  - 创建统一的run.sh入口脚本，负责环境激活和命令分发
+  - 将WebDriver管理和环境管理功能移至专用Python模块
+  - 添加tabulate依赖，支持表格化显示统计信息
+  - 优化脚本结构，减少多层bash调用
+  - 更新文档，反映新的脚本系统结构
+
 - **2025-04-18 (2)**: 分析模块功能增强
   - 为analyze模块增加metadata功能，实现智能防重复分析
   - 给分析模块运行脚本增加vendor参数选项，支持只分析特定厂商数据
@@ -36,20 +44,19 @@ cloud-comp-spy/
 │   └── analysis/       # 分析结果
 ├── logs/               # 日志文件目录
 ├── scripts/            # 脚本文件
-│   ├── setup_latest_driver.sh  # WebDriver和ChromeDriver自动下载脚本
-│   ├── run_crawl.sh    # 爬虫运行脚本
-│   ├── run_analyze.sh  # 分析运行脚本
-│   ├── run_server.sh   # Web服务器运行脚本
-│   ├── setup_env.sh    # 环境设置脚本
-│   ├── venv.sh         # 虚拟环境激活脚本
+│   ├── compare_stats.py  # 统计比较脚本
 │   ├── daily_crawl_and_analyze.sh  # 每日自动爬取与分析脚本
-│   └── daily_crawl_and_analyze_README.md  # 每日脚本使用说明
+│   ├── daily_crawl_and_analyze_README.md  # 每日脚本使用说明
+│   └── backup/         # 备份的旧脚本
 ├── src/                # 源代码
 │   ├── crawlers/       # 爬虫模块
 │   │   ├── common/     # 通用爬虫组件
 │   │   └── vendors/    # 厂商特定爬虫
 │   ├── ai_analyzer/    # AI分析模块
 │   ├── utils/          # 工具类
+│   │   ├── driver_manager.py  # WebDriver管理模块
+│   │   ├── environment_manager.py  # 环境管理模块
+│   │   └── ...         # 其他工具类
 │   └── web_server/     # Web服务器模块
 ├── requirements.txt    # 项目依赖
 ├── setup.py            # 安装脚本（仅开发用途）

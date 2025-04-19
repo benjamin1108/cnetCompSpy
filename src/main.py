@@ -302,13 +302,22 @@ def main() -> None:
     Main entry point.
     """
     # 使用彩色日志替换原有的日志配置
-    log_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "cnetCompSpy.log")
+    base_dir = os.path.dirname(os.path.dirname(__file__))
+    logs_dir = os.path.join(base_dir, "logs")
+    os.makedirs(logs_dir, exist_ok=True)
+    
+    # 使用时间戳作为日志文件名，避免冲突
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    log_file = os.path.join(logs_dir, f"cnetCompSpy_{timestamp}.log")
+    
     setup_colored_logging(
         level=logging.INFO,
         log_file=log_file,
         fmt='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S'
     )
+    
+    logger.info(f"日志文件路径: {log_file}")
     
     # 设置第三方库的日志级别
     logging.getLogger("urllib3").setLevel(logging.WARNING)
