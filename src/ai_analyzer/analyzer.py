@@ -1061,9 +1061,29 @@ class AIAnalyzer:
             # 增加请求详细日志记录
             logger.info(f"[{time.strftime('%H:%M:%S')}] 完整请求URL: {request_data['url']}")
             
+            # 检查是否使用动态线程池
+            use_dynamic = self.ai_config.get('use_dynamic_pool', True)
+            
             # 使用频率限制器等待合适的请求间隔
-            logger.info(f"[{time.strftime('%H:%M:%S')}] 应用API频率限制...")
-            self.rate_limiter.wait()
+            if use_dynamic:
+                try:
+                    # 尝试导入动态线程池的RateLimiter
+                    from src.ai_analyzer.thread_pool import log_yellow, log_green
+                    # 获取线程池实例，使用线程池的频率限制器
+                    from src.ai_analyzer.thread_pool import get_thread_pool
+                    thread_pool = get_thread_pool()
+                    log_yellow(f"执行AI分析任务: {task_type}，使用动态线程池频率限制器")
+                    # 线程池限制器会自动控制API调用频率
+                    wait_time = thread_pool.rate_limiter.wait()
+                    if wait_time > 0:
+                        log_yellow(f"线程等待了 {wait_time:.2f}秒 以符合API频率限制")
+                except ImportError:
+                    logger.info(f"[{time.strftime('%H:%M:%S')}] 应用内置API频率限制...")
+                    self.rate_limiter.wait()
+            else:
+                logger.info(f"[{time.strftime('%H:%M:%S')}] 应用内置API频率限制...")
+                self.rate_limiter.wait()
+                
             logger.info(f"[{time.strftime('%H:%M:%S')}] 频率限制检查通过，开始发送API请求")
             
             # 启用HTTP请求详细日志
@@ -1093,6 +1113,16 @@ class AIAnalyzer:
                     timeout=180  # 增加超时时间
                 )
                 
+                # 如果使用动态线程池，记录API调用
+                if use_dynamic:
+                    try:
+                        from src.ai_analyzer.thread_pool import get_thread_pool, log_green
+                        thread_pool = get_thread_pool()
+                        thread_pool.rate_limiter.record_api_call()
+                        log_green(f"已记录API调用: {task_type}")
+                    except (ImportError, AttributeError):
+                        pass
+                
                 # 检查响应状态
                 if response.status_code != 200:
                     # 对于可以重试的状态码，抛出异常以触发重试
@@ -1108,7 +1138,7 @@ class AIAnalyzer:
                         response.raise_for_status()
                 
                 return response
-            
+                
             # 使用重试策略执行API请求
             logger.info(f"[{time.strftime('%H:%M:%S')}] 准备发送API请求，已配置自动重试机制...")
             
@@ -1145,9 +1175,15 @@ class AIAnalyzer:
                 result_log_preview = result[:50] + "..." if len(result) > 50 else result
                 logger.info(f"解析结果预览: {result_log_preview}")
                 
+                if use_dynamic:
+                    try:
+                        from src.ai_analyzer.thread_pool import log_green
+                        log_green(f"AI分析任务完成: {task_type}")
+                    except ImportError:
+                        pass
+                
                 # 返回原始结果，不进行任何格式化
                 logger.info(f"[{time.strftime('%H:%M:%S')}] {task_type} 响应接收完成，总长度: {len(result)} 字符")
-                
                 return result
             except Exception as e:
                 error_msg = f"API调用失败: {str(e)}"
@@ -1210,6 +1246,97 @@ class AIAnalyzer:
         
         return results
     
+    def run_dynamic(self) -> List[Dict[str, Any]]:
+        """
+        运行分析（使用动态线程池）
+        
+        Returns:
+            分析结果列表
+        """
+        # 导入动态线程池
+        try:
+            from src.ai_analyzer.thread_pool import get_thread_pool, log_yellow, log_green, log_red
+        except ImportError:
+            logger.error("无法导入动态线程池模块，将回退到单线程模式")
+            return self.run()
+        
+        # 获取需要分析的文件
+        files = self._get_files_to_analyze()
+        if not files:
+            logger.info("没有需要分析的新文件")
+            return []
+        
+        # 获取API调用频率限制和最大线程数
+        api_rate_limit = self.ai_config.get('api_rate_limit', 10)
+        max_threads = self.ai_config.get('max_workers', 10)
+        
+        logger.info(f"使用动态线程池分析 {len(files)} 个文件，API频率限制: {api_rate_limit}/分钟，最大线程数: {max_threads}")
+        
+        # 获取线程池实例
+        thread_pool = get_thread_pool(
+            api_rate_limit=api_rate_limit,
+            max_threads=max_threads
+        )
+        
+        # 启动线程池
+        thread_pool.start()
+        
+        # 定义文件处理函数
+        def process_file(file_path):
+            log_yellow(f"开始处理文件: {os.path.basename(file_path)}")
+            try:
+                # 分析单个文件
+                result = self.analyze_file(file_path)
+                log_green(f"完成分析文件: {os.path.basename(file_path)}")
+                return result
+            except Exception as e:
+                error_msg = str(e)
+                log_red(f"处理文件时发生异常: {os.path.basename(file_path)} - {error_msg}")
+                return {
+                    'file': file_path,
+                    'success': False,
+                    'error': error_msg
+                }
+        
+        try:
+            # 添加所有任务到线程池
+            for file in files:
+                thread_pool.add_task(process_file, file)
+            
+            # 等待所有任务完成
+            while thread_pool.task_queue.unfinished_tasks > 0:
+                # 每1秒检查一次任务完成情况
+                time.sleep(1)
+            
+            # 获取结果
+            results = thread_pool.get_results()
+            
+            # 分析完成后，对整个分析目录应用权限
+            try:
+                logger.info("对分析结果目录应用权限...")
+                os.system("chmod -R 777 data")
+                os.system("sync")
+                logger.info("分析结果目录权限设置完成")
+                time.sleep(1)
+            except Exception as e:
+                logger.warning(f"设置分析结果目录权限失败: {e}")
+            
+            return results
+            
+        except KeyboardInterrupt:
+            logger.warning("用户中断操作，正在优雅地关闭线程池...")
+            # 关闭线程池
+            thread_pool.shutdown(wait=True)
+            raise
+            
+        except Exception as e:
+            logger.error(f"动态线程池执行过程中发生异常: {e}")
+            # 关闭线程池
+            thread_pool.shutdown(wait=True)
+            # 回退到单线程模式
+            logger.info("回退到单线程模式继续执行...")
+            return self.run()
+    
     def analyze_all(self) -> List[Dict[str, Any]]:
         """
         分析所有原始数据的别名方法
@@ -1217,4 +1344,12 @@ class AIAnalyzer:
         Returns:
             List[Dict[str, Any]]: 分析结果列表
         """
-        return self.run()
+        # 检查是否使用动态线程池
+        use_dynamic = self.ai_config.get('use_dynamic_pool', True)
+        
+        if use_dynamic:
+            logger.info("使用动态线程池进行分析")
+            return self.run_dynamic()
+        else:
+            logger.info("使用单线程模式进行分析")
+            return self.run()
