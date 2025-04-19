@@ -160,6 +160,9 @@ class AIAnalyzer:
         self.metadata_file = 'data/metadata/analysis_metadata.json'
         self.vendor_filter = self.ai_config.get('vendor_filter', None)
         
+        # 添加元数据锁，确保线程安全
+        self.metadata_lock = threading.RLock()
+        
         # 初始化频率限制器
         requests_per_minute = self.ai_config.get('api_rate_limit', 10)  # 默认每分钟10个请求
         self.rate_limiter = RateLimiter(requests_per_minute)
@@ -530,28 +533,29 @@ class AIAnalyzer:
         Returns:
             Dict: 分析元数据字典，键为文件路径，值为元数据
         """
-        if os.path.exists(self.metadata_file):
-            try:
-                with open(self.metadata_file, 'r', encoding='utf-8') as f:
-                    raw_metadata = json.load(f)
-                
-                # 标准化元数据中的文件路径
-                metadata = {}
-                for file_path, file_data in raw_metadata.items():
-                    normalized_path = self._normalize_file_path(file_path)
-                    metadata[normalized_path] = file_data
-                    # 如果标准化后的路径与原始路径不同，记录日志
-                    if normalized_path != file_path:
-                        logger.debug(f"元数据路径标准化: {file_path} -> {normalized_path}")
-                
-                logger.info(f"已加载分析元数据: {len(metadata)} 条记录")
-                return metadata
-            except Exception as e:
-                logger.error(f"加载分析元数据失败: {e}")
+        with self.metadata_lock:
+            if os.path.exists(self.metadata_file):
+                try:
+                    with open(self.metadata_file, 'r', encoding='utf-8') as f:
+                        raw_metadata = json.load(f)
+                    
+                    # 标准化元数据中的文件路径
+                    metadata = {}
+                    for file_path, file_data in raw_metadata.items():
+                        normalized_path = self._normalize_file_path(file_path)
+                        metadata[normalized_path] = file_data
+                        # 如果标准化后的路径与原始路径不同，记录日志
+                        if normalized_path != file_path:
+                            logger.debug(f"元数据路径标准化: {file_path} -> {normalized_path}")
+                    
+                    logger.info(f"已加载分析元数据: {len(metadata)} 条记录")
+                    return metadata
+                except Exception as e:
+                    logger.error(f"加载分析元数据失败: {e}")
+                    return {}
+            else:
+                logger.info("分析元数据文件不存在，将创建新文件")
                 return {}
-        else:
-            logger.info("分析元数据文件不存在，将创建新文件")
-            return {}
     
     def _save_metadata(self, metadata: Dict[str, Dict[str, Any]]) -> None:
         """
@@ -560,24 +564,37 @@ class AIAnalyzer:
         Args:
             metadata: 分析元数据字典
         """
-        try:
-            # 确保目录存在
-            os.makedirs(os.path.dirname(self.metadata_file), exist_ok=True)
-            
-            # 标准化元数据中的文件路径
-            normalized_metadata = {}
-            for file_path, file_data in metadata.items():
-                normalized_path = self._normalize_file_path(file_path)
-                # 更新文件数据中的file字段，确保与键一致
-                if 'file' in file_data:
-                    file_data['file'] = normalized_path
-                normalized_metadata[normalized_path] = file_data
-            
-            with open(self.metadata_file, 'w', encoding='utf-8') as f:
-                json.dump(normalized_metadata, f, ensure_ascii=False, indent=2)
-            logger.info(f"已保存分析元数据: {len(normalized_metadata)} 条记录")
-        except Exception as e:
-            logger.error(f"保存分析元数据失败: {e}")
+        with self.metadata_lock:
+            try:
+                # 确保目录存在
+                os.makedirs(os.path.dirname(self.metadata_file), exist_ok=True)
+                
+                # 标准化元数据中的文件路径
+                normalized_metadata = {}
+                for file_path, file_data in metadata.items():
+                    normalized_path = self._normalize_file_path(file_path)
+                    # 更新文件数据中的file字段，确保与键一致
+                    if 'file' in file_data:
+                        file_data['file'] = normalized_path
+                    normalized_metadata[normalized_path] = file_data
+                
+                # 使用临时文件写入，然后重命名，确保原子性写入
+                temp_file = f"{self.metadata_file}.tmp"
+                with open(temp_file, 'w', encoding='utf-8') as f:
+                    json.dump(normalized_metadata, f, ensure_ascii=False, indent=2)
+                    f.flush()
+                    os.fsync(f.fileno())  # 确保数据写入磁盘
+                
+                # 重命名临时文件为正式文件，这是一个原子操作
+                os.replace(temp_file, self.metadata_file)
+                
+                # 确保正式文件权限正确
+                os.chmod(self.metadata_file, 0o666)  # 所有用户可读写
+                
+                logger.info(f"已保存分析元数据: {len(normalized_metadata)} 条记录")
+            except Exception as e:
+                logger.error(f"保存分析元数据失败: {e}")
+                logger.exception("元数据保存详细错误信息:")
     
     def _get_files_to_analyze(self) -> List[str]:
         """
@@ -730,13 +747,14 @@ class AIAnalyzer:
         normalized_file_path = self._normalize_file_path(file_path)
         logger.info(f"开始分析文件: {normalized_file_path}")
         
-        # 加载元数据
-        metadata = self._load_metadata()
-        file_metadata = metadata.get(normalized_file_path, {
-            'file': normalized_file_path,
-            'last_analyzed': None,
-            'tasks': {}
-        })
+        # 加载元数据 - 使用锁确保线程安全
+        with self.metadata_lock:
+            metadata = self._load_metadata()
+            file_metadata = metadata.get(normalized_file_path, {
+                'file': normalized_file_path,
+                'last_analyzed': None,
+                'tasks': {}
+            })
         
         try:
             # 读取文件内容
@@ -853,13 +871,16 @@ class AIAnalyzer:
             except Exception as e:
                 logger.warning(f"设置文件权限失败: {e}")
             
-            # 更新元数据
-            file_metadata['last_analyzed'] = time.strftime('%Y-%m-%d %H:%M:%S')
-            file_metadata['tasks'] = tasks_status
-            metadata[normalized_file_path] = file_metadata
-            
-            # 保存元数据
-            self._save_metadata(metadata)
+            # 更新元数据 - 使用锁确保线程安全
+            with self.metadata_lock:
+                # 重新加载元数据，避免覆盖其他线程的更改
+                current_metadata = self._load_metadata()
+                file_metadata['last_analyzed'] = time.strftime('%Y-%m-%d %H:%M:%S')
+                file_metadata['tasks'] = tasks_status
+                current_metadata[normalized_file_path] = file_metadata
+                
+                # 保存元数据
+                self._save_metadata(current_metadata)
             
             logger.info(f"文件分析完成: {file_path}")
             
@@ -874,13 +895,16 @@ class AIAnalyzer:
             logger.error(f"分析文件失败: {file_path} - {e}")
             logger.exception("详细错误信息:")
             
-            # 更新元数据，记录错误
-            file_metadata['last_error'] = str(e)
-            file_metadata['last_error_time'] = time.strftime('%Y-%m-%d %H:%M:%S')
-            metadata[normalized_file_path] = file_metadata
-            
-            # 保存元数据
-            self._save_metadata(metadata)
+            # 更新元数据，记录错误 - 使用锁确保线程安全
+            with self.metadata_lock:
+                # 重新加载元数据，避免覆盖其他线程的更改
+                current_metadata = self._load_metadata()
+                file_metadata['last_error'] = str(e)
+                file_metadata['last_error_time'] = time.strftime('%Y-%m-%d %H:%M:%S')
+                current_metadata[normalized_file_path] = file_metadata
+                
+                # 保存元数据
+                self._save_metadata(current_metadata)
             
             return {
                 'file': file_path,
@@ -1004,19 +1028,48 @@ class AIAnalyzer:
             'type': ''
         }
         
-        # 简单的元数据提取逻辑
+        # 扩展元数据提取逻辑，支持多种格式
         lines = content.split('\n')
         for line in lines[:20]:  # 只检查前20行
+            line = line.strip()
+            # 提取标题
             if line.startswith('# '):
                 metadata['title'] = line[2:].strip()
-            elif line.startswith('原始链接:'):
-                metadata['original_url'] = line[5:].strip()
-            elif line.startswith('爬取时间:'):
-                metadata['crawl_time'] = line[5:].strip()
-            elif line.startswith('厂商:'):
-                metadata['vendor'] = line[3:].strip()
-            elif line.startswith('类型:'):
-                metadata['type'] = line[3:].strip()
+            
+            # 提取原始链接 - 支持多种格式
+            elif line.startswith('原始链接:') or line.startswith('**原始链接:**'):
+                url_part = line.split(':', 1)[1].strip()
+                # 处理可能的Markdown链接格式 [url](url)
+                if '[' in url_part and '](' in url_part:
+                    url_match = re.search(r'\[(.*?)\]\((.*?)\)', url_part)
+                    if url_match:
+                        metadata['original_url'] = url_match.group(2)
+                else:
+                    metadata['original_url'] = url_part
+            
+            # 提取爬取时间 - 支持多种格式
+            elif line.startswith('爬取时间:') or line.startswith('**爬取时间:**'):
+                metadata['crawl_time'] = line.split(':', 1)[1].strip()
+            elif line.startswith('发布时间:') or line.startswith('**发布时间:**'):
+                metadata['crawl_time'] = line.split(':', 1)[1].strip()
+            
+            # 提取厂商信息 - 支持多种格式
+            elif line.startswith('厂商:') or line.startswith('**厂商:**'):
+                vendor_part = line.split(':', 1)[1].strip()
+                metadata['vendor'] = vendor_part
+            
+            # 提取类型信息 - 支持多种格式
+            elif line.startswith('类型:') or line.startswith('**类型:**'):
+                type_part = line.split(':', 1)[1].strip()
+                metadata['type'] = type_part
+        
+        # 清理元数据值（移除可能的粗体标记等）
+        for key in metadata:
+            if metadata[key]:
+                # 移除粗体标记
+                metadata[key] = metadata[key].replace('**', '')
+                # 移除首尾空白
+                metadata[key] = metadata[key].strip()
         
         return metadata
     
@@ -1321,6 +1374,41 @@ class AIAnalyzer:
             except Exception as e:
                 logger.warning(f"设置分析结果目录权限失败: {e}")
             
+            # 确认所有元数据都已正确保存
+            logger.info("正在确认元数据完整性...")
+            try:
+                # 最终确认一次元数据更新，确保所有线程的更改都被保存
+                with self.metadata_lock:
+                    metadata = self._load_metadata()
+                    
+                    # 验证所有分析的文件是否都有元数据记录
+                    processed_files = [result.get('file') for result in results if 'file' in result]
+                    logger.info(f"已处理文件数: {len(processed_files)}")
+                    logger.info(f"元数据记录数: {len(metadata)}")
+                    
+                    missing_records = []
+                    for file_path in processed_files:
+                        normalized_path = self._normalize_file_path(file_path)
+                        if normalized_path not in metadata:
+                            missing_records.append(normalized_path)
+                            logger.warning(f"缺失元数据记录: {normalized_path}")
+                    
+                    if missing_records:
+                        logger.warning(f"发现 {len(missing_records)} 个文件缺失元数据记录")
+                    else:
+                        logger.info("所有文件的元数据记录完整")
+                    
+                    # 重新保存元数据文件确保完整性
+                    self._save_metadata(metadata)
+                    logger.info(f"元数据最终确认完成，共 {len(metadata)} 条记录")
+            except Exception as e:
+                logger.error(f"元数据完整性确认失败: {e}")
+                logger.exception("详细错误信息:")
+            
+            # 关闭线程池 - 确保在正常流程结束时也关闭线程池
+            logger.info("任务完成，正在关闭线程池...")
+            thread_pool.shutdown(wait=True)
+            
             return results
             
         except KeyboardInterrupt:
@@ -1353,3 +1441,5 @@ class AIAnalyzer:
         else:
             logger.info("使用单线程模式进行分析")
             return self.run()
+    
+    

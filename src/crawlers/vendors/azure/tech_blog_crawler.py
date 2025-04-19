@@ -858,12 +858,16 @@ class AzureTechBlogCrawler(BaseCrawler):
         self.metadata[url] = {
             'filepath': filepath,
             'title': title,
-            'crawl_time': time.strftime('%Y-%m-%d %H:%M:%S')
+            'crawl_time': time.strftime('%Y-%m-%d %H:%M:%S'),
+            'vendor': self.vendor,
+            'type': self.source_type
         }
         self.metadata_manager.update_crawler_metadata_entry(self.vendor, self.source_type, url, {
             'filepath': filepath,
             'title': title,
-            'crawl_time': time.strftime('%Y-%m-%d %H:%M:%S')
+            'crawl_time': time.strftime('%Y-%m-%d %H:%M:%S'),
+            'vendor': self.vendor,
+            'type': self.source_type
         })
         
         logger.info(f"已保存Markdown文件: {filepath}")
