@@ -71,6 +71,13 @@ cloud-comp-spy/
 - **Windows**: Windows 10, Windows 11
 - **macOS**: macOS 10.15 (Catalina)及以上版本
 
+### 环境管理
+- **必需**: Miniforge（用于创建和管理虚拟环境）
+  - 系统会自动检测是否安装，并在需要时提供安装指导
+  - macOS安装方法：`curl -L -O https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-x86_64.sh`（M1/M2 Mac使用arm64版本），然后`bash Miniforge3-MacOSX-x86_64.sh`
+  - Linux安装方法：`wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh`，然后`bash Miniforge3-Linux-x86_64.sh`
+  - Windows安装方法：下载并运行[Miniforge3-Windows-x86_64.exe](https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Windows-x86_64.exe)
+
 ### 其他要求
 - **内存**: 最低2GB RAM，建议4GB及以上
 - **存储**: 最低1GB可用空间，根据爬取数据量可能需要更多
@@ -84,16 +91,44 @@ cloud-comp-spy/
    cd cloud-comp-spy
    ```
 
-2. 设置虚拟环境
+2. 安装Miniforge（如果尚未安装）
+   
+   脚本会自动检测是否安装了Miniforge，如果未安装，会提供详细的安装指南。
+   
+   **macOS**:
+   ```bash
+   # 对于Intel Mac
+   curl -L -O https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-x86_64.sh
+   bash Miniforge3-MacOSX-x86_64.sh
+   
+   # 对于M1/M2 Mac
+   curl -L -O https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-arm64.sh
+   bash Miniforge3-MacOSX-arm64.sh
    ```
-   python -m venv venv
-   source venv/bin/activate  # Linux/Mac
-   # 或者
-   venv\Scripts\activate  # Windows
+   
+   **Linux**:
+   ```bash
+   wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh
+   bash Miniforge3-Linux-x86_64.sh
    ```
+   
+   **Windows**:
+   - 下载 [Miniforge3-Windows-x86_64.exe](https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Windows-x86_64.exe)
+   - 运行下载的安装程序并按照提示完成安装
 
-3. 安装依赖
+3. 使用run.sh脚本进行环境设置（推荐方式）
+   ```bash
+   # 设置环境（创建conda虚拟环境并安装依赖）
+   ./run.sh setup
    ```
+   
+   或者手动设置：
+   ```bash
+   # 创建并激活conda环境
+   conda create -y -n venv python=3.11
+   conda activate venv
+   
+   # 安装依赖
    pip install -r requirements.txt
    ```
 
