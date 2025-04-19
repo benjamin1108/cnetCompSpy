@@ -26,6 +26,7 @@ show_help() {
     echo -e "  ${GREEN}stats${NC}    - 比较元数据和实际文件统计"
     echo -e "  ${GREEN}stats --detailed${NC} - 详细对比元数据和实际文件，显示时间和文件名"
     echo -e "  ${GREEN}check-tasks${NC} - 检查任务完成状态，显示未完成任务的文件"
+    echo -e "  ${GREEN}clean${NC}    - 清理中间文件和临时文件"
     echo -e "  ${GREEN}daily${NC}    - 执行每日爬取与分析任务"
     echo -e "  ${GREEN}help${NC}     - 显示此帮助信息"
     echo ""
@@ -37,6 +38,10 @@ show_help() {
     echo -e "  ${GREEN}--debug${NC}                  - 启用调试模式"
     echo -e "  ${GREEN}--clean${NC}                  - 清理数据目录（仅用于crawl和analyze命令）"
     echo -e "  ${GREEN}--force${NC}                  - 强制执行，忽略本地metadata或文件是否已存在"
+    echo -e "  ${GREEN}--all${NC}                    - 清理所有中间文件（仅用于clean命令）"
+    echo -e "  ${GREEN}--pyc${NC}                    - 清理Python字节码文件（仅用于clean命令）"
+    echo -e "  ${GREEN}--logs${NC}                   - 清理日志文件（仅用于clean命令）"
+    echo -e "  ${GREEN}--temp${NC}                   - 清理临时文件（仅用于clean命令）"
     echo ""
     echo -e "${YELLOW}示例:${NC}"
     echo -e "  $0 crawl                     # 爬取所有厂商的数据"
@@ -51,6 +56,9 @@ show_help() {
     echo -e "  $0 driver                    # 下载最新的WebDriver"
     echo -e "  $0 stats                     # 比较元数据和实际文件统计"
     echo -e "  $0 stats --detailed          # 显示详细的文件对比信息"
+    echo -e "  $0 clean                     # 清理所有中间文件和临时文件"
+    echo -e "  $0 clean --pyc               # 只清理Python字节码文件"
+    echo -e "  $0 clean --logs              # 只清理日志文件"
     echo -e "  $0 daily                     # 执行每日爬取与分析任务"
 }
 
@@ -262,6 +270,83 @@ run_server() {
     python -m src.web_server.run --host $HOST --port $PORT $DEBUG
 }
 
+# 清理中间文件和临时文件
+clean_files() {
+    echo -e "${BLUE}开始清理文件...${NC}"
+    
+    # 默认不清理任何文件，除非指定了参数
+    CLEAN_ALL=false
+    CLEAN_PYC=false
+    CLEAN_LOGS=false
+    CLEAN_TEMP=false
+    
+    # 如果没有参数，默认清理所有
+    if [ $# -eq 0 ]; then
+        CLEAN_ALL=true
+    fi
+    
+    # 解析参数
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --all)
+                CLEAN_ALL=true
+                shift
+                ;;
+            --pyc)
+                CLEAN_PYC=true
+                shift
+                ;;
+            --logs)
+                CLEAN_LOGS=true
+                shift
+                ;;
+            --temp)
+                CLEAN_TEMP=true
+                shift
+                ;;
+            *)
+                shift
+                ;;
+        esac
+    done
+    
+    # 如果指定了--all，则清理所有类型的文件
+    if [ "$CLEAN_ALL" = true ]; then
+        CLEAN_PYC=true
+        CLEAN_LOGS=true
+        CLEAN_TEMP=true
+    fi
+    
+    # 清理Python字节码文件
+    if [ "$CLEAN_PYC" = true ]; then
+        echo -e "${YELLOW}清理Python字节码文件...${NC}"
+        find "$SCRIPT_DIR" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+        find "$SCRIPT_DIR" -name "*.pyc" -delete 2>/dev/null || true
+        find "$SCRIPT_DIR" -name "*.pyo" -delete 2>/dev/null || true
+        find "$SCRIPT_DIR" -name "*.pyd" -delete 2>/dev/null || true
+        echo -e "${GREEN}Python字节码文件已清理${NC}"
+    fi
+    
+    # 清理日志文件
+    if [ "$CLEAN_LOGS" = true ]; then
+        echo -e "${YELLOW}清理日志文件...${NC}"
+        find "$SCRIPT_DIR/logs" -name "*.log" -delete 2>/dev/null || true
+        echo -e "${GREEN}日志文件已清理${NC}"
+    fi
+    
+    # 清理临时文件
+    if [ "$CLEAN_TEMP" = true ]; then
+        echo -e "${YELLOW}清理临时文件...${NC}"
+        find "$SCRIPT_DIR" -name "*.tmp" -delete 2>/dev/null || true
+        find "$SCRIPT_DIR" -name "*.bak" -delete 2>/dev/null || true
+        find "$SCRIPT_DIR" -name "*.swp" -delete 2>/dev/null || true
+        find "$SCRIPT_DIR" -name ".DS_Store" -delete 2>/dev/null || true
+        echo -e "${GREEN}临时文件已清理${NC}"
+    fi
+    
+    echo -e "${GREEN}文件清理完成${NC}"
+}
+
 # 执行每日爬取与分析任务
 run_daily() {
     echo -e "${BLUE}执行每日爬取与分析任务...${NC}"
@@ -306,6 +391,9 @@ main() {
             ;;
         check-tasks)
             check_tasks "$@"
+            ;;
+        clean)
+            clean_files "$@"
             ;;
         daily)
             run_daily "$@"

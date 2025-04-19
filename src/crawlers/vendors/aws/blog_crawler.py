@@ -765,7 +765,11 @@ class AwsBlogCrawler(BaseCrawler):
             'title': title,
             'crawl_time': time.strftime('%Y-%m-%d %H:%M:%S')
         }
-        self._save_metadata()
+        self.metadata_manager.update_crawler_metadata(self.vendor, self.source_type, url, {
+            'filepath': filepath,
+            'title': title,
+            'crawl_time': time.strftime('%Y-%m-%d %H:%M:%S')
+        })
         
         return filepath
 
