@@ -1,0 +1,219 @@
+{% extends "admin/base.html" %}
+
+{% block admin_title %}AI分析任务{% endblock %}
+
+{% block admin_content %}
+<div class="admin-card">
+    <div class="admin-card-header">
+        <i class="bi bi-robot me-2"></i> 缺失AI分析的文件
+    </div>
+    <div class="admin-card-body">
+        {% if missing_analysis %}
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i> 以下文件缺少AI分析或任务未完成，可以单独对这些文件执行分析任务
+            </div>
+            
+            <div class="accordion" id="vendorAccordion">
+                {% for vendor, vendor_data in missing_analysis.items() %}
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading{{ vendor }}">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ vendor }}" aria-expanded="true" aria-controls="collapse{{ vendor }}">
+                            <i class="bi bi-building me-2"></i> {{ vendor }} 
+                            <span class="badge bg-warning ms-2">{{ vendor_data|length }}</span>
+                        </button>
+                    </h2>
+                    <div id="collapse{{ vendor }}" class="accordion-collapse collapse show" aria-labelledby="heading{{ vendor }}" data-bs-parent="#vendorAccordion">
+                        <div class="accordion-body p-0">
+                            <div class="list-group list-group-flush">
+                                {% for source_type, files in vendor_data.items() %}
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h6 class="mb-0">{{ source_type }}</h6>
+                                        <button class="btn btn-sm btn-outline-primary analyze-type-btn" data-vendor="{{ vendor }}" data-type="{{ source_type }}">
+                                            <i class="bi bi-play-fill"></i> 分析此类型
+                                        </button>
+                                    </div>
+                                    <ul class="file-list">
+                                        {% for file in files %}
+                                        <li>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <div class="file-title">{{ file.title }}</div>
+                                                    <div class="file-path">{{ file.path }}</div>
+                                                </div>
+                                                <div class="file-status">
+                                                    {% if file.has_analysis %}
+                                                        {% if file.tasks_completed %}
+                                                            <i class="bi bi-check-circle-fill status-icon status-icon-success" title="分析完成"></i>
+                                                        {% else %}
+                                                            <i class="bi bi-exclamation-circle-fill status-icon status-icon-warning" title="分析文件存在但任务未完成"></i>
+                                                        {% endif %}
+                                                    {% else %}
+                                                        <i class="bi bi-x-circle-fill status-icon status-icon-danger" title="缺少分析文件"></i>
+                                                    {% endif %}
+                                                    <button class="btn btn-sm btn-outline-secondary ms-2 analyze-file-btn" data-path="{{ file.path }}">
+                                                        <i class="bi bi-play-fill"></i> 分析
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-success">
+                <i class="bi bi-check-circle me-2"></i> 所有文件都已完成AI分析
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 分析任务模态框 -->
+<div class="modal fade" id="analyzeTaskModal" tabindex="-1" aria-labelledby="analyzeTaskModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="analyzeTaskModalLabel">分析任务</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold">任务状态: <span id="analyzeStatusBadge" class="badge bg-secondary">等待中</span></span>
+                        <span class="small text-muted" id="analyzeElapsedTime"></span>
+                    </div>
+                    <div class="progress mb-3" style="height: 5px;">
+                        <div id="analyzeProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="console-output" id="analyzeOutput">正在准备执行分析任务...</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block admin_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 分析单个文件
+        document.querySelectorAll('.analyze-file-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const filePath = this.getAttribute('data-path');
+                runAnalyzeTask('analyze_file', { file: filePath }, `分析文件: ${filePath}`);
+            });
+        });
+        
+        // 分析特定类型
+        document.querySelectorAll('.analyze-type-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const vendor = this.getAttribute('data-vendor');
+                const type = this.getAttribute('data-type');
+                runAnalyzeTask('analyze_' + vendor, {}, `分析 ${vendor} 的 ${type} 文件`);
+            });
+        });
+        
+        // 执行分析任务
+        function runAnalyzeTask(taskId, params, title) {
+            // 更新模态框标题
+            document.getElementById('analyzeTaskModalLabel').textContent = title;
+            
+            // 重置模态框内容
+            document.getElementById('analyzeOutput').textContent = '正在准备执行分析任务...';
+            document.getElementById('analyzeStatusBadge').textContent = '执行中';
+            document.getElementById('analyzeStatusBadge').className = 'badge bg-primary';
+            document.getElementById('analyzeProgressBar').style.width = '10%';
+            document.getElementById('analyzeElapsedTime').textContent = '00:00';
+            
+            // 显示模态框
+            const modal = new bootstrap.Modal(document.getElementById('analyzeTaskModal'));
+            modal.show();
+            
+            // 开始计时
+            const startTime = new Date();
+            const timerInterval = setInterval(function() {
+                const elapsedTime = new Date() - startTime;
+                const minutes = Math.floor(elapsedTime / 60000);
+                const seconds = Math.floor((elapsedTime % 60000) / 1000);
+                document.getElementById('analyzeElapsedTime').textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }, 1000);
+            
+            // 执行任务
+            fetch('/api/admin/run-task', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    task: taskId,
+                    params: params
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // 停止计时
+                clearInterval(timerInterval);
+                
+                // 更新进度条
+                document.getElementById('analyzeProgressBar').style.width = '100%';
+                
+                // 更新状态
+                if (data.success) {
+                    document.getElementById('analyzeStatusBadge').textContent = '完成';
+                    document.getElementById('analyzeStatusBadge').className = 'badge bg-success';
+                    
+                    // 显示输出
+                    if (data.result && data.result.output) {
+                        document.getElementById('analyzeOutput').textContent = data.result.output;
+                    } else {
+                        document.getElementById('analyzeOutput').textContent = '任务执行成功，但没有输出。';
+                    }
+                    
+                    // 提示刷新页面
+                    const refreshMsg = document.createElement('div');
+                    refreshMsg.className = 'alert alert-success mt-3';
+                    refreshMsg.innerHTML = '<i class="bi bi-check-circle me-2"></i> 分析任务已完成，请刷新页面查看最新状态。';
+                    document.getElementById('analyzeOutput').parentNode.appendChild(refreshMsg);
+                } else {
+                    document.getElementById('analyzeStatusBadge').textContent = '失败';
+                    document.getElementById('analyzeStatusBadge').className = 'badge bg-danger';
+                    
+                    // 显示错误
+                    if (data.error) {
+                        document.getElementById('analyzeOutput').textContent = `错误: ${data.error}`;
+                    } else if (data.result && data.result.error) {
+                        document.getElementById('analyzeOutput').textContent = `错误: ${data.result.error}`;
+                    } else if (data.result && data.result.output) {
+                        document.getElementById('analyzeOutput').textContent = data.result.output;
+                    } else {
+                        document.getElementById('analyzeOutput').textContent = '任务执行失败，但没有错误信息。';
+                    }
+                }
+            })
+            .catch(error => {
+                // 停止计时
+                clearInterval(timerInterval);
+                
+                // 更新状态
+                document.getElementById('analyzeStatusBadge').textContent = '错误';
+                document.getElementById('analyzeStatusBadge').className = 'badge bg-danger';
+                document.getElementById('analyzeProgressBar').style.width = '100%';
+                
+                // 显示错误
+                document.getElementById('analyzeOutput').textContent = `请求错误: ${error.message}`;
+            });
+        }
+    });
+</script>
+{% endblock %}

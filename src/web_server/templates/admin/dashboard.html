@@ -1,0 +1,127 @@
+{% extends "admin/base.html" %}
+
+{% block admin_title %}仪表盘{% endblock %}
+
+{% block admin_content %}
+<div class="row">
+    <!-- 统计卡片 -->
+    <div class="col-md-4">
+        <div class="stats-box position-relative">
+            <i class="bi bi-file-earmark-text"></i>
+            <h3>{{ stats.summary|length }}</h3>
+            <p>厂商/类型组合总数</p>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="stats-box position-relative">
+            <i class="bi bi-file-earmark"></i>
+            <h3>{{ stats.summary|sum(attribute='raw_count') }}</h3>
+            <p>原始文件总数</p>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="stats-box position-relative">
+            <i class="bi bi-file-earmark-code"></i>
+            <h3>{{ stats.summary|sum(attribute='analysis_count') }}</h3>
+            <p>分析文件总数</p>
+        </div>
+    </div>
+</div>
+
+<!-- 厂商统计表格 -->
+<div class="admin-card mt-4">
+    <div class="admin-card-header">
+        <i class="bi bi-bar-chart-line me-2"></i> 厂商文件统计
+    </div>
+    <div class="admin-card-body">
+        <div class="table-responsive">
+            <table class="table table-hover" id="summaryTable">
+                <thead>
+                    <tr>
+                        <th>厂商</th>
+                        <th>类型</th>
+                        <th>原始文件</th>
+                        <th>爬虫元数据</th>
+                        <th>分析元数据</th>
+                        <th>分析文件</th>
+                        <th>任务完成</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in stats.summary %}
+                    <tr>
+                        <td>{{ item.vendor }}</td>
+                        <td>{{ item.source_type }}</td>
+                        <td>{{ item.raw_count }}</td>
+                        <td>{{ item.in_crawler_count }}</td>
+                        <td>{{ item.in_analysis_count }}</td>
+                        <td>{{ item.has_file_count }}</td>
+                        <td>{{ item.tasks_done_count }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 快速操作 -->
+<div class="admin-card mt-4">
+    <div class="admin-card-header">
+        <i class="bi bi-lightning-charge me-2"></i> 快速操作
+    </div>
+    <div class="admin-card-body">
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-cloud-download text-primary me-2"></i> 爬取数据
+                        </h5>
+                        <p class="card-text">爬取所有厂商的博客和文档</p>
+                        <a href="{{ url_for('admin_tasks') }}" class="btn btn-outline-primary">前往任务管理</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-robot text-success me-2"></i> AI分析
+                        </h5>
+                        <p class="card-text">对爬取的数据进行AI分析</p>
+                        <a href="{{ url_for('admin_tasks') }}" class="btn btn-outline-success">前往任务管理</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-exclamation-triangle text-warning me-2"></i> 缺失分析
+                        </h5>
+                        <p class="card-text">查看缺失AI分析的文件</p>
+                        <a href="{{ url_for('admin_ai_tasks') }}" class="btn btn-outline-warning">查看缺失分析</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 初始化DataTable
+    $('#summaryTable').DataTable({
+        paging: false,
+        searching: false,
+        info: false,
+        order: [[0, 'asc'], [1, 'asc']]
+    });
+});
+</script>
+{% endblock %}

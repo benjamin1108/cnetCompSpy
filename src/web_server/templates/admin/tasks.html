@@ -1,0 +1,171 @@
+{% extends "admin/base.html" %}
+
+{% block admin_title %}任务管理{% endblock %}
+
+{% block admin_content %}
+<div class="admin-card">
+    <div class="admin-card-header">
+        <i class="bi bi-list-task me-2"></i> 可用任务
+    </div>
+    <div class="admin-card-body">
+        <div class="row">
+            {% for task in tasks %}
+            <div class="col-md-6 mb-4">
+                <div class="task-card" data-task-id="{{ task.id }}">
+                    <div class="task-card-header">
+                        <span>{{ task.name }}</span>
+                        <span class="task-status"></span>
+                    </div>
+                    <div class="task-card-body">
+                        <p>{{ task.description }}</p>
+                        <div class="small text-muted">命令: <code>{{ task.command }}</code></div>
+                    </div>
+                    <div class="task-card-footer">
+                        <button class="btn btn-primary btn-run-task" data-task-id="{{ task.id }}">
+                            <i class="bi bi-play-fill"></i> 执行任务
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- 任务输出模态框 -->
+<div class="modal fade" id="taskOutputModal" tabindex="-1" aria-labelledby="taskOutputModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="taskOutputModalLabel">任务输出</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold">任务状态: <span id="taskStatusBadge" class="badge bg-secondary">等待中</span></span>
+                        <span class="small text-muted" id="taskElapsedTime"></span>
+                    </div>
+                    <div class="progress mb-3" style="height: 5px;">
+                        <div id="taskProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="console-output" id="taskOutput">正在准备执行任务...</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block admin_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 任务执行按钮点击事件
+        document.querySelectorAll('.btn-run-task').forEach(button => {
+            button.addEventListener('click', function() {
+                const taskId = this.getAttribute('data-task-id');
+                const taskCard = document.querySelector(`.task-card[data-task-id="${taskId}"]`);
+                const taskName = taskCard.querySelector('.task-card-header span').textContent;
+                
+                // 更新模态框标题
+                document.getElementById('taskOutputModalLabel').textContent = `任务输出: ${taskName}`;
+                
+                // 重置模态框内容
+                document.getElementById('taskOutput').textContent = '正在准备执行任务...';
+                document.getElementById('taskStatusBadge').textContent = '执行中';
+                document.getElementById('taskStatusBadge').className = 'badge bg-primary';
+                document.getElementById('taskProgressBar').style.width = '10%';
+                document.getElementById('taskElapsedTime').textContent = '00:00';
+                
+                // 显示模态框
+                const modal = new bootstrap.Modal(document.getElementById('taskOutputModal'));
+                modal.show();
+                
+                // 开始计时
+                const startTime = new Date();
+                const timerInterval = setInterval(function() {
+                    const elapsedTime = new Date() - startTime;
+                    const minutes = Math.floor(elapsedTime / 60000);
+                    const seconds = Math.floor((elapsedTime % 60000) / 1000);
+                    document.getElementById('taskElapsedTime').textContent = 
+                        `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }, 1000);
+                
+                // 执行任务
+                fetch('/api/admin/run-task', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        task: taskId,
+                        params: {}
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // 停止计时
+                    clearInterval(timerInterval);
+                    
+                    // 更新进度条
+                    document.getElementById('taskProgressBar').style.width = '100%';
+                    
+                    // 更新状态
+                    if (data.success) {
+                        document.getElementById('taskStatusBadge').textContent = '完成';
+                        document.getElementById('taskStatusBadge').className = 'badge bg-success';
+                        
+                        // 更新任务卡片状态
+                        const statusElement = taskCard.querySelector('.task-status');
+                        statusElement.innerHTML = '<i class="bi bi-check-circle-fill text-success"></i>';
+                        
+                        // 显示输出
+                        if (data.result && data.result.output) {
+                            document.getElementById('taskOutput').textContent = data.result.output;
+                        } else {
+                            document.getElementById('taskOutput').textContent = '任务执行成功，但没有输出。';
+                        }
+                    } else {
+                        document.getElementById('taskStatusBadge').textContent = '失败';
+                        document.getElementById('taskStatusBadge').className = 'badge bg-danger';
+                        
+                        // 更新任务卡片状态
+                        const statusElement = taskCard.querySelector('.task-status');
+                        statusElement.innerHTML = '<i class="bi bi-x-circle-fill text-danger"></i>';
+                        
+                        // 显示错误
+                        if (data.error) {
+                            document.getElementById('taskOutput').textContent = `错误: ${data.error}`;
+                        } else if (data.result && data.result.error) {
+                            document.getElementById('taskOutput').textContent = `错误: ${data.result.error}`;
+                        } else if (data.result && data.result.output) {
+                            document.getElementById('taskOutput').textContent = data.result.output;
+                        } else {
+                            document.getElementById('taskOutput').textContent = '任务执行失败，但没有错误信息。';
+                        }
+                    }
+                })
+                .catch(error => {
+                    // 停止计时
+                    clearInterval(timerInterval);
+                    
+                    // 更新状态
+                    document.getElementById('taskStatusBadge').textContent = '错误';
+                    document.getElementById('taskStatusBadge').className = 'badge bg-danger';
+                    document.getElementById('taskProgressBar').style.width = '100%';
+                    
+                    // 更新任务卡片状态
+                    const statusElement = taskCard.querySelector('.task-status');
+                    statusElement.innerHTML = '<i class="bi bi-x-circle-fill text-danger"></i>';
+                    
+                    // 显示错误
+                    document.getElementById('taskOutput').textContent = `请求错误: ${error.message}`;
+                });
+            });
+        });
+    });
+</script>
+{% endblock %}

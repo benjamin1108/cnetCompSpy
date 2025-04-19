@@ -178,6 +178,28 @@ class StatsAnalyzer:
         # 统计每个厂商和类型的文件数量
         stats = {}
         
+        # 统计爬虫元数据中的文件数量
+        crawler_metadata_counts = defaultdict(lambda: defaultdict(int))
+        for filepath, metadata_info in self.crawler_metadata.items():
+            # 从路径中提取厂商和类型
+            # 路径格式: data/raw/vendor/type/file.md
+            parts = filepath.split(os.sep)
+            if len(parts) >= 4:
+                vendor = parts[-3]  # 倒数第三个部分是厂商
+                source_type = parts[-2]  # 倒数第二个部分是类型
+                crawler_metadata_counts[vendor][source_type] += 1
+        
+        # 统计分析元数据中的文件数量
+        analysis_metadata_counts = defaultdict(lambda: defaultdict(int))
+        for filepath in self.analysis_metadata:
+            # 从路径中提取厂商和类型
+            # 路径格式: data/raw/vendor/type/file.md
+            parts = filepath.split(os.sep)
+            if len(parts) >= 4:
+                vendor = parts[-3]  # 倒数第三个部分是厂商
+                source_type = parts[-2]  # 倒数第二个部分是类型
+                analysis_metadata_counts[vendor][source_type] += 1
+        
         # 遍历所有原始文件
         for vendor, vendor_data in self.raw_files.items():
             if vendor not in stats:
@@ -189,10 +211,14 @@ class StatsAnalyzer:
                         'metadata_count': 0,
                         'raw_count': len(files),
                         'analysis_count': 0,
-                        'files': []
+                        'files': [],
+                        'crawler_metadata_count': crawler_metadata_counts[vendor][source_type],
+                        'analysis_metadata_count': analysis_metadata_counts[vendor][source_type]
                     }
                 else:
                     stats[vendor][source_type]['raw_count'] = len(files)
+                    stats[vendor][source_type]['crawler_metadata_count'] = crawler_metadata_counts[vendor][source_type]
+                    stats[vendor][source_type]['analysis_metadata_count'] = analysis_metadata_counts[vendor][source_type]
                 
                 # 收集文件详情，用于计算统计信息
                 # 如果detailed=False，只收集基本信息用于统计
@@ -243,32 +269,12 @@ class StatsAnalyzer:
                         'metadata_count': 0,
                         'raw_count': 0,
                         'analysis_count': len(files),
-                        'files': []
+                        'files': [],
+                        'crawler_metadata_count': crawler_metadata_counts[vendor][source_type],
+                        'analysis_metadata_count': analysis_metadata_counts[vendor][source_type]
                     }
                 else:
                     stats[vendor][source_type]['analysis_count'] = len(files)
-        
-        # 统计元数据中的文件数量
-        for filepath, metadata_info in self.crawler_metadata.items():
-            # 从路径中提取厂商和类型
-            # 路径格式: data/raw/vendor/type/file.md
-            parts = filepath.split(os.sep)
-            if len(parts) >= 4:
-                vendor = parts[-3]  # 倒数第三个部分是厂商
-                source_type = parts[-2]  # 倒数第二个部分是类型
-                
-                if vendor not in stats:
-                    stats[vendor] = {}
-                
-                if source_type not in stats[vendor]:
-                    stats[vendor][source_type] = {
-                        'metadata_count': 1,
-                        'raw_count': 0,
-                        'analysis_count': 0,
-                        'files': []
-                    }
-                else:
-                    stats[vendor][source_type]['metadata_count'] += 1
         
         return stats
     
@@ -344,35 +350,23 @@ class StatsAnalyzer:
         # 添加摘要数据
         for vendor, vendor_data in stats.items():
             for source_type, source_stats in vendor_data.items():
-                # 计算各种状态的文件数量
-                in_crawler_count = 0
-                in_analysis_count = 0
-                has_file_count = 0
-                tasks_done_count = 0
+                # 使用正确的元数据计数
+                crawler_metadata_count = source_stats.get('crawler_metadata_count', 0)
+                analysis_metadata_count = source_stats.get('analysis_metadata_count', 0)
                 
-                if 'files' in source_stats:
-                    for file_info in source_stats['files']:
-                        if file_info['in_crawler_metadata']:
-                            in_crawler_count += 1
-                        if file_info['in_analysis_metadata']:
-                            in_analysis_count += 1
-                        if file_info['has_analysis']:
-                            has_file_count += 1
-                        if file_info.get('tasks_completed', False):
-                            tasks_done_count += 1
-                
+                # 确保所有字段都存在，无论detailed是True还是False
                 json_data['summary'].append({
                     'vendor': vendor,
                     'source_type': source_type,
-                    'metadata_count': source_stats['metadata_count'],
                     'raw_count': source_stats['raw_count'],
                     'analysis_count': source_stats['analysis_count'],
-                    'metadata_match': source_stats['metadata_count'] == source_stats['raw_count'],
+                    'metadata_count': crawler_metadata_count,
+                    'in_crawler_count': crawler_metadata_count,  # 使用crawler_metadata_count
+                    'in_analysis_count': analysis_metadata_count,  # 使用analysis_metadata_count
+                    'metadata_match': crawler_metadata_count == source_stats['raw_count'],
                     'analysis_match': source_stats['raw_count'] == source_stats['analysis_count'],
-                    'in_crawler_count': in_crawler_count,
-                    'in_analysis_count': in_analysis_count,
-                    'has_file_count': has_file_count,
-                    'tasks_done_count': tasks_done_count
+                    'has_file_count': source_stats['analysis_count'],
+                    'tasks_done_count': analysis_metadata_count
                 })
         
         # 如果需要详细信息，添加文件详情
@@ -386,16 +380,25 @@ class StatsAnalyzer:
                         json_data['details'][vendor][source_type] = []
                         
                         for file_info in source_stats['files']:
-                            json_data['details'][vendor][source_type].append({
-                                'filename': file_info['filename'],
-                                'title': file_info['title'],
-                                'url': file_info['url'],
-                                'crawl_time': file_info['crawl_time'],
-                                'file_mtime': file_info['file_mtime'],
-                                'in_crawler_metadata': file_info['in_crawler_metadata'],
-                                'in_analysis_metadata': file_info['in_analysis_metadata'],
-                                'has_analysis': file_info['has_analysis'],
-                                'tasks_completed': file_info.get('tasks_completed', False)
-                            })
+                            if detailed and 'path' in file_info:
+                                json_data['details'][vendor][source_type].append({
+                                    'filename': file_info['filename'],
+                                    'title': file_info['title'],
+                                    'url': file_info['url'],
+                                    'crawl_time': file_info['crawl_time'],
+                                    'file_mtime': file_info['file_mtime'],
+                                    'in_crawler_metadata': file_info['in_crawler_metadata'],
+                                    'in_analysis_metadata': file_info['in_analysis_metadata'],
+                                    'has_analysis': file_info['has_analysis'],
+                                    'tasks_completed': file_info.get('tasks_completed', False)
+                                })
+                            else:
+                                json_data['details'][vendor][source_type].append({
+                                    'filename': file_info['filename'],
+                                    'in_crawler_metadata': file_info['in_crawler_metadata'],
+                                    'in_analysis_metadata': file_info['in_analysis_metadata'],
+                                    'has_analysis': file_info['has_analysis'],
+                                    'tasks_completed': file_info.get('tasks_completed', False)
+                                })
         
         return json_data
