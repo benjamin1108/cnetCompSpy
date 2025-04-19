@@ -13,6 +13,8 @@ from abc import ABC, abstractmethod
 from typing import Dict, Any, List, Optional, Tuple
 from urllib.parse import urljoin, urlparse
 
+from src.utils.metadata_manager import MetadataManager
+
 import requests
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -60,10 +62,9 @@ class BaseCrawler(ABC):
         self.output_dir = os.path.join(base_dir, 'data', 'raw', vendor, source_type)
         os.makedirs(self.output_dir, exist_ok=True)
         
-        # 初始化metadata文件路径
-        self.metadata_file = os.path.join(base_dir, 'data', 'metadata', f'{vendor}_{source_type}_metadata.json')
-        os.makedirs(os.path.dirname(self.metadata_file), exist_ok=True)
-        self.metadata = self._load_metadata()
+        # 初始化元数据管理器
+        self.metadata_manager = MetadataManager(base_dir)
+        self.metadata = self.metadata_manager.get_crawler_metadata(vendor, source_type)
         
         # 初始化HTML到Markdown转换器
         self.html_converter = self._init_html_converter()
@@ -309,29 +310,7 @@ class BaseCrawler(ABC):
         
         return None
     
-    def _load_metadata(self) -> Dict[str, Dict[str, str]]:
-        """
-        加载metadata文件
-        
-        Returns:
-            metadata字典，包含已爬取的URL和文件路径
-        """
-        if os.path.exists(self.metadata_file):
-            try:
-                with open(self.metadata_file, 'r', encoding='utf-8') as f:
-                    return json.load(f)
-            except Exception as e:
-                logger.warning(f"加载metadata文件失败: {e}")
-                return {}
-        return {}
-
-    def _save_metadata(self) -> None:
-        """保存metadata到文件"""
-        try:
-            with open(self.metadata_file, 'w', encoding='utf-8') as f:
-                json.dump(self.metadata, f, ensure_ascii=False, indent=2)
-        except Exception as e:
-            logger.error(f"保存metadata文件失败: {e}")
+    # 这些方法已经被MetadataManager类替代
 
     def _init_html_converter(self):
         """
@@ -408,7 +387,11 @@ class BaseCrawler(ABC):
             'title': title,
             'crawl_time': time.strftime('%Y-%m-%d %H:%M:%S')
         }
-        self._save_metadata()
+        self.metadata_manager.update_crawler_metadata(self.vendor, self.source_type, url, {
+            'filepath': filepath,
+            'title': title,
+            'crawl_time': time.strftime('%Y-%m-%d %H:%M:%S')
+        })
         
         logging.info(f"已保存Markdown文件: {filepath}")
         return filepath
