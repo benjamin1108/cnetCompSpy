@@ -33,6 +33,17 @@ class CrawlerManager:
         self.lock = threading.RLock()
         # 创建结果队列，用于线程安全地收集结果
         self.result_queue = queue.Queue()
+        
+        # 创建共享的MetadataManager实例，确保所有爬虫线程使用同一个实例
+        # 获取项目根目录路径
+        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+        
+        # 导入MetadataManager
+        from src.utils.metadata_manager import MetadataManager
+        self.metadata_manager = MetadataManager(base_dir)
+        
+        # 创建metadata锁，用于保护metadata的访问
+        self.metadata_lock = threading.RLock()
     
     def _get_crawler_class(self, vendor: str, source_type: str):
         """
@@ -111,7 +122,16 @@ class CrawlerManager:
                    f"测试模式: {source_config.get('test_mode', False)}, " + 
                    f"文章限制: {config_copy.get('crawler', {}).get('article_limit', '未设置')}")
         
+        # 创建爬虫实例，并传入共享的MetadataManager实例
         crawler = crawler_class(config_copy, vendor, source_type)
+        
+        # 替换爬虫实例中的MetadataManager为共享实例
+        from src.crawlers.common.base_crawler import metadata_lock
+        with metadata_lock:
+            crawler.metadata_manager = self.metadata_manager
+            # 重新加载metadata，确保使用最新的数据
+            crawler.metadata = crawler.metadata_manager.get_crawler_metadata(vendor, source_type)
+        
         return crawler.run()
     
     def _worker(self, vendor: str, source_type: str, source_config: Dict[str, Any]):
@@ -165,6 +185,10 @@ class CrawlerManager:
                 if vendor not in results:
                     results[vendor] = {}
                 results[vendor][source_type] = result
+        
+        # 确保所有metadata都已保存
+        logger.info("所有爬虫任务完成，确保所有metadata都已保存")
+        self.metadata_manager.save_crawler_metadata()
         
         return results
     

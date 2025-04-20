@@ -208,15 +208,6 @@ class AzureBlogCrawler(BaseCrawler):
         
         logger.info("开始解析Azure博客列表页...")
         
-        # 保存HTML用于调试
-        try:
-            debug_dir = os.path.join(os.path.dirname(self.output_dir), 'debug')
-            os.makedirs(debug_dir, exist_ok=True)
-            with open(os.path.join(debug_dir, 'azure_page.html'), 'w', encoding='utf-8') as f:
-                f.write(html)
-            logger.info("已保存HTML用于调试")
-        except Exception as e:
-            logger.warning(f"保存HTML调试文件失败: {e}")
         
         # Azure博客搜索结果页面的文章通常在指定的容器内
         try:
@@ -662,7 +653,7 @@ class AzureBlogCrawler(BaseCrawler):
     
     def save_to_markdown(self, url: str, title: str, content_and_date: Tuple[str, Optional[str]]) -> str:
         """
-        保存内容为Markdown文件
+        保存内容为Markdown文件，调用基类方法
         
         Args:
             url: 文章URL
@@ -672,59 +663,7 @@ class AzureBlogCrawler(BaseCrawler):
         Returns:
             保存的文件路径
         """
-        content, pub_date = content_and_date
-        
-        if not pub_date:
-            # 如果没有提取到日期，使用当前日期
-            pub_date = datetime.datetime.now().strftime("%Y_%m_%d")
-        
-        # 创建用于存储的文件名（使用日期和URL哈希）
-        filename = self._create_filename(url, pub_date, ".md")
-        filepath = os.path.join(self.output_dir, filename)
-        
-        # 将日期格式转换为更友好的显示格式（比如 2024-03-02）
-        display_date = pub_date.replace('_', '-') if pub_date else "未知"
-        
-        # 构建Markdown内容（美化格式）
-        metadata = [
-            f"# {title}",
-            "",
-            f"**原始链接:** [{url}]({url})",
-            "",
-            f"**发布时间:** {display_date}",
-            "",
-            f"**厂商:** {self.vendor.upper()}",
-            "",
-            f"**类型:** {self.source_type.upper()}",
-            "",
-            "---",
-            "",
-        ]
-        
-        # 组合最终内容
-        final_content = "\n".join(metadata) + content
-        
-        # 写入文件
-        with open(filepath, "w", encoding="utf-8") as f:
-            f.write(final_content)
-        
-        # 记录metadata
-        self.metadata[url] = {
-            'filepath': filepath,
-            'title': title,
-            'crawl_time': time.strftime('%Y-%m-%d %H:%M:%S'),
-            'vendor': self.vendor,
-            'type': self.source_type
-        }
-        self.metadata_manager.update_crawler_metadata_entry(self.vendor, self.source_type, url, {
-            'filepath': filepath,
-            'title': title,
-            'crawl_time': time.strftime('%Y-%m-%d %H:%M:%S'),
-            'vendor': self.vendor,
-            'type': self.source_type
-        })
-        
-        return filepath
+        return super().save_to_markdown(url, title, content_and_date)
     
     def _get_azure_page(self, url: str) -> Optional[str]:
         """

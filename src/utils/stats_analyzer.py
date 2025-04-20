@@ -63,7 +63,9 @@ class StatsAnalyzer:
                         self.crawler_metadata[filepath] = {
                             'url': url,
                             'title': file_data.get('title', ''),
-                            'crawl_time': file_data.get('crawl_time', '')
+                            'crawl_time': file_data.get('crawl_time', ''),
+                            'vendor': vendor,
+                            'source_type': source_type
                         }
         
         # 打印加载信息
@@ -73,12 +75,24 @@ class StatsAnalyzer:
             
             # 打印爬虫元数据信息
             total_crawler_records = 0
+            vendor_counts = {}
+            
             for vendor, vendor_data in crawler_metadata.items():
+                if vendor not in vendor_counts:
+                    vendor_counts[vendor] = {}
+                
                 for source_type, source_data in vendor_data.items():
-                    total_crawler_records += len(source_data)
-                    print(f"已加载元数据文件: {vendor}/{source_type} 包含 {len(source_data)} 条记录")
+                    records_count = len(source_data)
+                    total_crawler_records += records_count
+                    vendor_counts[vendor][source_type] = records_count
+            
+            # 打印每个厂商和源类型的记录数
+            for vendor, source_types in vendor_counts.items():
+                for source_type, count in source_types.items():
+                    print(f"已加载元数据文件: {vendor}/{source_type} 包含 {count} 条记录")
             
             print(f"已加载爬虫元数据文件: crawler_metadata.json 包含 {total_crawler_records} 条记录")
+            print(f"已加载爬虫元数据到内存: self.crawler_metadata 包含 {len(self.crawler_metadata)} 条记录")
         
         return self.all_metadata
     

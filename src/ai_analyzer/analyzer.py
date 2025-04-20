@@ -533,29 +533,17 @@ class AIAnalyzer:
         Returns:
             Dict: 分析元数据字典，键为文件路径，值为元数据
         """
-        with self.metadata_lock:
-            if os.path.exists(self.metadata_file):
-                try:
-                    with open(self.metadata_file, 'r', encoding='utf-8') as f:
-                        raw_metadata = json.load(f)
-                    
-                    # 标准化元数据中的文件路径
-                    metadata = {}
-                    for file_path, file_data in raw_metadata.items():
-                        normalized_path = self._normalize_file_path(file_path)
-                        metadata[normalized_path] = file_data
-                        # 如果标准化后的路径与原始路径不同，记录日志
-                        if normalized_path != file_path:
-                            logger.debug(f"元数据路径标准化: {file_path} -> {normalized_path}")
-                    
-                    logger.info(f"已加载分析元数据: {len(metadata)} 条记录")
-                    return metadata
-                except Exception as e:
-                    logger.error(f"加载分析元数据失败: {e}")
-                    return {}
-            else:
-                logger.info("分析元数据文件不存在，将创建新文件")
-                return {}
+        from src.utils.metadata_utils import load_metadata
+        
+        # 使用通用的元数据加载函数
+        metadata = load_metadata(
+            file_path=self.metadata_file,
+            lock=self.metadata_lock,
+            normalize_path_func=self._normalize_file_path
+        )
+        
+        logger.info(f"已加载分析元数据: {len(metadata)} 条记录")
+        return metadata
     
     def _save_metadata(self, metadata: Dict[str, Dict[str, Any]]) -> None:
         """
@@ -564,37 +552,17 @@ class AIAnalyzer:
         Args:
             metadata: 分析元数据字典
         """
-        with self.metadata_lock:
-            try:
-                # 确保目录存在
-                os.makedirs(os.path.dirname(self.metadata_file), exist_ok=True)
-                
-                # 标准化元数据中的文件路径
-                normalized_metadata = {}
-                for file_path, file_data in metadata.items():
-                    normalized_path = self._normalize_file_path(file_path)
-                    # 更新文件数据中的file字段，确保与键一致
-                    if 'file' in file_data:
-                        file_data['file'] = normalized_path
-                    normalized_metadata[normalized_path] = file_data
-                
-                # 使用临时文件写入，然后重命名，确保原子性写入
-                temp_file = f"{self.metadata_file}.tmp"
-                with open(temp_file, 'w', encoding='utf-8') as f:
-                    json.dump(normalized_metadata, f, ensure_ascii=False, indent=2)
-                    f.flush()
-                    os.fsync(f.fileno())  # 确保数据写入磁盘
-                
-                # 重命名临时文件为正式文件，这是一个原子操作
-                os.replace(temp_file, self.metadata_file)
-                
-                # 确保正式文件权限正确
-                os.chmod(self.metadata_file, 0o666)  # 所有用户可读写
-                
-                logger.info(f"已保存分析元数据: {len(normalized_metadata)} 条记录")
-            except Exception as e:
-                logger.error(f"保存分析元数据失败: {e}")
-                logger.exception("元数据保存详细错误信息:")
+        from src.utils.metadata_utils import save_metadata
+        
+        # 使用通用的元数据保存函数
+        save_metadata(
+            file_path=self.metadata_file,
+            metadata=metadata,
+            lock=self.metadata_lock,
+            normalize_path_func=self._normalize_file_path
+        )
+        
+        logger.info(f"已保存分析元数据: {len(metadata)} 条记录")
     
     def _get_files_to_analyze(self) -> List[str]:
         """
@@ -1441,5 +1409,3 @@ class AIAnalyzer:
         else:
             logger.info("使用单线程模式进行分析")
             return self.run()
-    
-    

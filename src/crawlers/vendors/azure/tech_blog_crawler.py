@@ -417,7 +417,7 @@ class AzureTechBlogCrawler(BaseCrawler):
                 
                 logger.info(f"从所有链接中提取到 {len(processed_articles)} 篇文章")
                 debug_info["final_count"] = len(processed_articles)
-                self._save_debug_info(debug_info, "article_parsing_debug.json")
+
                 return processed_articles
                 
             # 处理找到的文章卡片
@@ -594,10 +594,7 @@ class AzureTechBlogCrawler(BaseCrawler):
                 logger.info(f"添加文章: {title} | {url}")
                 item_details.append(item_detail)
             
-            # 记录调试信息
-            debug_info["items"] = item_details
-            debug_info["final_count"] = len(processed_articles)
-            self._save_debug_info(debug_info, "article_parsing_debug.json")
+       
             
             logger.info(f"总共解析到 {len(processed_articles)} 篇文章")
             return processed_articles
@@ -627,14 +624,7 @@ class AzureTechBlogCrawler(BaseCrawler):
         """检查URL是否为标签或分类页面"""
         return bool(re.search(r'/(tags?|categor(y|ies)|topics?|archive)/', url))
         
-    def _save_debug_info(self, debug_info: Dict, filename: str) -> None:
-        """保存调试信息到文件"""
-        try:
-            with open(os.path.join(self.output_dir, filename), 'w', encoding='utf-8') as f:
-                json.dump(debug_info, f, ensure_ascii=False, indent=2)
-                logger.debug(f"已保存调试信息到 {filename}")
-        except Exception as e:
-            logger.warning(f"保存调试信息失败: {e}")
+
             
     def _parse_date_string(self, date_str: Optional[str]) -> Optional[str]:
         """解析日期字符串，转换为统一格式"""
@@ -830,48 +820,18 @@ class AzureTechBlogCrawler(BaseCrawler):
         return None
     
     def save_to_markdown(self, url: str, title: str, content_and_date: Tuple[str, Optional[str]]) -> str:
-        """保存为Markdown文件"""
-        content, pub_date = content_and_date
+        """
+        保存内容为Markdown文件，调用基类方法
         
-        # 如果未提供日期，使用当前日期
-        if not pub_date:
-            pub_date = time.strftime("%Y_%m_%d")
-        
-        # 创建文件名
-        filename = self._create_filename(url, pub_date, ".md")
-        filepath = os.path.join(self.output_dir, filename)
-        
-        # 构建Markdown内容
-        md_content = f"# {title}\n\n"
-        md_content += f"**原始链接:** [{url}]({url})\n\n"
-        md_content += f"**发布时间:** {pub_date.replace('_', '-')}\n\n"
-        md_content += f"**厂商:** {self.vendor.capitalize()}\n\n"
-        md_content += f"**类型:** {self.source_type}\n\n"
-        md_content += "---\n\n"
-        md_content += content
-        
-        # 保存文件
-        with open(filepath, 'w', encoding='utf-8') as f:
-            f.write(md_content)
-        
-        # 记录metadata
-        self.metadata[url] = {
-            'filepath': filepath,
-            'title': title,
-            'crawl_time': time.strftime('%Y-%m-%d %H:%M:%S'),
-            'vendor': self.vendor,
-            'type': self.source_type
-        }
-        self.metadata_manager.update_crawler_metadata_entry(self.vendor, self.source_type, url, {
-            'filepath': filepath,
-            'title': title,
-            'crawl_time': time.strftime('%Y-%m-%d %H:%M:%S'),
-            'vendor': self.vendor,
-            'type': self.source_type
-        })
-        
-        logger.info(f"已保存Markdown文件: {filepath}")
-        return filepath
+        Args:
+            url: 文章URL
+            title: 文章标题
+            content_and_date: 文章内容和发布日期的元组
+            
+        Returns:
+            保存的文件路径
+        """
+        return super().save_to_markdown(url, title, content_and_date)
     
     def _create_filename(self, url: str, pub_date: str, ext: str) -> str:
         """创建文件名"""

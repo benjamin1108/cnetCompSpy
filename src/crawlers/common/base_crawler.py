@@ -78,6 +78,9 @@ class BaseCrawler(ABC):
         
         # 初始化HTML到Markdown转换器
         self.html_converter = self._init_html_converter()
+        
+        # 初始化待更新的元数据字典，用于批量更新
+        self._pending_metadata_updates = {}
     
     def _init_driver(self) -> None:
         """
@@ -355,7 +358,7 @@ class BaseCrawler(ABC):
             return converter
         return None
     
-    def save_to_markdown(self, url: str, title: str, content_and_date: Tuple[str, Optional[str]]) -> str:
+    def save_to_markdown(self, url: str, title: str, content_and_date: Tuple[str, Optional[str]], metadata_extra: Dict[str, Any] = None, batch_mode: bool = True) -> str:
         """
         将爬取的内容保存为Markdown文件
         
@@ -363,47 +366,71 @@ class BaseCrawler(ABC):
             url: 文章URL
             title: 文章标题
             content_and_date: 文章内容和发布日期元组
+            metadata_extra: 额外的元数据字段，子类可传入定制化信息
+            batch_mode: 是否为批量更新模式，如果为True则不立即写入metadata，而是收集到_pending_metadata_updates中
+                        默认为True，以减少文件写入次数
             
         Returns:
             保存的文件路径
         """
         content, pub_date = content_and_date
         
+        if not pub_date:
+            pub_date = datetime.datetime.now().strftime("%Y_%m_%d")
+        
         # 创建文件名
-        filename = self._create_filename(url, pub_date, 'md')
+        filename = self._create_filename(url, pub_date, '.md')
         file_path = os.path.join(self.output_dir, filename)
         
-        # 格式化Markdown内容
-        # 添加元数据头
-        md_content = f"""---
-title: {title}
-date: {pub_date or 'Unknown'}
-vendor: {self.vendor}
-source_type: {self.source_type}
-source_url: {url}
----
-
-{content}
-"""
+        # 将日期格式转换为更友好的显示格式
+        display_date = pub_date.replace('_', '-') if pub_date else "未知"
+        
+        # 构建Markdown内容
+        metadata_lines = [
+            f"# {title}",
+            "",
+            f"**原始链接:** [{url}]({url})",
+            "",
+            f"**发布时间:** {display_date}",
+            "",
+            f"**厂商:** {self.vendor.upper()}",
+            "",
+            f"**类型:** {self.source_type.upper()}",
+            "",
+            "---",
+            "",
+        ]
+        final_content = "\n".join(metadata_lines) + content
         
         # 线程安全地写入文件
         with self.lock:
             # 确保目录存在
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
-            
             with open(file_path, 'w', encoding='utf-8') as f:
-                f.write(md_content)
+                f.write(final_content)
             
-            # 更新元数据
+            # 创建metadata条目
+            metadata_entry = {
+                'filepath': file_path,
+                'title': title,
+                'crawl_time': time.strftime('%Y-%m-%d %H:%M:%S'),
+                'vendor': self.vendor,
+                'source_type': self.source_type
+            }
+            if metadata_extra:
+                metadata_entry.update(metadata_extra)
+            
+            # 更新内存中的metadata
             with metadata_lock:
-                self.metadata[url] = {
-                    'filename': filename,
-                    'filepath': file_path,
-                    'title': title,
-                    'pub_date': pub_date,
-                    'crawl_date': datetime.datetime.now().isoformat()
-                }
-                self.metadata_manager.update_crawler_metadata(self.vendor, self.source_type, self.metadata)
+                self.metadata[url] = metadata_entry
+            
+            # 如果是批量更新模式，则收集metadata条目，不立即写入文件
+            if batch_mode:
+                self._pending_metadata_updates[url] = metadata_entry
+            else:
+                # 否则立即更新metadata文件
+                with metadata_lock:
+                    self.metadata_manager.update_crawler_metadata_entry(self.vendor, self.source_type, url, metadata_entry)
         
         return file_path
     
@@ -694,6 +721,220 @@ source_url: {url}
         # 默认返回False，宁可错过也不要误报
         return False
     
+    def process_articles_in_batches(self, article_info: List[Tuple], batch_size: int = 10) -> List[str]:
+        """
+        分批处理文章，减少锁的竞争和文件写入次数
+        
+        Args:
+            article_info: 文章信息列表，每项为(标题, URL, 日期)元组
+            batch_size: 每批处理的文章数量，默认为10
+            
+        Returns:
+            保存的文件路径列表
+        """
+        saved_files = []
+        
+        # 分批处理文章
+        for i in range(0, len(article_info), batch_size):
+            batch = article_info[i:i+batch_size]
+            logger.info(f"处理第 {i//batch_size + 1} 批文章，共 {len(batch)} 篇")
+            
+            # 在处理每批文章前刷新metadata，确保内存中的metadata是最新的
+            self.refresh_metadata()
+            
+            # 过滤已爬取的文章
+            filtered_batch = []
+            for title, url, list_date in batch:
+                # 减少锁的持有时间，只在检查URL是否在metadata中时使用锁
+                is_url_in_metadata = False
+                with metadata_lock:
+                    is_url_in_metadata = url in self.metadata and 'filepath' in self.metadata[url] and os.path.exists(self.metadata[url]['filepath'])
+                
+                if is_url_in_metadata:
+                    logger.info(f"跳过已爬取的文章: {title} ({url})")
+                    saved_files.append(self.metadata[url]['filepath'])
+                else:
+                    filtered_batch.append((title, url, list_date))
+            
+            # 处理这一批文章
+            for idx, (title, url, list_date) in enumerate(filtered_batch, 1):
+                try:
+                    logger.info(f"正在爬取第 {idx}/{len(filtered_batch)} 篇文章: {title}")
+                    
+                    # 获取文章内容
+                    article_html = self._get_article_html(url)
+                    if not article_html:
+                        logger.warning(f"获取文章内容失败: {url}")
+                        continue
+                    
+                    # 解析文章内容和日期
+                    article_content, pub_date = self._parse_article_content(url, article_html, list_date)
+                    
+                    # 保存为Markdown，使用批量更新模式
+                    file_path = self.save_to_markdown(url, title, (article_content, pub_date), batch_mode=True)
+                    saved_files.append(file_path)
+                    logger.info(f"已保存文章: {title} -> {file_path}")
+                    
+                    # 间隔一段时间再爬取下一篇
+                    if idx < len(filtered_batch):
+                        time.sleep(self.interval)
+                        
+                except Exception as e:
+                    logger.error(f"爬取文章失败: {url} - {e}")
+            
+            # 批量更新这一批文章的metadata
+            if self._pending_metadata_updates:
+                self.batch_update_metadata()
+        
+        return saved_files
+    
+    def _get_article_html(self, url: str) -> Optional[str]:
+        """
+        获取文章HTML内容，优先使用requests，失败时使用Selenium
+        
+        Args:
+            url: 文章URL
+            
+        Returns:
+            文章HTML内容或None（如果失败）
+        """
+        # 尝试使用requests获取文章内容
+        try:
+            logger.info(f"使用requests库获取文章内容: {url}")
+            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
+            response = requests.get(url, headers=headers, timeout=self.timeout)
+            if response.status_code == 200:
+                logger.info("使用requests库成功获取到文章内容")
+                return response.text
+            else:
+                logger.error(f"请求返回非成功状态码: {response.status_code}")
+        except Exception as e:
+            logger.error(f"使用requests库获取文章失败: {e}")
+        
+        # 如果requests失败，尝试使用Selenium
+        if not self.driver:
+            self._init_driver()
+        
+        try:
+            logger.info(f"尝试使用Selenium获取文章内容: {url}")
+            return self._get_selenium(url)
+        except Exception as e:
+            logger.warning(f"使用Selenium获取文章失败: {e}")
+        
+        return None
+    
+    def _parse_article_content(self, url: str, html: str, list_date: Optional[str] = None) -> Tuple[str, Optional[str]]:
+        """
+        从文章页面解析文章内容和发布日期
+        
+        Args:
+            url: 文章URL
+            html: 文章页面HTML
+            list_date: 从列表页获取的日期（可能为None）
+            
+        Returns:
+            (文章内容, 发布日期)元组，如果找不到日期则使用列表页日期或当前日期
+        """
+        soup = BeautifulSoup(html, 'lxml')
+        
+        # 提取发布日期
+        pub_date = self._extract_publish_date(soup, list_date, url)
+        
+        # 提取文章内容
+        article_content = self._extract_article_content(soup, url)
+        
+        return article_content, pub_date
+    
+    def _extract_article_content(self, soup: BeautifulSoup, url: str) -> str:
+        """
+        从文章页面提取文章内容
+        
+        Args:
+            soup: BeautifulSoup对象
+            url: 文章URL
+            
+        Returns:
+            Markdown格式的文章内容
+        """
+        # 尝试定位文章主体内容
+        content_selectors = [
+            'article', 
+            '.entry-content', 
+            '.post-content', 
+            '.article-content', 
+            '.main-content',
+            '.blog-post',
+            '.content-container',
+            'main',
+            '#main-content'
+        ]
+        
+        article_elem = None
+        for selector in content_selectors:
+            elements = soup.select(selector)
+            if elements:
+                # 选择最长的元素作为文章主体
+                article_elem = max(elements, key=lambda x: len(str(x)))
+                break
+        
+        # 如果没有找到文章主体，使用页面主体
+        if not article_elem:
+            article_elem = soup.find('body')
+            
+        if not article_elem:
+            logger.warning(f"未找到文章主体: {url}")
+            return "无法提取文章内容"
+        
+        # 清理非内容元素
+        for elem in article_elem.select('header, footer, sidebar, .sidebar, nav, .navigation, .ad, .ads, .comments, .social-share'):
+            elem.decompose()
+        
+        # 转换为Markdown
+        html = str(article_elem)
+        if self.html_converter:
+            markdown_content = self.html_converter.handle(html)
+        else:
+            # 简单的HTML到文本转换
+            markdown_content = article_elem.get_text("\n\n", strip=True)
+        
+        # 清理和美化Markdown
+        markdown_content = self._clean_markdown(markdown_content)
+        
+        return markdown_content
+    
+    def batch_update_metadata(self) -> None:
+        """
+        批量更新所有待更新的metadata条目，减少文件写入次数
+        
+        在爬取完成后调用此方法，一次性更新所有收集的metadata条目
+        """
+        if not self._pending_metadata_updates:
+            logger.info("没有待更新的metadata条目")
+            return
+        
+        logger.info(f"批量更新 {len(self._pending_metadata_updates)} 个metadata条目")
+        with metadata_lock:
+            self.metadata_manager.update_crawler_metadata_entries_batch(
+                self.vendor, 
+                self.source_type, 
+                self._pending_metadata_updates
+            )
+        
+        # 清空待更新列表
+        self._pending_metadata_updates = {}
+        logger.info("批量更新metadata完成")
+    
+    def refresh_metadata(self) -> None:
+        """
+        刷新内存中的metadata，确保与文件同步
+        
+        在处理一批文章前调用，确保内存中的metadata是最新的
+        """
+        logger.info(f"刷新 {self.vendor}/{self.source_type} 的metadata")
+        with metadata_lock:
+            self.metadata = self.metadata_manager.get_crawler_metadata(self.vendor, self.source_type)
+        logger.info(f"metadata刷新完成，共 {len(self.metadata)} 条记录")
+    
     def should_crawl(self, url: str) -> bool:
         """
         检查是否需要爬取某个URL
@@ -707,12 +948,15 @@ source_url: {url}
         Returns:
             True 如果需要爬取，False 如果不需要（已存在）
         """
-        # 使用线程安全的方式检查元数据
+        # 减少锁的持有时间，只在检查URL是否在metadata中时使用锁
+        is_url_in_metadata = False
         with metadata_lock:
-            if url in self.metadata:
-                logger.info(f"跳过已爬取的URL: {url}")
-                return False
-            return True
+            is_url_in_metadata = url in self.metadata
+        
+        if is_url_in_metadata:
+            logger.info(f"跳过已爬取的URL: {url}")
+            return False
+        return True
 
     def run(self) -> List[str]:
         """
@@ -723,11 +967,35 @@ source_url: {url}
         """
         try:
             logger.info(f"开始爬取 {self.vendor} {self.source_type}")
+            
+            # 在爬取前刷新metadata，确保内存中的metadata是最新的
+            self.refresh_metadata()
+            
+            # 清空待更新列表，确保每次运行都是从空列表开始
+            self._pending_metadata_updates = {}
+            
             results = self._crawl()
+            
+            # 强制批量更新metadata，无论爬虫子类是否显式调用
+            # 这确保了即使爬虫子类没有调用batch_update_metadata，metadata也会被正确更新
+            logger.info(f"爬取完成，检查是否有待更新的metadata条目")
+            if self._pending_metadata_updates:
+                logger.info(f"发现 {len(self._pending_metadata_updates)} 个待更新的metadata条目，执行批量更新")
+                self.batch_update_metadata()
+            else:
+                logger.info("没有待更新的metadata条目，跳过批量更新")
+                
             logger.info(f"爬取完成 {self.vendor} {self.source_type}, 共爬取 {len(results)} 个文件")
             return results
         except Exception as e:
             logger.error(f"爬取失败 {self.vendor} {self.source_type}: {e}")
+            # 即使爬取失败，也尝试更新已收集的metadata
+            if self._pending_metadata_updates:
+                logger.info(f"爬取失败，但仍有 {len(self._pending_metadata_updates)} 个待更新的metadata条目，执行批量更新")
+                try:
+                    self.batch_update_metadata()
+                except Exception as update_e:
+                    logger.error(f"批量更新metadata失败: {update_e}")
             return []
         finally:
             self._close_driver()
