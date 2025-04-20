@@ -734,6 +734,11 @@ class BaseCrawler(ABC):
         """
         saved_files = []
         
+        # 检查是否启用了强制模式
+        force_mode = self.crawler_config.get('force', False)
+        if force_mode:
+            logger.info("强制模式已启用，将重新爬取所有文章，忽略本地metadata")
+        
         # 分批处理文章
         for i in range(0, len(article_info), batch_size):
             batch = article_info[i:i+batch_size]
@@ -742,19 +747,25 @@ class BaseCrawler(ABC):
             # 在处理每批文章前刷新metadata，确保内存中的metadata是最新的
             self.refresh_metadata()
             
-            # 过滤已爬取的文章
+            # 过滤已爬取的文章（如果不是强制模式）
             filtered_batch = []
             for title, url, list_date in batch:
-                # 减少锁的持有时间，只在检查URL是否在metadata中时使用锁
-                is_url_in_metadata = False
-                with metadata_lock:
-                    is_url_in_metadata = url in self.metadata and 'filepath' in self.metadata[url] and os.path.exists(self.metadata[url]['filepath'])
-                
-                if is_url_in_metadata:
-                    logger.info(f"跳过已爬取的文章: {title} ({url})")
-                    saved_files.append(self.metadata[url]['filepath'])
-                else:
+                if force_mode:
+                    # 强制模式下，不跳过任何文章
                     filtered_batch.append((title, url, list_date))
+                    logger.info(f"强制模式：将重新爬取文章: {title} ({url})")
+                else:
+                    # 非强制模式下，跳过已爬取的文章
+                    # 减少锁的持有时间，只在检查URL是否在metadata中时使用锁
+                    is_url_in_metadata = False
+                    with metadata_lock:
+                        is_url_in_metadata = url in self.metadata and 'filepath' in self.metadata[url] and os.path.exists(self.metadata[url]['filepath'])
+                    
+                    if is_url_in_metadata:
+                        logger.info(f"跳过已爬取的文章: {title} ({url})")
+                        saved_files.append(self.metadata[url]['filepath'])
+                    else:
+                        filtered_batch.append((title, url, list_date))
             
             # 处理这一批文章
             for idx, (title, url, list_date) in enumerate(filtered_batch, 1):

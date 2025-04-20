@@ -1,0 +1,304 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>进程锁管理</h1>
+    <p class="lead">查看和管理系统中的进程锁状态，防止系统因进程异常退出而锁死。</p>
+    
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> 进程锁用于确保同一时间只有一个特定类型的进程在运行，防止多个进程同时运行导致的数据不一致问题。
+        如果进程异常退出，可能会导致锁无法正常释放，此时可以使用此页面手动清除锁。
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">进程锁状态</h5>
+        </div>
+        <div class="card-body">
+            <div id="lock-status-loading" class="text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">加载中...</span>
+                </div>
+                <p>正在加载进程锁状态...</p>
+            </div>
+            
+            <div id="lock-status-content" style="display: none;">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>进程类型</th>
+                                <th>状态</th>
+                                <th>进程ID</th>
+                                <th>获取时间</th>
+                                <th>持续时间</th>
+                                <th>命令</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lock-status-table">
+                            <!-- 锁状态将通过JavaScript动态填充 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div id="lock-status-error" class="alert alert-danger" style="display: none;">
+                <i class="fas fa-exclamation-triangle"></i> <span id="lock-status-error-message"></span>
+            </div>
+        </div>
+        <div class="card-footer">
+            <button id="refresh-lock-status" class="btn btn-outline-primary">
+                <i class="fas fa-sync-alt"></i> 刷新状态
+            </button>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0">清除所有锁</h5>
+        </div>
+        <div class="card-body">
+            <p>
+                <strong>警告：</strong> 清除锁可能会导致正在运行的进程出现问题。只有在确定没有进程正在运行或进程已经异常退出时，才应该清除锁。
+            </p>
+            <div class="d-flex gap-2">
+                <button id="clear-crawler-lock" class="btn btn-warning" data-process-type="CRAWLER">
+                    <i class="fas fa-trash-alt"></i> 清除爬虫锁
+                </button>
+                <button id="clear-analyzer-lock" class="btn btn-warning" data-process-type="ANALYZER">
+                    <i class="fas fa-trash-alt"></i> 清除分析器锁
+                </button>
+                <button id="clear-webserver-lock" class="btn btn-warning" data-process-type="WEB_SERVER">
+                    <i class="fas fa-trash-alt"></i> 清除Web服务器锁
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 确认对话框 -->
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="confirmModalLabel">确认清除锁</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+            </div>
+            <div class="modal-body">
+                <p>您确定要清除 <strong id="lock-type-to-clear"></strong> 锁吗？</p>
+                <p>如果该进程仍在运行，清除锁可能会导致数据不一致问题。</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-danger" id="confirm-clear-lock">确认清除</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 结果对话框 -->
+<div class="modal fade" id="resultModal" tabindex="-1" aria-labelledby="resultModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" id="result-modal-header">
+                <h5 class="modal-title" id="resultModalLabel">操作结果</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+            </div>
+            <div class="modal-body" id="result-modal-body">
+                <!-- 结果内容将通过JavaScript动态填充 -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">确定</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 页面加载完成后执行
+    document.addEventListener('DOMContentLoaded', function() {
+        // 加载锁状态
+        loadLockStatus();
+        
+        // 刷新按钮点击事件
+        document.getElementById('refresh-lock-status').addEventListener('click', function() {
+            loadLockStatus();
+        });
+        
+        // 清除锁按钮点击事件
+        document.querySelectorAll('[id^="clear-"][id$="-lock"]').forEach(function(button) {
+            button.addEventListener('click', function() {
+                const processType = this.getAttribute('data-process-type');
+                showConfirmModal(processType);
+            });
+        });
+        
+        // 确认清除锁按钮点击事件
+        document.getElementById('confirm-clear-lock').addEventListener('click', function() {
+            const processType = this.getAttribute('data-process-type');
+            clearLock(processType);
+        });
+    });
+    
+    // 加载锁状态
+    function loadLockStatus() {
+        // 显示加载中
+        document.getElementById('lock-status-loading').style.display = 'block';
+        document.getElementById('lock-status-content').style.display = 'none';
+        document.getElementById('lock-status-error').style.display = 'none';
+        
+        // 发送请求获取锁状态
+        fetch('/api/admin/process-locks')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 更新锁状态表格
+                    updateLockStatusTable(data.locks);
+                    // 显示内容
+                    document.getElementById('lock-status-loading').style.display = 'none';
+                    document.getElementById('lock-status-content').style.display = 'block';
+                } else {
+                    // 显示错误信息
+                    document.getElementById('lock-status-loading').style.display = 'none';
+                    document.getElementById('lock-status-error').style.display = 'block';
+                    document.getElementById('lock-status-error-message').textContent = data.error || '获取锁状态失败';
+                }
+            })
+            .catch(error => {
+                // 显示错误信息
+                document.getElementById('lock-status-loading').style.display = 'none';
+                document.getElementById('lock-status-error').style.display = 'block';
+                document.getElementById('lock-status-error-message').textContent = '获取锁状态失败: ' + error.message;
+            });
+    }
+    
+    // 更新锁状态表格
+    function updateLockStatusTable(locks) {
+        const tableBody = document.getElementById('lock-status-table');
+        tableBody.innerHTML = '';
+        
+        // 遍历所有锁
+        for (const [processType, lockInfo] of Object.entries(locks)) {
+            const row = document.createElement('tr');
+            
+            // 进程类型
+            const typeCell = document.createElement('td');
+            typeCell.textContent = processType;
+            row.appendChild(typeCell);
+            
+            // 状态
+            const statusCell = document.createElement('td');
+            if (lockInfo.locked) {
+                if (lockInfo.process_exists) {
+                    statusCell.innerHTML = '<span class="badge bg-success">运行中</span>';
+                } else if (lockInfo.expired) {
+                    statusCell.innerHTML = '<span class="badge bg-danger">已过期</span>';
+                } else {
+                    statusCell.innerHTML = '<span class="badge bg-warning text-dark">已锁定</span>';
+                }
+            } else {
+                statusCell.innerHTML = '<span class="badge bg-secondary">未锁定</span>';
+            }
+            row.appendChild(statusCell);
+            
+            // 进程ID
+            const pidCell = document.createElement('td');
+            pidCell.textContent = lockInfo.pid || '-';
+            row.appendChild(pidCell);
+            
+            // 获取时间
+            const timestampCell = document.createElement('td');
+            timestampCell.textContent = lockInfo.timestamp_formatted || '-';
+            row.appendChild(timestampCell);
+            
+            // 持续时间
+            const ageCell = document.createElement('td');
+            ageCell.textContent = lockInfo.age_formatted || '-';
+            row.appendChild(ageCell);
+            
+            // 命令
+            const commandCell = document.createElement('td');
+            commandCell.textContent = lockInfo.command || '-';
+            commandCell.style.maxWidth = '300px';
+            commandCell.style.overflow = 'hidden';
+            commandCell.style.textOverflow = 'ellipsis';
+            commandCell.style.whiteSpace = 'nowrap';
+            row.appendChild(commandCell);
+            
+            // 操作
+            const actionCell = document.createElement('td');
+            if (lockInfo.locked) {
+                const clearButton = document.createElement('button');
+                clearButton.className = 'btn btn-sm btn-outline-danger';
+                clearButton.innerHTML = '<i class="fas fa-trash-alt"></i> 清除';
+                clearButton.addEventListener('click', function() {
+                    showConfirmModal(processType);
+                });
+                actionCell.appendChild(clearButton);
+            } else {
+                actionCell.textContent = '-';
+            }
+            row.appendChild(actionCell);
+            
+            tableBody.appendChild(row);
+        }
+    }
+    
+    // 显示确认对话框
+    function showConfirmModal(processType) {
+        const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+        document.getElementById('lock-type-to-clear').textContent = processType;
+        document.getElementById('confirm-clear-lock').setAttribute('data-process-type', processType);
+        modal.show();
+    }
+    
+    // 清除锁
+    function clearLock(processType) {
+        // 关闭确认对话框
+        const confirmModal = bootstrap.Modal.getInstance(document.getElementById('confirmModal'));
+        confirmModal.hide();
+        
+        // 发送请求清除锁
+        fetch('/api/admin/clear-process-lock', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                process_type: processType
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            // 显示结果对话框
+            const resultModal = new bootstrap.Modal(document.getElementById('resultModal'));
+            const resultHeader = document.getElementById('result-modal-header');
+            const resultBody = document.getElementById('result-modal-body');
+            
+            if (data.success) {
+                resultHeader.className = 'modal-header bg-success text-white';
+                resultBody.innerHTML = `<p><i class="fas fa-check-circle"></i> ${data.message || '操作成功'}</p>`;
+                // 重新加载锁状态
+                loadLockStatus();
+            } else {
+                resultHeader.className = 'modal-header bg-danger text-white';
+                resultBody.innerHTML = `<p><i class="fas fa-exclamation-triangle"></i> ${data.error || '操作失败'}</p>`;
+            }
+            
+            resultModal.show();
+        })
+        .catch(error => {
+            // 显示错误对话框
+            const resultModal = new bootstrap.Modal(document.getElementById('resultModal'));
+            const resultHeader = document.getElementById('result-modal-header');
+            const resultBody = document.getElementById('result-modal-body');
+            
+            resultHeader.className = 'modal-header bg-danger text-white';
+            resultBody.innerHTML = `<p><i class="fas fa-exclamation-triangle"></i> 清除锁失败: ${error.message}</p>`;
+            
+            resultModal.show();
+        });
+    }
+</script>
+{% endblock %}

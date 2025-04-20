@@ -226,6 +226,17 @@ class RouteManager:
                 tasks=tasks
             )
         
+        # 管理后台实时任务管理页面
+        @self.app.route('/admin/tasks-realtime')
+        def admin_tasks_realtime():
+            if not self.admin_manager.is_logged_in():
+                return redirect(url_for('login', next=request.url))
+            
+            return render_template(
+                'admin/tasks_realtime.html',
+                title='实时任务管理'
+            )
+        
         # 管理后台AI分析任务页面
         @self.app.route('/admin/ai-tasks')
         def admin_ai_tasks():
@@ -239,6 +250,17 @@ class RouteManager:
                 'admin/ai_tasks.html',
                 title='AI分析任务',
                 missing_analysis=missing_analysis
+            )
+        
+        # 管理后台进程锁管理页面
+        @self.app.route('/admin/process-locks')
+        def admin_process_locks():
+            if not self.admin_manager.is_logged_in():
+                return redirect(url_for('login', next=request.url))
+            
+            return render_template(
+                'admin/process_locks.html',
+                title='进程锁管理'
             )
     
     def _register_api_routes(self):
@@ -274,6 +296,39 @@ class RouteManager:
                 return jsonify({'success': True, 'result': result})
             except Exception as e:
                 self.logger.error(f"执行任务失败: {e}")
+                return jsonify({'success': False, 'error': str(e)}), 500
+        
+        # 获取进程锁状态API
+        @self.app.route('/api/admin/process-locks')
+        def api_process_locks():
+            if not self.admin_manager.is_logged_in():
+                return jsonify({'success': False, 'error': '未登录'}), 401
+            
+            try:
+                # 获取进程锁状态
+                lock_status = self.admin_manager.get_process_lock_status()
+                return jsonify({'success': True, 'locks': lock_status})
+            except Exception as e:
+                self.logger.error(f"获取进程锁状态失败: {e}")
+                return jsonify({'success': False, 'error': str(e)}), 500
+        
+        # 清除进程锁API
+        @self.app.route('/api/admin/clear-process-lock', methods=['POST'])
+        def api_clear_process_lock():
+            if not self.admin_manager.is_logged_in():
+                return jsonify({'success': False, 'error': '未登录'}), 401
+            
+            process_type = request.json.get('process_type')
+            
+            if not process_type:
+                return jsonify({'success': False, 'error': '未指定进程类型'}), 400
+            
+            try:
+                # 清除进程锁
+                result = self.admin_manager.clear_process_lock(process_type)
+                return jsonify(result)
+            except Exception as e:
+                self.logger.error(f"清除进程锁失败: {e}")
                 return jsonify({'success': False, 'error': str(e)}), 500
     
     def _register_error_handlers(self):

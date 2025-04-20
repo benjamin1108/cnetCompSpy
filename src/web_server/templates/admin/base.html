@@ -190,6 +190,11 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link {% if request.path == '/admin/tasks-realtime' %}active{% endif %}" href="{{ url_for('admin_tasks_realtime') }}">
+                        <i class="bi bi-activity"></i> 实时任务
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link {% if request.path == '/admin/ai-tasks' %}active{% endif %}" href="{{ url_for('admin_ai_tasks') }}">
                         <i class="bi bi-robot"></i> AI分析任务
                     </a>
@@ -197,6 +202,11 @@
                 <li class="nav-item">
                     <a class="nav-link {% if request.path == '/admin/stats' %}active{% endif %}" href="{{ url_for('admin_stats_page') }}">
                         <i class="bi bi-bar-chart"></i> 文件统计
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.path == '/admin/process-locks' %}active{% endif %}" href="{{ url_for('admin_process_locks') }}">
+                        <i class="bi bi-lock"></i> 进程锁管理
                     </a>
                 </li>
                 <li class="nav-item mt-4">

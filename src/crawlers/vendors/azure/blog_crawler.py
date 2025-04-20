@@ -115,27 +115,34 @@ class AzureBlogCrawler(BaseCrawler):
                 logger.info(f"爬取模式：限制爬取{article_limit}篇文章")
                 article_info = article_info[:article_limit]
             
-            # 修改：先过滤已爬取的文章链接，避免不必要的网络请求
-            filtered_article_info = []
-            already_crawled_count = 0
-            
-            with metadata_lock:  # 使用锁确保线程安全
-                for title, url, list_date in article_info:
-                    # 只有当URL在metadata中存在且文件也存在时才跳过
-                    if (url in self.metadata and 
-                        'filepath' in self.metadata[url] and 
-                        os.path.exists(self.metadata[url]['filepath'])):
-                        # 文章已爬取过且文件存在，直接添加到结果中
-                        already_crawled_count += 1
-                        logger.info(f"跳过已爬取的文章: {title} ({url})")
-                        saved_files.append(self.metadata[url]['filepath'])
-                    else:
-                        # 文章未爬取过或文件不存在，添加到待爬取列表
-                        if url in self.metadata:
-                            logger.info(f"文章元数据存在但文件缺失，将重新爬取: {title} ({url})")
-                        filtered_article_info.append((title, url, list_date))
-            
-            logger.info(f"过滤后: {len(filtered_article_info)} 篇新文章需要爬取，{already_crawled_count} 篇文章已存在")
+            # 检查是否启用了强制模式
+            force_mode = self.crawler_config.get('force', False)
+            if force_mode:
+                logger.info("强制模式已启用，将重新爬取所有文章，忽略本地metadata")
+                filtered_article_info = article_info
+                logger.info(f"强制模式下爬取所有 {len(filtered_article_info)} 篇文章")
+            else:
+                # 非强制模式下，过滤已爬取的文章链接，避免不必要的网络请求
+                filtered_article_info = []
+                already_crawled_count = 0
+                
+                with metadata_lock:  # 使用锁确保线程安全
+                    for title, url, list_date in article_info:
+                        # 只有当URL在metadata中存在且文件也存在时才跳过
+                        if (url in self.metadata and 
+                            'filepath' in self.metadata[url] and 
+                            os.path.exists(self.metadata[url]['filepath'])):
+                            # 文章已爬取过且文件存在，直接添加到结果中
+                            already_crawled_count += 1
+                            logger.info(f"跳过已爬取的文章: {title} ({url})")
+                            saved_files.append(self.metadata[url]['filepath'])
+                        else:
+                            # 文章未爬取过或文件不存在，添加到待爬取列表
+                            if url in self.metadata:
+                                logger.info(f"文章元数据存在但文件缺失，将重新爬取: {title} ({url})")
+                            filtered_article_info.append((title, url, list_date))
+                
+                logger.info(f"过滤后: {len(filtered_article_info)} 篇新文章需要爬取，{already_crawled_count} 篇文章已存在")
             
             # 爬取新文章
             for idx, (title, url, list_date) in enumerate(filtered_article_info, 1):

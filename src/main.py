@@ -187,9 +187,12 @@ def clean_data_dir(data_dir: str, dry_run: bool = False) -> None:
     
     logger.info("所有数据目录清理完成")
 
-def crawl_main(args: argparse.Namespace) -> None:
+def crawl_main(args: argparse.Namespace) -> int:
     """
     Main function for crawling.
+    
+    Returns:
+        int: 0表示成功，非0表示失败
     """
     config = get_config(args)
     
@@ -201,7 +204,7 @@ def crawl_main(args: argparse.Namespace) -> None:
         # 如果厂商不存在，给出警告
         if not filtered_sources:
             logger.warning(f"未找到厂商 {args.vendor} 的配置，请检查配置文件和厂商名称")
-            return
+            return 1
         config['sources'] = filtered_sources
     
     # 如果设置了文章数量限制，更新配置
@@ -222,11 +225,18 @@ def crawl_main(args: argparse.Namespace) -> None:
     crawler_manager = CrawlerManager(config)
     result = crawler_manager.run()
     
+    # 检查是否成功获取进程锁
+    if not result:
+        logger.error("爬虫任务失败，可能是因为无法获取进程锁")
+        return 1
+    
     # 记录爬取结果
     for vendor_name, vendor_results in result.items():
         for source_type, files in vendor_results.items():
             file_count = len(files)
             logger.info(f"爬取完成: {vendor_name} {source_type}, 共 {file_count} 个文件")
+    
+    return 0
 
 def test_main(args: argparse.Namespace) -> None:
     """
@@ -249,9 +259,12 @@ def test_main(args: argparse.Namespace) -> None:
     # 分析
     analyze_main(args)
 
-def analyze_main(args: argparse.Namespace) -> None:
+def analyze_main(args: argparse.Namespace) -> int:
     """
     Main function for analyzing.
+    
+    Returns:
+        int: 0表示成功，非0表示失败
     """
     # 加载配置
     config = get_config(args)
@@ -295,11 +308,20 @@ def analyze_main(args: argparse.Namespace) -> None:
     
     # 创建并运行AI分析器
     analyzer = AIAnalyzer(config)
-    analyzer.analyze_all()
+    success = analyzer.analyze_all()
+    
+    if not success:
+        logger.error("分析任务失败，可能是因为无法获取进程锁")
+        return 1
+    
+    return 0
 
-def main() -> None:
+def main() -> int:
     """
     Main entry point.
+    
+    Returns:
+        int: 0表示成功，非0表示失败
     """
     # 使用彩色日志替换原有的日志配置
     base_dir = os.path.dirname(os.path.dirname(__file__))
@@ -333,21 +355,23 @@ def main() -> None:
     if args.clean:
         clean_data_dir(os.path.dirname(os.path.dirname(__file__)), True)
         if not args.mode:
-            return
+            return 0
     
     # 根据运行模式执行相应操作
     if args.mode == "crawl":
         logger.info("运行模式: crawl")
-        crawl_main(args)
+        return crawl_main(args)
     elif args.mode == "analyze":
         logger.info("运行模式: analyze")
-        analyze_main(args)
+        return analyze_main(args)
     elif args.mode == "test":
         logger.info("运行模式: test")
         logger.info("启动测试模式")
-        test_main(args)
+        return test_main(args)
     else:
         logger.warning("未指定运行模式，使用 --mode 参数指定运行模式")
+        return 0
 
 if __name__ == "__main__":
-    main()
+    exit_code = main()
+    sys.exit(exit_code)

@@ -10,10 +10,12 @@
 import os
 import logging
 import yaml
-import subprocess
-import tempfile
+import json
 from typing import Dict, List, Any, Optional
 from flask import session
+
+from src.utils.process_lock_manager import ProcessLockManager, ProcessType
+from src.utils.task_manager import TaskManager
 
 class AdminManager:
     """管理员管理器类"""
@@ -30,6 +32,9 @@ class AdminManager:
         
         # 加载管理员账户信息
         self.admin_credentials = self._load_admin_credentials()
+        
+        # 初始化任务管理器
+        self.task_manager = TaskManager(base_dir)
         
         self.logger.info("管理员管理器初始化完成")
     
@@ -74,13 +79,6 @@ class AdminManager:
         """
         # 定义可用任务
         tasks = [
-            {
-                'id': 'analyze_file',
-                'name': '分析单个文件',
-                'description': '对指定的单个文件进行AI分析',
-                'command': './run.sh analyze --file {file}',
-                'params': ['file']
-            },
             {
                 'id': 'crawl_all',
                 'name': '爬取所有厂商数据',
@@ -182,72 +180,229 @@ class AdminManager:
         """
         # 获取任务信息
         tasks = self.get_available_tasks()
-        task = next((t for t in tasks if t['id'] == task_id), None)
+        task_info = next((t for t in tasks if t['id'] == task_id), None)
         
-        if not task:
+        if not task_info:
             raise ValueError(f"未找到任务: {task_id}")
         
-        # 构建命令
-        command = task['command']
+        # 检查任务类型，确定需要获取的进程锁类型
+        process_type = None
+        if 'crawl' in task_id:
+            process_type = ProcessType.CRAWLER
+        elif 'analyze' in task_id:
+            process_type = ProcessType.ANALYZER
         
-        # 替换命令中的占位符
-        if params:
-            for param_name, param_value in params.items():
-                if param_value:
-                    placeholder = '{' + param_name + '}'
-                    if placeholder in command:
-                        command = command.replace(placeholder, param_value)
+        # 如果是爬虫或分析任务，检查进程锁状态
+        if process_type:
+            # 检查锁状态
+            lock_status = ProcessLockManager.check_lock_status()
+            # 如果是爬虫任务，检查分析进程是否在运行
+            if process_type == ProcessType.CRAWLER and 'ANALYZER' in lock_status:
+                analyzer_status = lock_status['ANALYZER']
+                if analyzer_status.get('locked', False) and analyzer_status.get('process_exists', False):
+                    # 检查锁是否过期或进程不存在，如果是则强制清除锁
+                    if analyzer_status.get('expired', False) or not analyzer_status.get('process_exists', False):
+                        self.logger.info(f"检测到分析进程锁过期或进程不存在，尝试清除锁")
+                        ProcessLockManager.force_clear_lock_by_type(ProcessType.ANALYZER)
+                        # 重新检查锁状态
+                        lock_status = ProcessLockManager.check_lock_status()
+                        analyzer_status = lock_status.get('ANALYZER', {})
+                        if not analyzer_status.get('locked', False):
+                            self.logger.info(f"成功清除分析进程锁，继续启动爬虫任务: {task_id}")
+                        else:
+                            self.logger.warning(f"分析进程仍然在运行，无法启动爬虫任务: {task_id}")
+                            return {
+                                'success': False,
+                                'error': "分析进程仍然在运行，无法启动爬虫任务。请等待分析任务完成后再试。"
+                            }
                     else:
-                        command += f" --{param_name} {param_value}"
+                        self.logger.warning(f"分析进程正在运行，无法启动爬虫任务: {task_id}")
+                        return {
+                            'success': False,
+                            'error': "分析进程正在运行，无法启动爬虫任务。请等待分析任务完成后再试。"
+                        }
+            
+            # 检查同类型进程是否在运行
+            if process_type.name in lock_status:
+                status = lock_status[process_type.name]
+                if status.get('locked', False) and status.get('process_exists', False):
+                    # 检查锁是否过期或进程不存在，如果是则强制清除锁
+                    if status.get('expired', False) or not status.get('process_exists', False):
+                        self.logger.info(f"检测到{process_type.name}锁过期或进程不存在，尝试清除锁")
+                        ProcessLockManager.force_clear_lock_by_type(process_type)
+                        # 重新检查锁状态
+                        lock_status = ProcessLockManager.check_lock_status()
+                        status = lock_status.get(process_type.name, {})
+                        if not status.get('locked', False):
+                            self.logger.info(f"成功清除{process_type.name}锁，继续启动任务: {task_id}")
+                        else:
+                            self.logger.warning(f"同类型进程仍然在运行，无法启动任务: {task_id}")
+                            return {
+                                'success': False,
+                                'error': f"{process_type.name.title()}进程仍在运行，无法启动新的{process_type.name.title()}任务。请等待当前任务完成或使用clear_process_locks.sh脚本清除锁。"
+                            }
+                    else:
+                        self.logger.warning(f"同类型进程正在运行，无法启动任务: {task_id}")
+                        return {
+                            'success': False,
+                            'error': f"{process_type.name.title()}进程已在运行，无法启动新的{process_type.name.title()}任务。请等待当前任务完成或使用clear_process_locks.sh脚本清除锁。"
+                        }
         
-        # 执行命令
-        self.logger.info(f"执行任务: {task['name']}, 命令: {command}")
+        # 创建任务
+        task_uuid = self.task_manager.create_task(
+            name=task_info['name'],
+            command=task_info['command'],
+            params=params
+        )
         
-        # 创建临时文件用于存储输出
-        with tempfile.NamedTemporaryFile(mode='w+', delete=False) as temp_file:
-            temp_path = temp_file.name
+        # 启动任务
+        self.task_manager.run_task(task_uuid)
         
+        # 获取任务信息
+        task = self.task_manager.get_task(task_uuid)
+        
+        # 返回结果
+        return {
+            'success': True,
+            'task_id': task_uuid,
+            'task': task.to_dict() if task else None
+        }
+    
+    def get_task(self, task_id: str) -> Dict[str, Any]:
+        """
+        获取任务信息
+        
+        Args:
+            task_id: 任务ID
+            
+        Returns:
+            Dict: 任务信息
+        """
+        task = self.task_manager.get_task(task_id)
+        if not task:
+            return {'success': False, 'error': f'任务不存在: {task_id}'}
+        
+        return {'success': True, 'task': task.to_dict()}
+    
+    def get_all_tasks(self) -> Dict[str, Any]:
+        """
+        获取所有任务
+        
+        Returns:
+            Dict: 任务列表
+        """
+        tasks = self.task_manager.get_all_tasks()
+        return {'success': True, 'tasks': tasks}
+    
+    def get_running_tasks(self) -> Dict[str, Any]:
+        """
+        获取正在运行的任务
+        
+        Returns:
+            Dict: 任务列表
+        """
+        tasks = self.task_manager.get_running_tasks()
+        return {'success': True, 'tasks': tasks}
+    
+    def cancel_task(self, task_id: str) -> Dict[str, Any]:
+        """
+        取消任务
+        
+        Args:
+            task_id: 任务ID
+            
+        Returns:
+            Dict: 操作结果
+        """
+        result = self.task_manager.cancel_task(task_id)
+        if result:
+            return {'success': True, 'message': f'成功取消任务: {task_id}'}
+        else:
+            return {'success': False, 'error': f'取消任务失败: {task_id}'}
+    
+    def delete_task(self, task_id: str) -> Dict[str, Any]:
+        """
+        删除任务
+        
+        Args:
+            task_id: 任务ID
+            
+        Returns:
+            Dict: 操作结果
+        """
+        result = self.task_manager.delete_task(task_id)
+        if result:
+            return {'success': True, 'message': f'成功删除任务: {task_id}'}
+        else:
+            return {'success': False, 'error': f'删除任务失败: {task_id}'}
+    
+    def get_process_lock_status(self) -> Dict[str, Any]:
+        """
+        获取进程锁状态
+        
+        Returns:
+            Dict: 进程锁状态信息
+        """
         try:
-            # 执行命令，将输出重定向到临时文件
-            process = subprocess.Popen(
-                command,
-                shell=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                cwd=self.base_dir,
-                text=True
-            )
+            # 获取所有进程锁的状态
+            lock_status = ProcessLockManager.check_lock_status()
             
-            # 读取输出并写入临时文件
-            with open(temp_path, 'w') as f:
-                for line in process.stdout:
-                    f.write(line)
+            # 格式化时间戳
+            for process_type, status in lock_status.items():
+                if 'timestamp' in status:
+                    timestamp = status['timestamp']
+                    import datetime
+                    status['timestamp_formatted'] = datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
+                
+                if 'age' in status:
+                    age = status['age']
+                    # 格式化为小时:分钟:秒
+                    hours, remainder = divmod(age, 3600)
+                    minutes, seconds = divmod(remainder, 60)
+                    status['age_formatted'] = f"{int(hours):02d}:{int(minutes):02d}:{int(seconds):02d}"
             
-            # 等待进程结束
-            return_code = process.wait()
-            
-            # 读取输出
-            with open(temp_path, 'r') as f:
-                output = f.read()
-            
-            # 删除临时文件
-            os.unlink(temp_path)
-            
-            # 返回结果
-            return {
-                'success': return_code == 0,
-                'output': output,
-                'return_code': return_code
-            }
-            
+            return lock_status
         except Exception as e:
-            self.logger.error(f"执行任务失败: {e}")
+            self.logger.error(f"获取进程锁状态失败: {e}")
+            return {"error": str(e)}
+    
+    def clear_process_lock(self, process_type: str) -> Dict[str, Any]:
+        """
+        清除指定类型的进程锁
+        
+        Args:
+            process_type: 进程类型名称
             
-            # 删除临时文件
-            if os.path.exists(temp_path):
-                os.unlink(temp_path)
+        Returns:
+            Dict: 操作结果
+        """
+        try:
+            # 将字符串转换为ProcessType枚举
+            try:
+                process_enum = ProcessType[process_type]
+            except (KeyError, ValueError):
+                return {
+                    'success': False,
+                    'error': f"无效的进程类型: {process_type}"
+                }
             
-            # 返回错误信息
+            # 清除锁
+            result = ProcessLockManager.force_clear_lock_by_type(process_enum)
+            
+            if result:
+                self.logger.info(f"成功清除进程锁: {process_type}")
+                return {
+                    'success': True,
+                    'message': f"成功清除 {process_type} 进程锁"
+                }
+            else:
+                self.logger.error(f"清除进程锁失败: {process_type}")
+                return {
+                    'success': False,
+                    'error': f"清除 {process_type} 进程锁失败"
+                }
+        except Exception as e:
+            self.logger.error(f"清除进程锁时发生异常: {e}")
             return {
                 'success': False,
                 'error': str(e)

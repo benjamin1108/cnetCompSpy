@@ -1,0 +1,760 @@
+{% extends "admin/base.html" %}
+
+{% block admin_title %}实时任务管理{% endblock %}
+
+{% block admin_styles %}
+<style>
+    .task-list {
+        margin-bottom: 20px;
+    }
+    
+    .task-card {
+        margin-bottom: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        overflow: hidden;
+    }
+    
+    .task-card-header {
+        padding: 10px 15px;
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #ddd;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .task-card-body {
+        padding: 15px;
+    }
+    
+    .task-card-footer {
+        padding: 10px 15px;
+        background-color: #f8f9fa;
+        border-top: 1px solid #ddd;
+        display: flex;
+        justify-content: space-between;
+    }
+    
+    .task-status {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 3px;
+        font-size: 12px;
+        font-weight: bold;
+    }
+    
+    .task-status-PENDING {
+        background-color: #f8f9fa;
+        color: #6c757d;
+    }
+    
+    .task-status-RUNNING {
+        background-color: #cfe2ff;
+        color: #0d6efd;
+    }
+    
+    .task-status-COMPLETED {
+        background-color: #d1e7dd;
+        color: #198754;
+    }
+    
+    .task-status-FAILED {
+        background-color: #f8d7da;
+        color: #dc3545;
+    }
+    
+    .task-status-CANCELED {
+        background-color: #fff3cd;
+        color: #ffc107;
+    }
+    
+    .console-output {
+        background-color: #212529;
+        color: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        font-family: monospace;
+        height: 400px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        word-break: break-all;
+    }
+    
+    .task-details {
+        margin-top: 20px;
+    }
+    
+    .task-info {
+        margin-bottom: 15px;
+    }
+    
+    .task-info-item {
+        margin-bottom: 5px;
+    }
+    
+    .task-actions {
+        margin-top: 15px;
+    }
+    
+    .no-tasks {
+        padding: 20px;
+        text-align: center;
+        color: #6c757d;
+    }
+    
+    .task-time {
+        font-size: 12px;
+        color: #6c757d;
+    }
+    
+    .task-output-line {
+        margin: 0;
+        line-height: 1.5;
+    }
+    
+    .task-output-line:hover {
+        background-color: #2c3034;
+    }
+    
+    .task-progress {
+        height: 5px;
+        margin-top: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block admin_content %}
+<div class="admin-card">
+    <div class="admin-card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <i class="bi bi-list-task me-2"></i> 实时任务管理
+            </div>
+            <div>
+                <button id="refreshTasksBtn" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-arrow-clockwise"></i> 刷新
+                </button>
+                <a href="{{ url_for('admin_tasks') }}" class="btn btn-sm btn-outline-primary ms-2">
+                    <i class="bi bi-plus-lg"></i> 新建任务
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="admin-card-body">
+        <ul class="nav nav-tabs" id="taskTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="running-tab" data-bs-toggle="tab" data-bs-target="#running" type="button" role="tab" aria-controls="running" aria-selected="true">
+                    运行中 <span id="runningCount" class="badge bg-primary">0</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab" aria-controls="all" aria-selected="false">
+                    所有任务 <span id="allCount" class="badge bg-secondary">0</span>
+                </button>
+            </li>
+        </ul>
+        <div class="tab-content mt-3" id="taskTabsContent">
+            <div class="tab-pane fade show active" id="running" role="tabpanel" aria-labelledby="running-tab">
+                <div id="runningTasks" class="task-list">
+                    <div class="no-tasks">没有正在运行的任务</div>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="all" role="tabpanel" aria-labelledby="all-tab">
+                <div id="allTasks" class="task-list">
+                    <div class="no-tasks">没有任务记录</div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="taskDetails" class="task-details d-none">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 id="taskTitle" class="mb-0">任务详情</h5>
+                    <div>
+                        <span id="taskStatusBadge" class="badge bg-secondary">等待中</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="task-info">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="task-info-item">
+                                    <strong>任务ID:</strong> <span id="taskId"></span>
+                                </div>
+                                <div class="task-info-item">
+                                    <strong>命令:</strong> <code id="taskCommand"></code>
+                                </div>
+                                <div class="task-info-item">
+                                    <strong>开始时间:</strong> <span id="taskStartTime">-</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="task-info-item">
+                                    <strong>状态:</strong> <span id="taskStatusText"></span>
+                                </div>
+                                <div class="task-info-item">
+                                    <strong>运行时间:</strong> <span id="taskRunTime">-</span>
+                                </div>
+                                <div class="task-info-item">
+                                    <strong>完成时间:</strong> <span id="taskEndTime">-</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="progress task-progress">
+                            <div id="taskProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="task-actions mb-3">
+                        <button id="cancelTaskBtn" class="btn btn-sm btn-warning" disabled>
+                            <i class="bi bi-x-circle"></i> 取消任务
+                        </button>
+                        <button id="deleteTaskBtn" class="btn btn-sm btn-danger" disabled>
+                            <i class="bi bi-trash"></i> 删除任务
+                        </button>
+                        <button id="clearOutputBtn" class="btn btn-sm btn-secondary">
+                            <i class="bi bi-eraser"></i> 清空输出
+                        </button>
+                        <div class="form-check form-switch d-inline-block ms-3">
+                            <input class="form-check-input" type="checkbox" id="autoScrollSwitch" checked>
+                            <label class="form-check-label" for="autoScrollSwitch">自动滚动</label>
+                        </div>
+                    </div>
+                    
+                    <div class="console-output" id="taskOutput"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block admin_scripts %}
+<script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 连接WebSocket
+        const socket = io();
+        
+        // 当前选中的任务ID
+        let currentTaskId = null;
+        
+        // 任务数据缓存
+        const tasksCache = {};
+        
+        // 格式化时间戳
+        function formatTimestamp(timestamp) {
+            if (!timestamp) return '-';
+            const date = new Date(timestamp * 1000);
+            return date.toLocaleString();
+        }
+        
+        // 格式化运行时间
+        function formatRunTime(startTime, endTime) {
+            if (!startTime) return '-';
+            
+            const start = startTime * 1000;
+            const end = endTime ? endTime * 1000 : Date.now();
+            const diff = Math.floor((end - start) / 1000);
+            
+            const hours = Math.floor(diff / 3600);
+            const minutes = Math.floor((diff % 3600) / 60);
+            const seconds = diff % 60;
+            
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+        
+        // 更新任务运行时间
+        function updateTaskRunTime() {
+            if (currentTaskId && tasksCache[currentTaskId]) {
+                const task = tasksCache[currentTaskId];
+                if (task.status === 'RUNNING' && task.started_at) {
+                    document.getElementById('taskRunTime').textContent = formatRunTime(task.started_at, null);
+                } else if (task.started_at && task.completed_at) {
+                    document.getElementById('taskRunTime').textContent = formatRunTime(task.started_at, task.completed_at);
+                }
+            }
+        }
+        
+        // 定时更新运行时间
+        setInterval(updateTaskRunTime, 1000);
+        
+        // 创建任务卡片
+        function createTaskCard(task) {
+            const card = document.createElement('div');
+            card.className = 'task-card';
+            card.dataset.taskId = task.task_id;
+            
+            const statusClass = `task-status-${task.status}`;
+            const statusText = {
+                'PENDING': '等待中',
+                'RUNNING': '运行中',
+                'COMPLETED': '已完成',
+                'FAILED': '失败',
+                'CANCELED': '已取消'
+            }[task.status] || task.status;
+            
+            let timeInfo = '';
+            if (task.started_at) {
+                timeInfo = `<div class="task-time">开始: ${formatTimestamp(task.started_at)}</div>`;
+                if (task.completed_at) {
+                    timeInfo += `<div class="task-time">结束: ${formatTimestamp(task.completed_at)}</div>`;
+                }
+            } else {
+                timeInfo = `<div class="task-time">创建: ${formatTimestamp(task.created_at)}</div>`;
+            }
+            
+            card.innerHTML = `
+                <div class="task-card-header">
+                    <div>
+                        <strong>${task.name}</strong>
+                    </div>
+                    <div>
+                        <span class="task-status ${statusClass}">${statusText}</span>
+                    </div>
+                </div>
+                <div class="task-card-body">
+                    <div class="small text-muted">命令: <code>${task.command}</code></div>
+                    ${timeInfo}
+                </div>
+                <div class="task-card-footer">
+                    <button class="btn btn-sm btn-primary btn-view-task">
+                        <i class="bi bi-eye"></i> 查看详情
+                    </button>
+                    <div>
+                        ${task.status === 'RUNNING' ? `
+                            <button class="btn btn-sm btn-warning btn-cancel-task">
+                                <i class="bi bi-x-circle"></i> 取消
+                            </button>
+                        ` : ''}
+                        ${task.status !== 'RUNNING' ? `
+                            <button class="btn btn-sm btn-danger btn-delete-task">
+                                <i class="bi bi-trash"></i> 删除
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+            
+            // 绑定查看详情按钮事件
+            card.querySelector('.btn-view-task').addEventListener('click', function() {
+                showTaskDetails(task.task_id);
+            });
+            
+            // 绑定取消任务按钮事件
+            const cancelBtn = card.querySelector('.btn-cancel-task');
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    cancelTask(task.task_id);
+                });
+            }
+            
+            // 绑定删除任务按钮事件
+            const deleteBtn = card.querySelector('.btn-delete-task');
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    deleteTask(task.task_id);
+                });
+            }
+            
+            return card;
+        }
+        
+        // 显示任务详情
+        function showTaskDetails(taskId) {
+            // 如果已经订阅了其他任务，先取消订阅
+            if (currentTaskId && currentTaskId !== taskId) {
+                socket.emit('unsubscribe_task', { task_id: currentTaskId });
+            }
+            
+            currentTaskId = taskId;
+            const task = tasksCache[taskId];
+            
+            if (!task) {
+                console.error('任务不存在:', taskId);
+                return;
+            }
+            
+            // 更新任务详情
+            document.getElementById('taskTitle').textContent = task.name;
+            document.getElementById('taskId').textContent = task.task_id;
+            document.getElementById('taskCommand').textContent = task.command;
+            document.getElementById('taskStartTime').textContent = formatTimestamp(task.started_at);
+            document.getElementById('taskEndTime').textContent = formatTimestamp(task.completed_at);
+            document.getElementById('taskStatusText').textContent = {
+                'PENDING': '等待中',
+                'RUNNING': '运行中',
+                'COMPLETED': '已完成',
+                'FAILED': '失败',
+                'CANCELED': '已取消'
+            }[task.status] || task.status;
+            
+            // 更新状态标签
+            const statusBadge = document.getElementById('taskStatusBadge');
+            statusBadge.textContent = {
+                'PENDING': '等待中',
+                'RUNNING': '运行中',
+                'COMPLETED': '已完成',
+                'FAILED': '失败',
+                'CANCELED': '已取消'
+            }[task.status] || task.status;
+            
+            statusBadge.className = 'badge';
+            switch (task.status) {
+                case 'PENDING':
+                    statusBadge.classList.add('bg-secondary');
+                    break;
+                case 'RUNNING':
+                    statusBadge.classList.add('bg-primary');
+                    break;
+                case 'COMPLETED':
+                    statusBadge.classList.add('bg-success');
+                    break;
+                case 'FAILED':
+                    statusBadge.classList.add('bg-danger');
+                    break;
+                case 'CANCELED':
+                    statusBadge.classList.add('bg-warning');
+                    break;
+                default:
+                    statusBadge.classList.add('bg-secondary');
+            }
+            
+            // 更新进度条
+            const progressBar = document.getElementById('taskProgressBar');
+            if (task.status === 'RUNNING') {
+                progressBar.classList.add('progress-bar-animated');
+                progressBar.style.width = '100%';
+            } else if (task.status === 'COMPLETED') {
+                progressBar.classList.remove('progress-bar-animated');
+                progressBar.style.width = '100%';
+                progressBar.classList.remove('bg-primary');
+                progressBar.classList.add('bg-success');
+            } else if (task.status === 'FAILED' || task.status === 'CANCELED') {
+                progressBar.classList.remove('progress-bar-animated');
+                progressBar.style.width = '100%';
+                progressBar.classList.remove('bg-primary');
+                progressBar.classList.add('bg-danger');
+            } else {
+                progressBar.classList.remove('progress-bar-animated');
+                progressBar.style.width = '0%';
+                progressBar.classList.remove('bg-success', 'bg-danger');
+                progressBar.classList.add('bg-primary');
+            }
+            
+            // 更新按钮状态
+            document.getElementById('cancelTaskBtn').disabled = task.status !== 'RUNNING';
+            document.getElementById('deleteTaskBtn').disabled = task.status === 'RUNNING';
+            
+            // 更新输出
+            const outputElement = document.getElementById('taskOutput');
+            outputElement.innerHTML = '';
+            if (task.output && task.output.length > 0) {
+                task.output.forEach(line => {
+                    const lineElement = document.createElement('div');
+                    lineElement.className = 'task-output-line';
+                    lineElement.textContent = line;
+                    outputElement.appendChild(lineElement);
+                });
+                
+                // 滚动到底部
+                if (document.getElementById('autoScrollSwitch').checked) {
+                    outputElement.scrollTop = outputElement.scrollHeight;
+                }
+            }
+            
+            // 显示任务详情
+            document.getElementById('taskDetails').classList.remove('d-none');
+            
+            // 订阅任务更新
+            socket.emit('subscribe_task', { task_id: taskId });
+        }
+        
+        // 取消任务
+        function cancelTask(taskId) {
+            if (confirm('确定要取消任务吗？')) {
+                socket.emit('cancel_task', { task_id: taskId });
+            }
+        }
+        
+        // 删除任务
+        function deleteTask(taskId) {
+            if (confirm('确定要删除任务吗？此操作不可恢复。')) {
+                socket.emit('delete_task', { task_id: taskId });
+            }
+        }
+        
+        // 更新任务列表
+        function updateTaskList() {
+            // 获取所有任务
+            socket.emit('get_all_tasks');
+        }
+        
+        // 更新运行中的任务列表
+        function updateRunningTaskList() {
+            // 获取运行中的任务
+            socket.emit('get_running_tasks');
+        }
+        
+        // 添加输出行
+        function addOutputLine(taskId, line) {
+            if (currentTaskId === taskId) {
+                const outputElement = document.getElementById('taskOutput');
+                const lineElement = document.createElement('div');
+                lineElement.className = 'task-output-line';
+                lineElement.textContent = line;
+                outputElement.appendChild(lineElement);
+                
+                // 滚动到底部
+                if (document.getElementById('autoScrollSwitch').checked) {
+                    outputElement.scrollTop = outputElement.scrollHeight;
+                }
+            }
+            
+            // 更新任务缓存
+            if (tasksCache[taskId]) {
+                tasksCache[taskId].output.push(line);
+            }
+        }
+        
+        // 更新任务状态
+        function updateTaskStatus(task) {
+            // 更新任务缓存
+            tasksCache[task.task_id] = task;
+            
+            // 如果是当前选中的任务，更新详情
+            if (currentTaskId === task.task_id) {
+                showTaskDetails(task.task_id);
+            }
+            
+            // 更新任务卡片
+            const runningTasksElement = document.getElementById('runningTasks');
+            const allTasksElement = document.getElementById('allTasks');
+            
+            // 更新运行中的任务列表
+            if (task.status === 'RUNNING') {
+                // 检查是否已存在
+                let existingCard = runningTasksElement.querySelector(`.task-card[data-task-id="${task.task_id}"]`);
+                if (!existingCard) {
+                    // 移除"没有任务"提示
+                    const noTasks = runningTasksElement.querySelector('.no-tasks');
+                    if (noTasks) {
+                        noTasks.remove();
+                    }
+                    
+                    // 添加任务卡片
+                    runningTasksElement.appendChild(createTaskCard(task));
+                } else {
+                    // 更新任务卡片
+                    existingCard.replaceWith(createTaskCard(task));
+                }
+            } else {
+                // 从运行中的任务列表中移除
+                const existingCard = runningTasksElement.querySelector(`.task-card[data-task-id="${task.task_id}"]`);
+                if (existingCard) {
+                    existingCard.remove();
+                    
+                    // 如果没有任务了，显示"没有任务"提示
+                    if (runningTasksElement.children.length === 0) {
+                        const noTasks = document.createElement('div');
+                        noTasks.className = 'no-tasks';
+                        noTasks.textContent = '没有正在运行的任务';
+                        runningTasksElement.appendChild(noTasks);
+                    }
+                }
+            }
+            
+            // 更新所有任务列表
+            let existingCard = allTasksElement.querySelector(`.task-card[data-task-id="${task.task_id}"]`);
+            if (!existingCard) {
+                // 移除"没有任务"提示
+                const noTasks = allTasksElement.querySelector('.no-tasks');
+                if (noTasks) {
+                    noTasks.remove();
+                }
+                
+                // 添加任务卡片
+                allTasksElement.appendChild(createTaskCard(task));
+            } else {
+                // 更新任务卡片
+                existingCard.replaceWith(createTaskCard(task));
+            }
+            
+            // 更新任务数量
+            updateTaskCount();
+        }
+        
+        // 删除任务卡片
+        function removeTaskCard(taskId) {
+            // 从缓存中移除
+            delete tasksCache[taskId];
+            
+            // 从运行中的任务列表中移除
+            const runningTasksElement = document.getElementById('runningTasks');
+            const runningCard = runningTasksElement.querySelector(`.task-card[data-task-id="${taskId}"]`);
+            if (runningCard) {
+                runningCard.remove();
+                
+                // 如果没有任务了，显示"没有任务"提示
+                if (runningTasksElement.children.length === 0) {
+                    const noTasks = document.createElement('div');
+                    noTasks.className = 'no-tasks';
+                    noTasks.textContent = '没有正在运行的任务';
+                    runningTasksElement.appendChild(noTasks);
+                }
+            }
+            
+            // 从所有任务列表中移除
+            const allTasksElement = document.getElementById('allTasks');
+            const allCard = allTasksElement.querySelector(`.task-card[data-task-id="${taskId}"]`);
+            if (allCard) {
+                allCard.remove();
+                
+                // 如果没有任务了，显示"没有任务"提示
+                if (allTasksElement.children.length === 0) {
+                    const noTasks = document.createElement('div');
+                    noTasks.className = 'no-tasks';
+                    noTasks.textContent = '没有任务记录';
+                    allTasksElement.appendChild(noTasks);
+                }
+            }
+            
+            // 如果是当前选中的任务，隐藏详情
+            if (currentTaskId === taskId) {
+                document.getElementById('taskDetails').classList.add('d-none');
+                currentTaskId = null;
+            }
+            
+            // 更新任务数量
+            updateTaskCount();
+        }
+        
+        // 更新任务数量
+        function updateTaskCount() {
+            const runningTasks = Object.values(tasksCache).filter(task => task.status === 'RUNNING');
+            document.getElementById('runningCount').textContent = runningTasks.length;
+            document.getElementById('allCount').textContent = Object.keys(tasksCache).length;
+        }
+        
+        // 绑定事件
+        document.getElementById('refreshTasksBtn').addEventListener('click', function() {
+            updateTaskList();
+            updateRunningTaskList();
+        });
+        
+        document.getElementById('cancelTaskBtn').addEventListener('click', function() {
+            if (currentTaskId) {
+                cancelTask(currentTaskId);
+            }
+        });
+        
+        document.getElementById('deleteTaskBtn').addEventListener('click', function() {
+            if (currentTaskId) {
+                deleteTask(currentTaskId);
+            }
+        });
+        
+        document.getElementById('clearOutputBtn').addEventListener('click', function() {
+            document.getElementById('taskOutput').innerHTML = '';
+        });
+        
+        // WebSocket事件处理
+        socket.on('connect', function() {
+            console.log('已连接到WebSocket服务器');
+            updateTaskList();
+            updateRunningTaskList();
+        });
+        
+        socket.on('disconnect', function() {
+            console.log('与WebSocket服务器断开连接');
+        });
+        
+        socket.on('error', function(data) {
+            console.error('WebSocket错误:', data.message);
+            alert('错误: ' + data.message);
+        });
+        
+        socket.on('all_tasks', function(data) {
+            const tasks = data.tasks;
+            
+            // 清空任务列表
+            const allTasksElement = document.getElementById('allTasks');
+            allTasksElement.innerHTML = '';
+            
+            if (tasks.length === 0) {
+                const noTasks = document.createElement('div');
+                noTasks.className = 'no-tasks';
+                noTasks.textContent = '没有任务记录';
+                allTasksElement.appendChild(noTasks);
+            } else {
+                // 更新任务缓存
+                tasks.forEach(task => {
+                    tasksCache[task.task_id] = task;
+                    allTasksElement.appendChild(createTaskCard(task));
+                });
+            }
+            
+            // 更新任务数量
+            updateTaskCount();
+        });
+        
+        socket.on('running_tasks', function(data) {
+            const tasks = data.tasks;
+            
+            // 清空运行中的任务列表
+            const runningTasksElement = document.getElementById('runningTasks');
+            runningTasksElement.innerHTML = '';
+            
+            if (tasks.length === 0) {
+                const noTasks = document.createElement('div');
+                noTasks.className = 'no-tasks';
+                noTasks.textContent = '没有正在运行的任务';
+                runningTasksElement.appendChild(noTasks);
+            } else {
+                // 更新任务缓存
+                tasks.forEach(task => {
+                    tasksCache[task.task_id] = task;
+                    runningTasksElement.appendChild(createTaskCard(task));
+                });
+            }
+            
+            // 更新任务数量
+            updateTaskCount();
+        });
+        
+        socket.on('task_update', function(task) {
+            updateTaskStatus(task);
+        });
+        
+        socket.on('task_output', function(data) {
+            addOutputLine(data.task_id, data.line);
+        });
+        
+        socket.on('task_canceled', function(data) {
+            if (data.success) {
+                console.log('任务已取消:', data.task_id);
+            } else {
+                console.error('取消任务失败:', data.task_id);
+                alert('取消任务失败: ' + (data.error || '未知错误'));
+            }
+        });
+        
+        socket.on('task_deleted', function(data) {
+            if (data.success) {
+                console.log('任务已删除:', data.task_id);
+                removeTaskCard(data.task_id);
+            } else {
+                console.error('删除任务失败:', data.task_id);
+                alert('删除任务失败: ' + (data.error || '未知错误'));
+            }
+        });
+        
+        // 初始化
+        updateTaskList();
+        updateRunningTaskList();
+    });
+</script>
+{% endblock %}

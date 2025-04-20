@@ -16,6 +16,8 @@ import copy
 import threading  # 保留线程安全支持（用于RateLimiter）
 import random
 
+from src.utils.process_lock_manager import ProcessLockManager, ProcessType
+
 # 添加项目根目录到路径
 sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
 
@@ -162,6 +164,10 @@ class AIAnalyzer:
         
         # 添加元数据锁，确保线程安全
         self.metadata_lock = threading.RLock()
+        
+        # 初始化进程锁管理器
+        self.process_lock_manager = ProcessLockManager.get_instance(ProcessType.ANALYZER)
+        self.lock_acquired = False
         
         # 初始化频率限制器
         requests_per_minute = self.ai_config.get('api_rate_limit', 10)  # 默认每分钟10个请求
@@ -1052,6 +1058,12 @@ class AIAnalyzer:
         Returns:
             分析结果文本
         """
+        # 检查是否启用mock模式
+        mock_mode = self.ai_config.get('mock', False)
+        if mock_mode:
+            logger.info(f"[{time.strftime('%H:%M:%S')}] Mock模式已启用，将返回mock数据而非真实API调用")
+            return self._get_mock_result(task_type, prompt)
+        
         try:
             # 如果API密钥为空，抛出异常
             if not self.api_key or not self.api_base:
@@ -1217,6 +1229,137 @@ class AIAnalyzer:
             logger.error(f"[{time.strftime('%H:%M:%S')}] {error_msg}")
             logger.exception("详细错误信息:")
             return error_msg
+            
+    def _get_mock_result(self, task_type: str, prompt: str) -> str:
+        """
+        根据任务类型生成mock结果
+        
+        Args:
+            task_type: 任务类型
+            prompt: 提示词
+            
+        Returns:
+            mock结果文本
+        """
+        # 获取mock延迟时间，默认为2秒
+        mock_delay = self.ai_config.get('mock_delay', 2)
+        logger.info(f"[{time.strftime('%H:%M:%S')}] 生成{task_type}的mock数据，模拟延迟{mock_delay}秒")
+        
+        # 模拟AI分析的响应时间
+        time.sleep(mock_delay)
+        
+        # 从提示词中提取文章标题（如果存在）
+        title = ""
+        content_lines = prompt.split('\n')
+        for line in content_lines[:20]:  # 只检查前20行
+            if line.startswith('# '):
+                title = line[2:].strip()
+                break
+        
+        if not title:
+            title = "云计算网络技术文章"
+        
+        # 根据任务类型返回不同的mock数据
+        if task_type == "AI标题翻译":
+            # 判断标题是否包含特定关键词，以决定使用哪种前缀
+            if any(keyword in title.lower() for keyword in ["how to", "guide", "best practices", "tutorial", "implement"]):
+                return "[解决方案] " + title + "（中文翻译）"
+            else:
+                return "[新功能] " + title + "（中文翻译）"
+        
+        elif task_type == "AI竞争分析":
+            # 判断是解决方案还是产品功能
+            if any(keyword in title.lower() for keyword in ["how to", "guide", "best practices", "tutorial", "implement"]):
+                return """# 解决方案分析
+
+## 解决方案概述
+这是一个关于**云网络**技术的解决方案，旨在帮助用户解决网络连接、安全和性能问题。该方案利用了**软件定义网络(SDN)**和**网络功能虚拟化(NFV)**技术，为企业提供灵活、可扩展的网络架构。
+
+## 实施步骤
+1. 评估现有网络架构和需求，确定迁移策略
+2. 部署核心网络组件，包括虚拟路由器和负载均衡器
+3. 配置安全策略和访问控制列表
+4. 实施监控和日志系统，确保网络可见性
+5. 进行性能测试和优化
+
+## 方案客户价值
+- 提高网络灵活性，支持快速业务变化和扩展
+- 降低运维复杂度，实现 _管理效率提升40%_
+- 增强安全性，通过微分段和深度包检测防御威胁
+- 优化成本结构，相比传统网络解决方案 _节省约25%的总拥有成本_
+
+## 涉及的相关产品
+- 虚拟私有云(VPC)：提供隔离的网络环境
+- 负载均衡服务：确保应用高可用性和性能
+- 网络安全组：实现细粒度的访问控制
+- 流日志：提供网络流量分析能力
+
+## 技术评估
+该解决方案采用了业界领先的云原生网络技术，具有较高的技术成熟度和可靠性。方案的优势在于灵活性和自动化程度高，但对于特定的传统网络协议支持可能存在一定限制。实施过程中需要考虑与现有系统的兼容性和迁移策略。
+
+## 其他信息
+部署该解决方案需要具备基本的云计算和网络知识，建议由有经验的网络工程师主导实施。方案支持主流操作系统和应用环境，可与大多数企业IT系统无缝集成。"""
+            else:
+                return """# 产品功能分析
+
+## 新功能/新产品概述
+这是一项关于**云网络连接**的新功能，提供了增强的网络连接能力和性能优化。该功能基于**高级路由算法**和**智能流量管理**技术，旨在解决企业在多云环境下面临的网络连接挑战。产品定位于需要高性能、安全可靠网络连接的企业客户。
+
+## 关键客户价值
+- 提供统一的网络管理界面，简化多云环境下的网络配置和监控
+- 实现智能路由优化，相比传统方案 _降低网络延迟达30%_
+- 支持自动扩展和故障转移，确保业务连续性
+- 提供详细的网络分析和可视化，帮助客户优化网络架构
+
+## 关键技术洞察
+- 采用 _基于AI的流量预测_ 技术，动态调整网络资源分配
+- 实现了跨区域的低延迟连接，通过优化路由和缓存机制
+- 集成了高级安全功能，包括DDoS防护和加密传输
+- 支持多种网络协议和标准，确保与现有系统的兼容性
+
+## 市场影响评估
+该产品功能的推出将显著增强云服务提供商在网络连接领域的竞争力。目标客户主要是大中型企业和对网络性能有高要求的行业（如金融、医疗、在线游戏等）。该功能填补了市场上在多云网络管理方面的空白，预计将吸引更多企业客户迁移到云环境。
+
+## 其他信息
+该功能目前处于公开预览阶段，预计在下一季度正式发布。使用该功能需要企业账户权限，并且某些高级特性可能需要额外付费。"""
+        
+        elif task_type == "AI全文翻译":
+            # 生成一个简单的中文翻译mock
+            return f"""# {title}（中文翻译）
+
+这是一篇关于云计算网络技术的文章的中文翻译。原文讨论了云计算网络的最新发展和技术趋势。
+
+## 主要内容
+
+云计算网络技术正在快速发展，主要表现在以下几个方面：
+
+1. 软件定义网络(SDN)的广泛应用
+2. 网络功能虚拟化(NFV)技术的成熟
+3. 多云网络连接解决方案的创新
+4. 网络安全技术的增强
+
+## 技术详情
+
+云服务提供商不断推出新的网络产品和功能，以满足企业客户的需求。这些创新包括：
+
+- 高性能的虚拟私有网络
+- 智能负载均衡技术
+- 全球分布式内容分发
+- 自动化网络配置和管理工具
+
+## 结论
+
+随着云计算的普及，网络技术将继续演进，为企业提供更加灵活、安全、高效的连接方案。"""
+        
+        else:
+            # 对于未知的任务类型，返回通用mock数据
+            return f"""# Mock数据：{task_type}
+
+这是为任务类型 "{task_type}" 生成的mock数据。
+
+在实际的AI分析中，这里会包含针对原始内容的详细分析结果。
+
+当前处于mock模式，用于调试整体项目流程，无需进行真正的AI API调用。"""
     
     def run(self) -> List[Dict[str, Any]]:
         """
@@ -1225,47 +1368,61 @@ class AIAnalyzer:
         Returns:
             分析结果列表
         """
-        # 获取需要分析的文件
-        files = self._get_files_to_analyze()
-        if not files:
-            logger.info("没有需要分析的新文件")
+        # 获取进程锁，确保同一时间只有一个分析进程在运行
+        if not self.process_lock_manager.acquire_lock():
+            logger.error("无法获取分析进程锁，可能有其他分析进程正在运行或互斥进程正在运行")
             return []
         
-        results = []
-        logger.info(f"使用单线程顺序分析 {len(files)} 个文件")
+        self.lock_acquired = True
+        logger.info("已获取分析进程锁，开始执行分析任务")
         
-        # 顺序处理每个文件
-        for file in files:
-            logger.info(f"开始分析文件: {file}")
-            try:
-                result = self.analyze_file(file)
-                results.append(result)
-                logger.info(f"文件分析完成: {file}")
-            except Exception as e:
-                logger.error(f"处理文件时发生异常: {file} - {e}")
-                results.append({
-                    'file': file,
-                    'error': str(e)
-                })
-        
-        # 分析完成后，对整个分析目录应用权限，确保Windows用户可以访问
         try:
-            logger.info("对分析结果目录应用权限...")
+            # 获取需要分析的文件
+            files = self._get_files_to_analyze()
+            if not files:
+                logger.info("没有需要分析的新文件")
+                return []
             
-            # 确保data目录可访问
-            os.system("chmod -R 777 data")  # 递归设置data及所有子目录权限
+            results = []
+            logger.info(f"使用单线程顺序分析 {len(files)} 个文件")
             
-            # 强制写入更改到磁盘
-            os.system("sync")
+            # 顺序处理每个文件
+            for file in files:
+                logger.info(f"开始分析文件: {file}")
+                try:
+                    result = self.analyze_file(file)
+                    results.append(result)
+                    logger.info(f"文件分析完成: {file}")
+                except Exception as e:
+                    logger.error(f"处理文件时发生异常: {file} - {e}")
+                    results.append({
+                        'file': file,
+                        'error': str(e)
+                    })
             
-            logger.info("分析结果目录权限设置完成")
+            # 分析完成后，对整个分析目录应用权限，确保Windows用户可以访问
+            try:
+                logger.info("对分析结果目录应用权限...")
+                
+                # 确保data目录可访问
+                os.system("chmod -R 777 data")  # 递归设置data及所有子目录权限
+                
+                # 强制写入更改到磁盘
+                os.system("sync")
+                
+                logger.info("分析结果目录权限设置完成")
+                
+                # 等待文件系统同步
+                time.sleep(1)
+            except Exception as e:
+                logger.warning(f"设置分析结果目录权限失败: {e}")
             
-            # 等待文件系统同步
-            time.sleep(1)
-        except Exception as e:
-            logger.warning(f"设置分析结果目录权限失败: {e}")
-        
-        return results
+            return results
+        finally:
+            # 释放进程锁
+            if self.lock_acquired:
+                self.process_lock_manager.release_lock()
+                logger.info("已释放分析进程锁")
     
     def run_dynamic(self) -> List[Dict[str, Any]]:
         """
@@ -1274,138 +1431,165 @@ class AIAnalyzer:
         Returns:
             分析结果列表
         """
-        # 导入动态线程池
-        try:
-            from src.ai_analyzer.thread_pool import get_thread_pool, log_yellow, log_green, log_red
-        except ImportError:
-            logger.error("无法导入动态线程池模块，将回退到单线程模式")
-            return self.run()
-        
-        # 获取需要分析的文件
-        files = self._get_files_to_analyze()
-        if not files:
-            logger.info("没有需要分析的新文件")
+        # 获取进程锁，确保同一时间只有一个分析进程在运行
+        if not self.process_lock_manager.acquire_lock():
+            logger.error("无法获取分析进程锁，可能有其他分析进程正在运行或互斥进程正在运行")
             return []
         
-        # 获取API调用频率限制和最大线程数
-        api_rate_limit = self.ai_config.get('api_rate_limit', 10)
-        max_threads = self.ai_config.get('max_workers', 10)
-        
-        logger.info(f"使用动态线程池分析 {len(files)} 个文件，API频率限制: {api_rate_limit}/分钟，最大线程数: {max_threads}")
-        
-        # 获取线程池实例
-        thread_pool = get_thread_pool(
-            api_rate_limit=api_rate_limit,
-            max_threads=max_threads
-        )
-        
-        # 启动线程池
-        thread_pool.start()
-        
-        # 定义文件处理函数
-        def process_file(file_path):
-            log_yellow(f"开始处理文件: {os.path.basename(file_path)}")
-            try:
-                # 分析单个文件
-                result = self.analyze_file(file_path)
-                log_green(f"完成分析文件: {os.path.basename(file_path)}")
-                return result
-            except Exception as e:
-                error_msg = str(e)
-                log_red(f"处理文件时发生异常: {os.path.basename(file_path)} - {error_msg}")
-                return {
-                    'file': file_path,
-                    'success': False,
-                    'error': error_msg
-                }
+        self.lock_acquired = True
+        logger.info("已获取分析进程锁，开始执行分析任务")
         
         try:
-            # 添加所有任务到线程池
-            for file in files:
-                thread_pool.add_task(process_file, file)
-            
-            # 等待所有任务完成
-            while thread_pool.task_queue.unfinished_tasks > 0:
-                # 每1秒检查一次任务完成情况
-                time.sleep(1)
-            
-            # 获取结果
-            results = thread_pool.get_results()
-            
-            # 分析完成后，对整个分析目录应用权限
+            # 导入动态线程池
             try:
-                logger.info("对分析结果目录应用权限...")
-                os.system("chmod -R 777 data")
-                os.system("sync")
-                logger.info("分析结果目录权限设置完成")
-                time.sleep(1)
-            except Exception as e:
-                logger.warning(f"设置分析结果目录权限失败: {e}")
+                from src.ai_analyzer.thread_pool import get_thread_pool, log_yellow, log_green, log_red
+            except ImportError:
+                logger.error("无法导入动态线程池模块，将回退到单线程模式")
+                return self.run()
             
-            # 确认所有元数据都已正确保存
-            logger.info("正在确认元数据完整性...")
+            # 获取需要分析的文件
+            files = self._get_files_to_analyze()
+            if not files:
+                logger.info("没有需要分析的新文件")
+                return []
+            
+            # 获取API调用频率限制和最大线程数
+            api_rate_limit = self.ai_config.get('api_rate_limit', 10)
+            max_threads = self.ai_config.get('max_workers', 10)
+            
+            logger.info(f"使用动态线程池分析 {len(files)} 个文件，API频率限制: {api_rate_limit}/分钟，最大线程数: {max_threads}")
+            
+            # 获取线程池实例
+            thread_pool = get_thread_pool(
+                api_rate_limit=api_rate_limit,
+                max_threads=max_threads
+            )
+            
+            # 启动线程池
+            thread_pool.start()
+            
+            # 定义文件处理函数
+            def process_file(file_path):
+                log_yellow(f"开始处理文件: {os.path.basename(file_path)}")
+                try:
+                    # 分析单个文件
+                    result = self.analyze_file(file_path)
+                    log_green(f"完成分析文件: {os.path.basename(file_path)}")
+                    return result
+                except Exception as e:
+                    error_msg = str(e)
+                    log_red(f"处理文件时发生异常: {os.path.basename(file_path)} - {error_msg}")
+                    return {
+                        'file': file_path,
+                        'success': False,
+                        'error': error_msg
+                    }
+            
             try:
-                # 最终确认一次元数据更新，确保所有线程的更改都被保存
-                with self.metadata_lock:
-                    metadata = self._load_metadata()
-                    
-                    # 验证所有分析的文件是否都有元数据记录
-                    processed_files = [result.get('file') for result in results if 'file' in result]
-                    logger.info(f"已处理文件数: {len(processed_files)}")
-                    logger.info(f"元数据记录数: {len(metadata)}")
-                    
-                    missing_records = []
-                    for file_path in processed_files:
-                        normalized_path = self._normalize_file_path(file_path)
-                        if normalized_path not in metadata:
-                            missing_records.append(normalized_path)
-                            logger.warning(f"缺失元数据记录: {normalized_path}")
-                    
-                    if missing_records:
-                        logger.warning(f"发现 {len(missing_records)} 个文件缺失元数据记录")
-                    else:
-                        logger.info("所有文件的元数据记录完整")
-                    
-                    # 重新保存元数据文件确保完整性
-                    self._save_metadata(metadata)
-                    logger.info(f"元数据最终确认完成，共 {len(metadata)} 条记录")
+                # 添加所有任务到线程池
+                for file in files:
+                    thread_pool.add_task(process_file, file)
+                
+                # 等待所有任务完成
+                while thread_pool.task_queue.unfinished_tasks > 0:
+                    # 每1秒检查一次任务完成情况
+                    time.sleep(1)
+                
+                # 获取结果
+                results = thread_pool.get_results()
+                
+                # 分析完成后，对整个分析目录应用权限
+                try:
+                    logger.info("对分析结果目录应用权限...")
+                    os.system("chmod -R 777 data")
+                    os.system("sync")
+                    logger.info("分析结果目录权限设置完成")
+                    time.sleep(1)
+                except Exception as e:
+                    logger.warning(f"设置分析结果目录权限失败: {e}")
+                
+                # 确认所有元数据都已正确保存
+                logger.info("正在确认元数据完整性...")
+                try:
+                    # 最终确认一次元数据更新，确保所有线程的更改都被保存
+                    with self.metadata_lock:
+                        metadata = self._load_metadata()
+                        
+                        # 验证所有分析的文件是否都有元数据记录
+                        processed_files = [result.get('file') for result in results if 'file' in result]
+                        logger.info(f"已处理文件数: {len(processed_files)}")
+                        logger.info(f"元数据记录数: {len(metadata)}")
+                        
+                        missing_records = []
+                        for file_path in processed_files:
+                            normalized_path = self._normalize_file_path(file_path)
+                            if normalized_path not in metadata:
+                                missing_records.append(normalized_path)
+                                logger.warning(f"缺失元数据记录: {normalized_path}")
+                        
+                        if missing_records:
+                            logger.warning(f"发现 {len(missing_records)} 个文件缺失元数据记录")
+                        else:
+                            logger.info("所有文件的元数据记录完整")
+                        
+                        # 重新保存元数据文件确保完整性
+                        self._save_metadata(metadata)
+                        logger.info(f"元数据最终确认完成，共 {len(metadata)} 条记录")
+                except Exception as e:
+                    logger.error(f"元数据完整性确认失败: {e}")
+                    logger.exception("详细错误信息:")
+                
+                # 关闭线程池 - 确保在正常流程结束时也关闭线程池
+                logger.info("任务完成，正在关闭线程池...")
+                thread_pool.shutdown(wait=True)
+                
+                return results
+                
+            except KeyboardInterrupt:
+                logger.warning("用户中断操作，正在优雅地关闭线程池...")
+                # 关闭线程池
+                thread_pool.shutdown(wait=True)
+                raise
+                
             except Exception as e:
-                logger.error(f"元数据完整性确认失败: {e}")
-                logger.exception("详细错误信息:")
-            
-            # 关闭线程池 - 确保在正常流程结束时也关闭线程池
-            logger.info("任务完成，正在关闭线程池...")
-            thread_pool.shutdown(wait=True)
-            
-            return results
-            
-        except KeyboardInterrupt:
-            logger.warning("用户中断操作，正在优雅地关闭线程池...")
-            # 关闭线程池
-            thread_pool.shutdown(wait=True)
-            raise
-            
-        except Exception as e:
-            logger.error(f"动态线程池执行过程中发生异常: {e}")
-            # 关闭线程池
-            thread_pool.shutdown(wait=True)
-            # 回退到单线程模式
-            logger.info("回退到单线程模式继续执行...")
-            return self.run()
+                logger.error(f"动态线程池执行过程中发生异常: {e}")
+                # 关闭线程池
+                thread_pool.shutdown(wait=True)
+                # 回退到单线程模式
+                logger.info("回退到单线程模式继续执行...")
+                return self.run()
+        finally:
+            # 释放进程锁
+            if self.lock_acquired:
+                self.process_lock_manager.release_lock()
+                logger.info("已释放分析进程锁")
     
-    def analyze_all(self) -> List[Dict[str, Any]]:
+    def analyze_all(self) -> bool:
         """
         分析所有原始数据的别名方法
         
         Returns:
-            List[Dict[str, Any]]: 分析结果列表
+            bool: 分析是否成功完成
         """
         # 检查是否使用动态线程池
         use_dynamic = self.ai_config.get('use_dynamic_pool', True)
         
-        if use_dynamic:
-            logger.info("使用动态线程池进行分析")
-            return self.run_dynamic()
-        else:
-            logger.info("使用单线程模式进行分析")
-            return self.run()
+        try:
+            if use_dynamic:
+                logger.info("使用动态线程池进行分析")
+                results = self.run_dynamic()
+            else:
+                logger.info("使用单线程模式进行分析")
+                results = self.run()
+            
+            # 如果结果为空列表且不是因为没有文件需要分析，则可能是因为无法获取进程锁
+            if not results and self._get_files_to_analyze():
+                logger.error("分析任务失败，可能是因为无法获取进程锁")
+                return False
+            
+            # 分析成功完成
+            return True
+        except Exception as e:
+            logger.error(f"分析任务异常: {e}")
+            logger.exception("详细错误信息:")
+            return False

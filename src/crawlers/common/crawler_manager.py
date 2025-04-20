@@ -8,7 +8,9 @@ import sys
 import threading
 import queue
 import concurrent.futures
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
+
+from src.utils.process_lock_manager import ProcessLockManager, ProcessType
 
 # 确保src目录在路径中
 sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))))
@@ -44,6 +46,10 @@ class CrawlerManager:
         
         # 创建metadata锁，用于保护metadata的访问
         self.metadata_lock = threading.RLock()
+        
+        # 初始化进程锁管理器
+        self.process_lock_manager = ProcessLockManager.get_instance(ProcessType.CRAWLER)
+        self.lock_acquired = False
     
     def _get_crawler_class(self, vendor: str, source_type: str):
         """
@@ -201,28 +207,42 @@ class CrawlerManager:
         Returns:
             爬取结果，格式为 {vendor: {source_type: [file_paths]}}
         """
-        # 根据配置决定使用多线程还是单线程
-        if self.max_workers > 1:
-            logger.info(f"使用多线程模式运行爬虫，线程数: {self.max_workers}")
-            return self.run_multi_threaded()
+        # 获取进程锁，确保同一时间只有一个爬虫进程在运行
+        if not self.process_lock_manager.acquire_lock():
+            logger.error("无法获取爬虫进程锁，可能有其他爬虫进程正在运行或互斥进程正在运行")
+            return {}
         
-        # 单线程执行模式
-        logger.info("使用单线程模式顺序运行爬虫")
-        results = {}
+        self.lock_acquired = True
+        logger.info("已获取爬虫进程锁，开始执行爬虫任务")
         
-        # 遍历所有数据源
-        for vendor, vendor_sources in self.sources.items():
-            results[vendor] = {}
+        try:
+            # 根据配置决定使用多线程还是单线程
+            if self.max_workers > 1:
+                logger.info(f"使用多线程模式运行爬虫，线程数: {self.max_workers}")
+                return self.run_multi_threaded()
             
-            for source_type, source_config in vendor_sources.items():
-                logger.info(f"开始执行爬虫任务: {vendor}/{source_type}")
-                try:
-                    # 直接运行爬虫，不使用线程池
-                    result = self.run_crawler(vendor, source_type, source_config)
-                    results[vendor][source_type] = result
-                    logger.info(f"爬虫任务完成: {vendor}/{source_type}, 获取了 {len(result)} 个文件")
-                except Exception as e:
-                    logger.error(f"爬虫任务异常: {vendor} {source_type} - {e}")
-                    results[vendor][source_type] = []
-        
-        return results
+            # 单线程执行模式
+            logger.info("使用单线程模式顺序运行爬虫")
+            results = {}
+            
+            # 遍历所有数据源
+            for vendor, vendor_sources in self.sources.items():
+                results[vendor] = {}
+                
+                for source_type, source_config in vendor_sources.items():
+                    logger.info(f"开始执行爬虫任务: {vendor}/{source_type}")
+                    try:
+                        # 直接运行爬虫，不使用线程池
+                        result = self.run_crawler(vendor, source_type, source_config)
+                        results[vendor][source_type] = result
+                        logger.info(f"爬虫任务完成: {vendor}/{source_type}, 获取了 {len(result)} 个文件")
+                    except Exception as e:
+                        logger.error(f"爬虫任务异常: {vendor} {source_type} - {e}")
+                        results[vendor][source_type] = []
+            
+            return results
+        finally:
+            # 释放进程锁
+            if self.lock_acquired:
+                self.process_lock_manager.release_lock()
+                logger.info("已释放爬虫进程锁")

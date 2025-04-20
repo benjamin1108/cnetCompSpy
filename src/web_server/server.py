@@ -9,6 +9,7 @@
 
 import os
 import logging
+import atexit
 from typing import Dict, List, Any
 
 from src.web_server.base_server import BaseServer
@@ -17,6 +18,8 @@ from src.web_server.vendor_manager import VendorManager
 from src.web_server.admin_manager import AdminManager
 from src.web_server.stats_manager import StatsManager
 from src.web_server.route_manager import RouteManager
+from src.utils.process_lock_manager import ProcessLockManager, ProcessType
+from src.web_server.socket_manager import SocketManager
 
 class WebServer(BaseServer):
     """竞争分析Web服务器类"""
@@ -37,8 +40,25 @@ class WebServer(BaseServer):
         # 获取项目根目录
         self.base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         
+        # 初始化进程锁管理器
+        self.process_lock_manager = ProcessLockManager.get_instance(ProcessType.WEB_SERVER)
+        
+        # 获取进程锁
+        if not self.process_lock_manager.acquire_lock():
+            self.logger.error("无法获取Web服务器进程锁，可能有其他Web服务器实例正在运行")
+            self.logger.error("请先关闭现有的Web服务器实例，或使用clear_process_locks.sh脚本清除锁")
+            # 抛出异常，阻止Web服务器启动
+            raise RuntimeError("无法获取Web服务器进程锁，服务器启动失败")
+        
+        self.logger.info("已获取Web服务器进程锁")
+        # 注册退出时释放锁的函数
+        atexit.register(self._release_lock)
+        
         # 初始化各个管理器
         self._init_managers()
+        
+        # 初始化WebSocket管理器
+        self.socket_manager = SocketManager(self.app)
         
         # 注册路由
         self._register_routes()
@@ -69,3 +89,27 @@ class WebServer(BaseServer):
             self.admin_manager,
             self.stats_manager
         )
+    
+    def _release_lock(self):
+        """释放进程锁"""
+        if hasattr(self, 'process_lock_manager'):
+            self.process_lock_manager.release_lock()
+            self.logger.info("已释放Web服务器进程锁")
+    
+    def run(self, host: str = None, port: int = None, debug: bool = None):
+        """
+        运行Web服务器
+        
+        Args:
+            host: 主机地址，如果为None则使用初始化时的值
+            port: 端口，如果为None则使用初始化时的值
+            debug: 是否启用调试模式，如果为None则使用初始化时的值
+        """
+        # 使用初始化时的值作为默认值
+        host = host or self.host
+        port = port or self.port
+        debug = debug if debug is not None else self.debug
+        
+        # 使用SocketIO运行服务器
+        self.logger.info(f"启动Web服务器: {host}:{port}, 调试模式: {debug}")
+        self.socket_manager.run(host=host, port=port, debug=debug)
