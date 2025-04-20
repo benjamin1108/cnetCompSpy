@@ -115,11 +115,12 @@ def main():
         logger.error(f"获取项目根目录时出错: {e}", exc_info=True)
         sys.exit(1)
     
-    # 导入WebServer类
+    # 导入WebServer类和Scheduler类
     try:
         from src.web_server.server import WebServer
+        from src.web_server.scheduler import Scheduler
     except ImportError:
-        logger.error("导入WebServer类失败，请确保安装了所有依赖", exc_info=True)
+        logger.error("导入WebServer或Scheduler类失败，请确保安装了所有依赖", exc_info=True)
         sys.exit(1)
     
     # 创建并启动Web服务器
@@ -134,15 +135,22 @@ def main():
             debug=args.debug
         )
         
+        # 启动定时任务
+        scheduler = Scheduler(config_path=os.path.join(project_root, 'config.yaml'))
+        scheduler.start()
+        logger.info("定时任务已启动，将根据配置文件执行每日任务")
+        
         server.run()
     
     except KeyboardInterrupt:
         logger.info("收到退出信号，服务器正在关闭...")
+        scheduler.stop()
     
     except Exception as e:
         logger.error(f"服务器运行时出错: {e}", exc_info=True)
+        scheduler.stop()
         sys.exit(1)
 
 
 if __name__ == "__main__":
-    main() 
+    main()

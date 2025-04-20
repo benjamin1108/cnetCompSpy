@@ -193,6 +193,18 @@ class TaskManager:
                         # 添加到任务字典
                         with self.task_lock:
                             self.tasks[task_id] = task
+                    except json.JSONDecodeError as e:
+                        self.logger.error(f"加载任务失败: {task_path} - JSON格式错误: {e}")
+                        # 备份格式错误的JSON文件
+                        backup_dir = os.path.join(self.tasks_dir, 'backup')
+                        os.makedirs(backup_dir, exist_ok=True)
+                        backup_path = os.path.join(backup_dir, f"{task_id}_backup_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
+                        try:
+                            import shutil
+                            shutil.copy2(task_path, backup_path)
+                            self.logger.info(f"已备份格式错误的JSON文件到: {backup_path}")
+                        except Exception as backup_err:
+                            self.logger.error(f"备份JSON文件失败: {task_path} - {backup_err}")
                     except Exception as e:
                         self.logger.error(f"加载任务失败: {task_path} - {e}")
             

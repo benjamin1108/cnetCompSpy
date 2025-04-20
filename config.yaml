@@ -5,7 +5,7 @@ email:
   smtp_port: 587  # Gmail SMTP端口（TLS）
   use_tls: true  # 启用TLS加密
   sender: "cloudnetworkspy@gmail.com"  # 您的Gmail邮箱地址
-  recipients: ["21586750@qq.com"]  # 收件人邮箱列表
+  recipients: ["21586750@qq.com","tianxiang.btx@alibaba-inc.com"]  # 收件人邮箱列表
   subject_prefix: "[云计算网络竞争动态分析]"  # 邮件主题前缀
 
 # 爬虫配置
@@ -199,3 +199,8 @@ ai_analyzer:
         请将此内容翻译成中文，保持专业术语的准确性，并确保翻译后的内容流畅自然。使用标准的markdown格式，结构清晰，专业美观
         1. 不要输出任何解释，只输出结果
         2. 使用提示词中原文的格式输出译文，严格保持一致，否则发生致命系统错误
+
+# 定时任务配置
+scheduler:
+  daily_task_time: "23:07"  # 每日定时任务执行时间，格式为 HH:MM（24小时制）
+  check_interval: 10  # 检查配置文件的时间间隔（秒）
