@@ -57,8 +57,8 @@ class ProcessLockManager:
             process_type: 进程类型
         """
         self.process_type = process_type
-        # 使用全局唯一的锁文件路径来实现进程互斥
-        self.lock_file_path = os.path.join(self._lock_dir, "cnetCompSpy_global.lock")
+        # 使用进程类型特定的锁文件路径来实现进程互斥
+        self.lock_file_path = os.path.join(self._lock_dir, f"cnetCompSpy_{process_type.name.lower()}.lock")
         self.lock_file = None
         self.locked = False
         self.pid = os.getpid()
@@ -97,26 +97,33 @@ class ProcessLockManager:
         # 首先检查同类型进程是否正在运行
         if self.is_same_type_process_running():
             logger.warning(f"同类型进程已在运行，无法获取锁: {self.process_type.name}")
-            # 检查锁是否过期或进程不存在，如果是则强制清除锁并重试
-            if self.is_lock_expired():
-                logger.warning(f"检测到过期的锁或进程不存在，尝试强制清除: {self.process_type.name}")
-                if self.force_clear_lock():
-                    logger.info(f"成功清除过期的锁，重新尝试获取锁: {self.process_type.name}")
-                    return self.acquire_lock()
             return False
         
         # 检查互斥进程是否正在运行
         for mutex_type in self._mutex_config.get(self.process_type, set()):
             if self.is_process_running(mutex_type):
                 logger.warning(f"互斥进程正在运行: {mutex_type.name}，无法获取锁: {self.process_type.name}")
-                # 检查互斥进程的锁是否过期或进程不存在，如果是则强制清除锁并重试
-                mutex_manager = ProcessLockManager.get_instance(mutex_type)
-                if mutex_manager.is_lock_expired():
-                    logger.warning(f"检测到互斥进程的过期锁或进程不存在，尝试强制清除: {mutex_type.name}")
-                    if mutex_manager.force_clear_lock():
-                        logger.info(f"成功清除互斥进程的过期锁，重新尝试获取锁: {self.process_type.name}")
-                        return self.acquire_lock()
                 return False
+        
+        # 即使没有进程持有排他锁，也检查锁文件是否存在且有效
+        if os.path.exists(self.lock_file_path):
+            try:
+                with open(self.lock_file_path, 'r') as f:
+                    content = f.read().strip()
+                    if content:
+                        lock_info = json.loads(content)
+                        timestamp = lock_info.get("timestamp", 0)
+                        pid = lock_info.get("pid", 0)
+                        if pid > 0 and (time.time() - timestamp) <= self._lock_timeout:
+                            try:
+                                process = psutil.Process(pid)
+                                if process.is_running() and process.status() != psutil.STATUS_ZOMBIE:
+                                    logger.warning(f"锁文件存在且进程仍在运行，无法获取锁: {self.process_type.name}")
+                                    return False
+                            except psutil.NoSuchProcess:
+                                pass
+            except Exception as e:
+                logger.warning(f"检查锁文件内容时发生错误: {e}")
         
         try:
             # 创建锁文件目录（如果不存在）
@@ -139,11 +146,48 @@ class ProcessLockManager:
                 "command": self.command,
                 "start_method": "web" if "web_server" in self.command else "shell"
             }
-            self.lock_file.seek(0)
-            self.lock_file.truncate()
-            json.dump(lock_info, self.lock_file)
-            self.lock_file.flush()
-            os.fsync(self.lock_file.fileno())  # 确保数据写入磁盘
+            max_retries = 3
+            temp_file_path = self.lock_file_path + ".tmp"
+            for attempt in range(max_retries):
+                try:
+                    # 使用临时文件写入锁信息
+                    with open(temp_file_path, 'w') as temp_file:
+                        json.dump(lock_info, temp_file, ensure_ascii=False, indent=2)
+                        temp_file.flush()
+                        os.fsync(temp_file.fileno())
+                        logger.debug(f"成功写入临时锁文件内容: {lock_info}")
+                    
+                    # 原子性地替换目标文件
+                    os.rename(temp_file_path, self.lock_file_path)
+                    logger.debug(f"成功将临时文件替换为锁文件: {self.lock_file_path}")
+                    
+                    # 验证写入内容
+                    with open(self.lock_file_path, 'r') as verify_file:
+                        content = verify_file.read().strip()
+                        if content:
+                            try:
+                                loaded_info = json.loads(content)
+                                if loaded_info.get("pid") == self.pid:
+                                    logger.debug(f"成功验证锁文件内容: {loaded_info}")
+                                    break
+                            except json.JSONDecodeError:
+                                logger.warning(f"锁文件内容无法解析为JSON，重试写入 ({attempt+1}/{max_retries})")
+                        else:
+                            logger.warning(f"锁文件内容为空，重试写入 ({attempt+1}/{max_retries})")
+                    
+                    if attempt == max_retries - 1:
+                        raise Exception("锁文件内容写入后为空或无法解析，达到最大重试次数")
+                except Exception as e:
+                    logger.error(f"写入锁文件内容时发生错误 ({attempt+1}/{max_retries}): {e}")
+                    if attempt == max_retries - 1:
+                        raise
+                    time.sleep(0.5)  # 短暂等待后重试
+                    # 清理临时文件（如果存在）
+                    if os.path.exists(temp_file_path):
+                        try:
+                            os.remove(temp_file_path)
+                        except Exception:
+                            pass
             
             self.locked = True
             logger.info(f"成功获取进程锁: {self.process_type.name}")
@@ -154,14 +198,7 @@ class ProcessLockManager:
             if e.errno == errno.EAGAIN or e.errno == errno.EACCES:
                 logger.warning(f"无法获取进程锁: {self.process_type.name}，锁已被其他进程持有")
                 
-                # 检查锁是否过期
-                if self.is_lock_expired():
-                    logger.warning(f"检测到过期的锁，尝试强制清除: {self.process_type.name}")
-                    if self.force_clear_lock():
-                        logger.info(f"成功清除过期的锁，重新尝试获取锁: {self.process_type.name}")
-                        return self.acquire_lock()
-            else:
-                logger.error(f"获取进程锁时发生IO错误: {e}")
+                logger.warning(f"无法获取进程锁: {self.process_type.name}，锁已被其他进程持有")
             
             # 关闭文件（如果已打开）
             if self.lock_file:
@@ -195,14 +232,9 @@ class ProcessLockManager:
             # 释放文件锁
             fcntl.flock(self.lock_file.fileno(), fcntl.LOCK_UN)
             
-            # 关闭锁文件并删除它
+            # 关闭锁文件，但不删除它
             self.lock_file.close()
             self.lock_file = None
-            
-            # 删除锁文件
-            if os.path.exists(self.lock_file_path):
-                os.remove(self.lock_file_path)
-                logger.info(f"成功删除锁文件: {self.lock_file_path}")
             
             self.locked = False
             logger.info(f"成功释放进程锁: {self.process_type.name}")
@@ -385,13 +417,20 @@ class ProcessLockManager:
         
         return False
     
-    def force_clear_lock(self) -> bool:
+    def force_clear_lock(self, caller_is_script_or_web=False) -> bool:
         """
-        强制清除锁
+        强制清除锁，只有在调用者是脚本或Web页面时才允许
         
+        Args:
+            caller_is_script_or_web: 是否由脚本或Web页面调用
+            
         Returns:
             bool: 是否成功清除
         """
+        if not caller_is_script_or_web:
+            logger.warning(f"非脚本或Web页面调用，禁止强制清除锁: {self.process_type.name}")
+            return False
+            
         if not os.path.exists(self.lock_file_path):
             return True
         
@@ -421,77 +460,77 @@ class ProcessLockManager:
             Dict: 锁状态信息
         """
         status = {}
-        lock_file = os.path.join(cls._lock_dir, "cnetCompSpy_global.lock")
-        if os.path.exists(lock_file):
-            try:
-                with open(lock_file, 'r') as f:
-                    try:
-                        # 尝试获取共享锁（非阻塞模式）
-                        fcntl.flock(f.fileno(), fcntl.LOCK_SH | fcntl.LOCK_NB)
-                        # 如果成功获取共享锁，说明没有进程持有排他锁
-                        has_exclusive_lock = False
-                        fcntl.flock(f.fileno(), fcntl.LOCK_UN)
-                    except IOError:
-                        # 如果无法获取共享锁，说明有进程持有排他锁
-                        has_exclusive_lock = True
-                    
-                    try:
-                        f.seek(0)
-                        content = f.read().strip()
+        for process_type in ProcessType:
+            lock_file = os.path.join(cls._lock_dir, f"cnetCompSpy_{process_type.name.lower()}.lock")
+            if os.path.exists(lock_file):
+                try:
+                    with open(lock_file, 'r') as f:
+                        try:
+                            # 尝试获取共享锁（非阻塞模式）
+                            fcntl.flock(f.fileno(), fcntl.LOCK_SH | fcntl.LOCK_NB)
+                            # 如果成功获取共享锁，说明没有进程持有排他锁
+                            has_exclusive_lock = False
+                            fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+                        except IOError:
+                            # 如果无法获取共享锁，说明有进程持有排他锁
+                            has_exclusive_lock = True
                         
-                        # 检查文件内容是否为空
-                        if not content:
-                            for process_type in ProcessType:
+                        try:
+                            f.seek(0)
+                            content = f.read().strip()
+                            
+                            # 检查文件内容是否为空
+                            if not content:
                                 status[process_type.name] = {
                                     'locked': has_exclusive_lock,
                                     'error': '锁文件内容为空'
                                 }
-                            return status
+                                continue
+                                
+                            data = json.loads(content)
+                            timestamp = data.get('timestamp', 0)
+                            pid = data.get('pid', 0)
+                            process_type_name = data.get('process_type', 'UNKNOWN')
                             
-                        data = json.loads(content)
-                        timestamp = data.get('timestamp', 0)
-                        pid = data.get('pid', 0)
-                        process_type_name = data.get('process_type', 'UNKNOWN')
-                        
-                        # 检查进程是否仍在运行
-                        process_exists = False
-                        if pid > 0:
-                            try:
-                                process = psutil.Process(pid)
-                                process_exists = process.is_running() and process.status() != psutil.STATUS_ZOMBIE
-                            except psutil.NoSuchProcess:
-                                pass
-                        
-                        for process_type in ProcessType:
+                            # 检查进程是否仍在运行
+                            process_exists = False
+                            if pid > 0:
+                                try:
+                                    process = psutil.Process(pid)
+                                    process_exists = process.is_running() and process.status() != psutil.STATUS_ZOMBIE
+                                except psutil.NoSuchProcess:
+                                    pass
+                            
+                            # 如果进程存在且未过期，强制将 locked 设置为 true，即使未持有排他锁
+                            expired = (time.time() - timestamp) > cls._lock_timeout
+                            effective_locked = has_exclusive_lock or (process_exists and not expired)
+                            
                             if process_type.name == process_type_name:
                                 status[process_type.name] = {
-                                    'locked': has_exclusive_lock,
+                                    'locked': effective_locked,
                                     'pid': pid,
                                     'process_exists': process_exists,
                                     'timestamp': timestamp,
                                     'timestamp_formatted': data.get('timestamp_formatted', ''),
                                     'age': time.time() - timestamp,
-                                    'expired': (time.time() - timestamp) > cls._lock_timeout,
+                                    'expired': expired,
                                     'hostname': data.get('hostname', ''),
                                     'command': data.get('command', ''),
                                     'start_method': data.get('start_method', 'unknown')
                                 }
                             else:
                                 status[process_type.name] = {'locked': False}
-                    except json.JSONDecodeError as e:
-                        for process_type in ProcessType:
+                        except json.JSONDecodeError as e:
                             status[process_type.name] = {
                                 'locked': has_exclusive_lock,
                                 'error': f'无法解析锁文件内容: {str(e)}'
                             }
-            except Exception as e:
-                for process_type in ProcessType:
+                except Exception as e:
                     status[process_type.name] = {
                         'locked': True,
                         'error': f'读取锁文件时发生错误: {str(e)}'
                     }
-        else:
-            for process_type in ProcessType:
+            else:
                 status[process_type.name] = {'locked': False}
         
         return status
@@ -499,7 +538,7 @@ class ProcessLockManager:
     @classmethod
     def force_clear_lock_by_type(cls, process_type: ProcessType) -> bool:
         """
-        强制清除指定类型的进程锁
+        强制清除指定类型的进程锁，只有在调用者是脚本或Web页面时才允许
         
         Args:
             process_type: 进程类型
@@ -507,7 +546,7 @@ class ProcessLockManager:
         Returns:
             bool: 是否成功清除
         """
-        lock_file = os.path.join(cls._lock_dir, "cnetCompSpy_global.lock")
+        lock_file = os.path.join(cls._lock_dir, f"cnetCompSpy_{process_type.name.lower()}.lock")
         if os.path.exists(lock_file):
             try:
                 os.remove(lock_file)

@@ -353,6 +353,7 @@ class TaskManager:
         try:
             # 如果需要进程锁，先获取锁
             if process_lock_manager:
+                self.logger.info(f"尝试获取{process_type.name}进程锁，任务: {task.task_id}")
                 if not process_lock_manager.acquire_lock():
                     task.status = TaskStatus.FAILED
                     task.error = f"无法获取{process_type.name}进程锁，可能有其他{process_type.name}进程正在运行"
@@ -363,7 +364,7 @@ class TaskManager:
                     return
                 
                 lock_acquired = True
-                self.logger.info(f"已获取{process_type.name}进程锁，开始执行任务: {task.task_id}")
+                self.logger.info(f"已成功获取{process_type.name}进程锁，开始执行任务: {task.task_id}")
             
             # 更新任务状态
             task.status = TaskStatus.RUNNING
