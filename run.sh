@@ -82,8 +82,8 @@ validate_args() {
     case "$cmd" in
         crawl)
             # crawl命令有效参数
-            local valid_opts=("--vendor" "--limit" "--debug" "--clean" "--force")
-            local requires_value=("--vendor" "--limit")
+            local valid_opts=("--vendor" "--source" "--limit" "--debug" "--clean" "--force")
+            local requires_value=("--vendor" "--source" "--limit")
             
             # 验证参数
             while [[ $# -gt 0 ]]; do

@@ -58,7 +58,7 @@ class Scheduler:
             return True
         
         # 如果当前时间已经超过任务时间太久，则等待到下一天
-        if time_difference > 300:
+        if time_difference > 1:
             #logger.info(f"当前时间已超过任务时间 {self.daily_task_time} 太久，将等待到下一天执行")
             return False
         

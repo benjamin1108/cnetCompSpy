@@ -147,6 +147,7 @@ def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="云计算竞争情报爬虫")
     parser.add_argument("--mode", choices=["crawl", "analyze", "test"], help="运行模式: crawl(爬取数据), analyze(分析数据), test(测试模式)")
     parser.add_argument("--vendor", help="爬取指定厂商的数据, 如aws, azure等")
+    parser.add_argument("--source", help="爬取指定来源的数据, 如blog, whatsnew等")
     parser.add_argument("--clean", action="store_true", help="清理所有中间文件")
     parser.add_argument("--limit", type=int, default=0, help="爬取的文章数量限制，如设置为5则每个来源只爬取5篇")
     parser.add_argument("--config", help="指定配置文件路径")
@@ -206,6 +207,21 @@ def crawl_main(args: argparse.Namespace) -> int:
             logger.warning(f"未找到厂商 {args.vendor} 的配置，请检查配置文件和厂商名称")
             return 1
         config['sources'] = filtered_sources
+        
+        # 如果同时指定了来源，进一步过滤配置
+        if args.source and args.vendor in config['sources']:
+            vendor_sources = config['sources'][args.vendor]
+            # 只保留指定来源的配置
+            if args.source in vendor_sources:
+                config['sources'][args.vendor] = {args.source: vendor_sources[args.source]}
+                logger.info(f"仅爬取厂商 {args.vendor} 的 {args.source} 来源")
+            else:
+                logger.warning(f"未找到厂商 {args.vendor} 的 {args.source} 来源配置，请检查配置文件和来源名称")
+                return 1
+    # 如果只指定了来源但没有指定厂商，给出警告
+    elif args.source:
+        logger.warning(f"指定了来源 {args.source} 但未指定厂商，请同时使用 --vendor 参数")
+        return 1
     
     # 如果设置了文章数量限制，更新配置
     if args.limit > 0:
