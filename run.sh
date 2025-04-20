@@ -416,17 +416,22 @@ activate_venv() {
 install_dependencies() {
     echo -e "${BLUE}正在安装项目依赖...${NC}"
     
+    # 创建临时日志文件
+    TEMP_LOG=$(mktemp)
+    echo -e "${YELLOW}安装日志将被保存到: $TEMP_LOG${NC}"
+    
     # 检查是否安装了tabulate库
     if ! pip list | grep -q "tabulate"; then
         echo -e "${YELLOW}未安装tabulate库，正在安装...${NC}"
-        pip install tabulate
+        pip install tabulate --no-cache-dir --verbose 2>&1 | tee -a "$TEMP_LOG"
     fi
     
-    pip install -r "$SCRIPT_DIR/requirements.txt"
+    pip install -r "$SCRIPT_DIR/requirements.txt" --no-cache-dir --verbose 2>&1 | tee -a "$TEMP_LOG"
     if [ $? -eq 0 ]; then
         echo -e "${GREEN}依赖安装成功${NC}"
     else
         echo -e "${RED}依赖安装失败，请检查网络连接和requirements.txt文件${NC}"
+        echo -e "${YELLOW}详细错误日志请查看: $TEMP_LOG${NC}"
         exit 1
     fi
 }
