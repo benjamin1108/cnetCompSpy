@@ -24,7 +24,6 @@ show_help() {
     echo -e "  ${GREEN}setup${NC}    - 设置环境（创建虚拟环境并安装依赖）"
     echo -e "  ${GREEN}driver${NC}   - 下载最新的WebDriver"
     echo -e "  ${GREEN}stats${NC}    - 比较元数据和实际文件统计"
-    echo -e "  ${GREEN}stats --detailed${NC} - 详细对比元数据和实际文件，显示时间和文件名"
     echo -e "  ${GREEN}check-tasks${NC} - 检查任务完成状态，显示未完成任务的文件"
     echo -e "  ${GREEN}clean${NC}    - 清理中间文件和临时文件"
     echo -e "  ${GREEN}daily${NC}    - 执行每日爬取与分析任务"
@@ -42,6 +41,9 @@ show_help() {
     echo -e "  ${GREEN}--pyc${NC}                    - 清理Python字节码文件（仅用于clean命令）"
     echo -e "  ${GREEN}--logs${NC}                   - 清理日志文件（仅用于clean命令）"
     echo -e "  ${GREEN}--temp${NC}                   - 清理临时文件（仅用于clean命令）"
+    echo -e "  ${GREEN}--data${NC}                   - 清理data目录（仅用于clean命令）"
+    echo -e "  ${GREEN}--detailed${NC}               - 显示详细信息（仅用于stats命令）"
+    echo -e "  ${GREEN}--tasks-only${NC}             - 只显示任务信息（仅用于check-tasks命令）"
     echo ""
     echo -e "${YELLOW}示例:${NC}"
     echo -e "  $0 crawl                     # 爬取所有厂商的数据"
@@ -59,7 +61,281 @@ show_help() {
     echo -e "  $0 clean                     # 清理所有中间文件和临时文件"
     echo -e "  $0 clean --pyc               # 只清理Python字节码文件"
     echo -e "  $0 clean --logs              # 只清理日志文件"
+    echo -e "  $0 clean --data              # 只清理data目录"
     echo -e "  $0 daily                     # 执行每日爬取与分析任务"
+}
+
+# 显示错误信息
+show_error() {
+    echo -e "${RED}错误: $1${NC}"
+    echo -e "${BLUE}使用 '$0 help' 查看完整帮助${NC}"
+    exit 1
+}
+
+# 验证参数
+validate_args() {
+    local cmd="$1"
+    shift
+    local valid_args=()
+    local invalid_args=()
+    
+    case "$cmd" in
+        crawl)
+            # crawl命令有效参数
+            local valid_opts=("--vendor" "--limit" "--debug" "--clean" "--force")
+            local requires_value=("--vendor" "--limit")
+            
+            # 验证参数
+            while [[ $# -gt 0 ]]; do
+                local current="$1"
+                local is_valid=false
+                
+                # 检查参数是否有效
+                for opt in "${valid_opts[@]}"; do
+                    if [[ "$current" == "$opt" ]]; then
+                        is_valid=true
+                        break
+                    fi
+                done
+                
+                # 检查需要值的参数
+                for req in "${requires_value[@]}"; do
+                    if [[ "$current" == "$req" ]]; then
+                        if [[ -z "$2" || "$2" == --* ]]; then
+                            show_error "参数 $current 需要一个值"
+                        fi
+                        
+                        # 检查特定参数的值约束
+                        if [[ "$current" == "--vendor" ]]; then
+                            if [[ ! "$2" =~ ^(aws|azure|gcp)$ ]]; then
+                                show_error "无效的厂商: $2，有效值为: aws, azure, gcp"
+                            fi
+                        elif [[ "$current" == "--limit" ]]; then
+                            if ! [[ "$2" =~ ^[0-9]+$ ]]; then
+                                show_error "文章数量限制必须是一个正整数: $2"
+                            fi
+                        fi
+                        
+                        shift
+                        break
+                    fi
+                done
+                
+                # 如果无效，添加到无效参数列表
+                if ! $is_valid; then
+                    invalid_args+=("$current")
+                fi
+                
+                shift
+            done
+            ;;
+            
+        analyze)
+            # analyze命令有效参数
+            local valid_opts=("--debug" "--clean" "--force")
+            
+            # 验证参数
+            while [[ $# -gt 0 ]]; do
+                local current="$1"
+                local is_valid=false
+                
+                # 检查参数是否有效
+                for opt in "${valid_opts[@]}"; do
+                    if [[ "$current" == "$opt" ]]; then
+                        is_valid=true
+                        break
+                    fi
+                done
+                
+                # 如果无效，添加到无效参数列表
+                if ! $is_valid; then
+                    invalid_args+=("$current")
+                fi
+                
+                shift
+            done
+            ;;
+            
+        server)
+            # server命令有效参数
+            local valid_opts=("--host" "--port" "--debug")
+            local requires_value=("--host" "--port")
+            
+            # 验证参数
+            while [[ $# -gt 0 ]]; do
+                local current="$1"
+                local is_valid=false
+                
+                # 检查参数是否有效
+                for opt in "${valid_opts[@]}"; do
+                    if [[ "$current" == "$opt" ]]; then
+                        is_valid=true
+                        break
+                    fi
+                done
+                
+                # 检查需要值的参数
+                for req in "${requires_value[@]}"; do
+                    if [[ "$current" == "$req" ]]; then
+                        if [[ -z "$2" || "$2" == --* ]]; then
+                            show_error "参数 $current 需要一个值"
+                        fi
+                        
+                        # 检查端口值是否为有效数字
+                        if [[ "$current" == "--port" ]]; then
+                            if ! [[ "$2" =~ ^[0-9]+$ ]]; then
+                                show_error "端口必须是一个数字: $2"
+                            fi
+                            if [[ "$2" -lt 1 || "$2" -gt 65535 ]]; then
+                                show_error "端口必须在1-65535范围内: $2"
+                            fi
+                        fi
+                        
+                        shift
+                        break
+                    fi
+                done
+                
+                # 如果无效，添加到无效参数列表
+                if ! $is_valid; then
+                    invalid_args+=("$current")
+                fi
+                
+                shift
+            done
+            ;;
+            
+        stats)
+            # stats命令有效参数
+            local valid_opts=("--detailed")
+            
+            # 验证参数
+            while [[ $# -gt 0 ]]; do
+                local current="$1"
+                local is_valid=false
+                
+                # 检查参数是否有效
+                for opt in "${valid_opts[@]}"; do
+                    if [[ "$current" == "$opt" ]]; then
+                        is_valid=true
+                        break
+                    fi
+                done
+                
+                # 如果无效，添加到无效参数列表
+                if ! $is_valid; then
+                    invalid_args+=("$current")
+                fi
+                
+                shift
+            done
+            ;;
+            
+        check-tasks)
+            # check-tasks命令有效参数
+            local valid_opts=("--tasks-only")
+            
+            # 验证参数
+            while [[ $# -gt 0 ]]; do
+                local current="$1"
+                local is_valid=false
+                
+                # 检查参数是否有效
+                for opt in "${valid_opts[@]}"; do
+                    if [[ "$current" == "$opt" ]]; then
+                        is_valid=true
+                        break
+                    fi
+                done
+                
+                # 如果无效，添加到无效参数列表
+                if ! $is_valid; then
+                    invalid_args+=("$current")
+                fi
+                
+                shift
+            done
+            ;;
+            
+        clean)
+            # clean命令有效参数
+            local valid_opts=("--all" "--pyc" "--logs" "--temp" "--data")
+            
+            # 验证参数
+            while [[ $# -gt 0 ]]; do
+                local current="$1"
+                local is_valid=false
+                
+                # 检查参数是否有效
+                for opt in "${valid_opts[@]}"; do
+                    if [[ "$current" == "$opt" ]]; then
+                        is_valid=true
+                        break
+                    fi
+                done
+                
+                # 如果无效，添加到无效参数列表
+                if ! $is_valid; then
+                    invalid_args+=("$current")
+                fi
+                
+                shift
+            done
+            ;;
+            
+        daily)
+            # daily命令没有特定参数，所有参数都传递给内部脚本
+            return 0
+            ;;
+            
+        setup|driver|help)
+            # 这些命令不接受任何参数
+            if [[ $# -gt 0 ]]; then
+                invalid_args=("$@")
+            fi
+            ;;
+            
+        *)
+            # 未知命令
+            show_error "未知命令: $cmd"
+            ;;
+    esac
+    
+    # 检查是否有无效参数
+    if [[ ${#invalid_args[@]} -gt 0 ]]; then
+        echo -e "${RED}错误: 无效的参数: ${invalid_args[*]}${NC}"
+        echo -e "${YELLOW}命令 '$cmd' 的有效参数:${NC}"
+        
+        case "$cmd" in
+            crawl)
+                echo -e "${GREEN}--vendor [aws|azure|gcp], --limit [数字], --debug, --clean, --force${NC}"
+                ;;
+            analyze)
+                echo -e "${GREEN}--debug, --clean, --force${NC}"
+                ;;
+            server)
+                echo -e "${GREEN}--host [主机地址], --port [端口号], --debug${NC}"
+                ;;
+            stats)
+                echo -e "${GREEN}--detailed${NC}"
+                ;;
+            check-tasks)
+                echo -e "${GREEN}--tasks-only${NC}"
+                ;;
+            clean)
+                echo -e "${GREEN}--all, --pyc, --logs, --temp, --data${NC}"
+                ;;
+            setup|driver|help)
+                echo -e "${GREEN}[无参数]${NC}"
+                ;;
+        esac
+        
+        echo -e "${BLUE}例如: $0 $cmd ${NC}"
+        echo -e "${BLUE}使用 '$0 help' 查看完整帮助${NC}"
+        return 1
+    fi
+    
+    return 0
 }
 
 # 检查是否安装了miniforge
@@ -193,6 +469,9 @@ download_driver() {
 crawl_data() {
     echo -e "${BLUE}开始爬取数据...${NC}"
     
+    # 验证参数
+    validate_args "crawl" "$@" || return 1
+    
     # 激活虚拟环境
     activate_venv
     
@@ -203,6 +482,9 @@ crawl_data() {
 # 分析数据
 analyze_data() {
     echo -e "${BLUE}开始分析数据...${NC}"
+    
+    # 验证参数
+    validate_args "analyze" "$@" || return 1
     
     # 激活虚拟环境
     activate_venv
@@ -215,6 +497,9 @@ analyze_data() {
 compare_stats() {
     echo -e "${BLUE}开始比较元数据和实际文件统计...${NC}"
     
+    # 验证参数
+    validate_args "stats" "$@" || return 1
+    
     # 激活虚拟环境
     activate_venv
     
@@ -226,6 +511,9 @@ compare_stats() {
 check_tasks() {
     echo -e "${BLUE}检查任务完成状态...${NC}"
     
+    # 验证参数
+    validate_args "check-tasks" "$@" || return 1
+    
     # 激活虚拟环境
     activate_venv
     
@@ -236,6 +524,9 @@ check_tasks() {
 # 启动Web服务器
 run_server() {
     echo -e "${BLUE}启动Web服务器...${NC}"
+    
+    # 验证参数
+    validate_args "server" "$@" || return 1
     
     # 激活虚拟环境
     activate_venv
@@ -274,11 +565,15 @@ run_server() {
 clean_files() {
     echo -e "${BLUE}开始清理文件...${NC}"
     
+    # 验证参数
+    validate_args "clean" "$@" || return 1
+    
     # 默认不清理任何文件，除非指定了参数
     CLEAN_ALL=false
     CLEAN_PYC=false
     CLEAN_LOGS=false
     CLEAN_TEMP=false
+    CLEAN_DATA=false
     
     # 如果没有参数，默认清理所有
     if [ $# -eq 0 ]; then
@@ -304,17 +599,22 @@ clean_files() {
                 CLEAN_TEMP=true
                 shift
                 ;;
+            --data)
+                CLEAN_DATA=true
+                shift
+                ;;
             *)
                 shift
                 ;;
         esac
     done
     
-    # 如果指定了--all，则清理所有类型的文件
+    # 如果指定了--all，则清理所有类型的文件（除了data目录）
     if [ "$CLEAN_ALL" = true ]; then
         CLEAN_PYC=true
         CLEAN_LOGS=true
         CLEAN_TEMP=true
+        # 注意：CLEAN_DATA 不包含在CLEAN_ALL中，需要单独指定
     fi
     
     # 清理Python字节码文件
@@ -344,6 +644,22 @@ clean_files() {
         echo -e "${GREEN}临时文件已清理${NC}"
     fi
     
+    # 清理data目录
+    if [ "$CLEAN_DATA" = true ]; then
+        echo -e "${YELLOW}清理data目录...${NC}"
+        if [ -d "$SCRIPT_DIR/data" ]; then
+            read -p "确定要删除data目录吗？这将删除所有爬取和分析数据 [y/N]: " confirm
+            if [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]]; then
+                rm -rf "$SCRIPT_DIR/data"
+                echo -e "${GREEN}data目录已清理${NC}"
+            else
+                echo -e "${BLUE}取消删除data目录${NC}"
+            fi
+        else
+            echo -e "${BLUE}data目录不存在，无需清理${NC}"
+        fi
+    fi
+    
     echo -e "${GREEN}文件清理完成${NC}"
 }
 
@@ -370,6 +686,17 @@ main() {
     COMMAND="$1"
     shift
     
+    # 验证命令是否有效
+    case "$COMMAND" in
+        crawl|analyze|server|setup|driver|stats|check-tasks|clean|daily|help)
+            # 有效命令
+            ;;
+        *)
+            show_error "未知命令: $COMMAND。有效命令: crawl, analyze, server, setup, driver, stats, check-tasks, clean, daily, help"
+            ;;
+    esac
+    
+    # 执行命令
     case "$COMMAND" in
         crawl)
             crawl_data "$@"
@@ -381,9 +708,13 @@ main() {
             run_server "$@"
             ;;
         setup)
+            # 验证参数
+            validate_args "setup" "$@" || exit 1
             setup_environment
             ;;
         driver)
+            # 验证参数
+            validate_args "driver" "$@" || exit 1
             download_driver
             ;;
         stats)
@@ -396,15 +727,16 @@ main() {
             clean_files "$@"
             ;;
         daily)
+            # validate_args "daily" "$@" || exit 1  # daily命令允许任意参数传递给内部脚本
             run_daily "$@"
             ;;
         help)
+            # 验证参数
+            validate_args "help" "$@" || exit 1
             show_help
             ;;
         *)
-            echo -e "${RED}未知命令: $COMMAND${NC}"
-            show_help
-            exit 1
+            show_error "未知命令: $COMMAND"
             ;;
     esac
 }
