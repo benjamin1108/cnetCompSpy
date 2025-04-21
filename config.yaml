@@ -14,7 +14,7 @@ crawler:
   retry: 3 # 重试次数
   interval: 2 # 请求间隔时间（秒）
   article_limit: 50 # 每个来源最多爬取的文章数量
-  max_workers: 100 # 并发爬虫数量，设置为4个线程同时运行
+  max_workers: 50 # 并发爬虫数量，设置为4个线程同时运行
   page_load_timeout: 45 # 页面加载超时（秒）- 适用于复杂页面
   script_timeout: 30 # JavaScript脚本执行超时（秒）
   implicit_wait: 10 # 查找元素的隐式等待时间（秒）
@@ -35,7 +35,7 @@ sources:
     whatsnew:
       url: "https://aws.amazon.com/about-aws/whats-new/networking_and_content_delivery"
       type: "what's new"
-      max_pages: 50  # 最大爬取页数
+      max_pages: 30  # 最大爬取页数
   azure:
     blog:
       url: "https://azure.microsoft.com/en-us/blog/category/networking/"

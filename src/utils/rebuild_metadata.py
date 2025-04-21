@@ -270,15 +270,21 @@ def rebuild_metadata(base_dir: Optional[str] = None, type: str = 'all', force_cl
                     if filepath and filepath not in existing_file_paths:
                         invalid_crawler_records.append((vendor, source_type, url_key, filepath))
         
-        for vendor, source_type, url_key, filepath in invalid_crawler_records:
-            try:
-                if url_key in all_crawler_metadata[vendor][source_type]:
-                    del all_crawler_metadata[vendor][source_type][url_key]
-                    deleted_crawler_metadata_count += 1
-                    logger.info(f"Removed invalid crawler metadata record: {filepath}")
-            except Exception as e:
-                errors.append(f"Error removing invalid crawler record {filepath}: {str(e)}")
-                logger.error(f"Failed to remove invalid crawler metadata record {filepath}: {str(e)}")
+        # 如果有无效记录，直接修改metadata_manager中的crawler_metadata
+        if invalid_crawler_records:
+            for vendor, source_type, url_key, filepath in invalid_crawler_records:
+                try:
+                    if vendor in metadata_manager.crawler_metadata and source_type in metadata_manager.crawler_metadata[vendor] and url_key in metadata_manager.crawler_metadata[vendor][source_type]:
+                        del metadata_manager.crawler_metadata[vendor][source_type][url_key]
+                        deleted_crawler_metadata_count += 1
+                        logger.info(f"Removed invalid crawler metadata record: {filepath}")
+                except Exception as e:
+                    errors.append(f"Error removing invalid crawler record {filepath}: {str(e)}")
+                    logger.error(f"Failed to remove invalid crawler metadata record {filepath}: {str(e)}")
+            
+            # 保存更改后的爬虫元数据
+            metadata_manager.save_crawler_metadata()
+            logger.info(f"已保存清理后的爬虫元数据")
     
     
     if type == 'analysis' or type == 'all':
@@ -389,16 +395,21 @@ def rebuild_metadata(base_dir: Optional[str] = None, type: str = 'all', force_cl
         invalid_records = [path for path in all_analysis_metadata if path not in processed_file_paths]
         
         # 删除无效记录
-        for path in invalid_records:
-            try:
-                # 从分析元数据中删除记录
-                if path in metadata_manager.analysis_metadata:
-                    del metadata_manager.analysis_metadata[path]
-                    deleted_analysis_metadata_count += 1
-                    logger.info(f"Removed invalid analysis metadata record: {path}")
-            except Exception as e:
-                errors.append(f"Error removing invalid record {path}: {str(e)}")
-                logger.error(f"Failed to remove invalid analysis metadata record {path}: {str(e)}")
+        if invalid_records:
+            for path in invalid_records:
+                try:
+                    # 从分析元数据中删除记录
+                    if path in metadata_manager.analysis_metadata:
+                        del metadata_manager.analysis_metadata[path]
+                        deleted_analysis_metadata_count += 1
+                        logger.info(f"Removed invalid analysis metadata record: {path}")
+                except Exception as e:
+                    errors.append(f"Error removing invalid record {path}: {str(e)}")
+                    logger.error(f"Failed to remove invalid analysis metadata record {path}: {str(e)}")
+            
+            # 保存更改后的分析元数据
+            metadata_manager.save_analysis_metadata()
+            logger.info(f"已保存清理后的分析元数据")
     # Obsolete code removed to fix NameError
     
     if type == 'crawler':
