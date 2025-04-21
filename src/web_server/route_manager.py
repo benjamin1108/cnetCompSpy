@@ -107,6 +107,8 @@ class RouteManager:
             if not document_info:
                 abort(404)
             
+            referrer = request.referrer if request.referrer else url_for('vendor_page', vendor=vendor)
+            
             return render_template(
                 'document.html',
                 title=document_info['meta'].get('title', filename),
@@ -116,7 +118,8 @@ class RouteManager:
                 content=document_info['content'],
                 meta=document_info['meta'],
                 has_analysis=document_info['has_analysis'],
-                view_type='raw'
+                view_type='raw',
+                referrer=referrer
             )
         
         # AI分析文档页面 - 显示特定文档的AI分析内容
@@ -128,6 +131,8 @@ class RouteManager:
                 # 如果没有分析文档，重定向到原始文档页面
                 return redirect(url_for('document_page', vendor=vendor, doc_type=doc_type, filename=filename))
             
+            referrer = request.referrer if request.referrer else url_for('analysis_page', vendor=vendor)
+            
             return render_template(
                 'document.html',
                 title=analysis_info['title'],
@@ -137,7 +142,8 @@ class RouteManager:
                 content=analysis_info['content'],
                 meta=analysis_info['meta'],
                 has_raw=analysis_info['has_raw'],
-                view_type='analysis'
+                view_type='analysis',
+                referrer=referrer
             )
         
         # 原始文件 - 提供原始Markdown文件下载

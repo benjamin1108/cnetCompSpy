@@ -26,7 +26,6 @@ crawler:
     User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
 
 # 数据源配置
-
 sources:
   aws:
     blog:
@@ -36,7 +35,7 @@ sources:
     whatsnew:
       url: "https://aws.amazon.com/about-aws/whats-new/networking_and_content_delivery"
       type: "what's new"
-      max_pages: 200  # 最大爬取页数
+      max_pages: 50  # 最大爬取页数
   azure:
     blog:
       url: "https://azure.microsoft.com/en-us/blog/category/networking/"
@@ -207,3 +206,7 @@ ai_analyzer:
 scheduler:
   daily_task_time: "23:07"  # 每日定时任务执行时间，格式为 HH:MM（24小时制）
   check_interval: 10  # 检查配置文件的时间间隔（秒）
+
+# WebServer配置
+webserver:
+  show_raw_data: true  # 是否展示原始资料，设置为false时页面只展示AI分析内容

@@ -8,13 +8,13 @@
     --secondary-color: #2b579a;
     --accent-color: #00a383;
     --accent-dark: #008f76;
-    --bg-light: #ffffff;
-    --bg-main: #f2f5fa;
-    --bg-dark: #e8ecf2;
+    --bg-light: #d1dbe8;
+    --bg-main: #b8c7d9;
+    --bg-dark: #a5b7cc;
     --text-primary: #2c3e50;
     --text-light: #5b6b7c;
     --text-dark: #1a2533;
-    --border-color: #dce1e8;
+    --border-color: #bccad8;
     --shadow-sm: 0 2px 5px rgba(0,0,0,0.05);
     --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
     --shadow-lg: 0 8px 28px rgba(0,0,0,0.12);
@@ -54,7 +54,7 @@ a:hover {
 
 /* 布局组件 */
 header {
-    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    background: linear-gradient(135deg, #004c99, #1a3a6c);
     color: white;
     padding: 30px 20px;
     text-align: center;
@@ -132,8 +132,8 @@ main {
 section {
     background-color: var(--bg-light);
     border-radius: var(--radius-md);
-    padding: 30px;
-    margin-bottom: 30px;
+    padding: 25px;
+    margin-bottom: 25px;
     box-shadow: var(--shadow-md);
     border: 1px solid var(--border-color);
     transition: var(--transition);
@@ -169,7 +169,7 @@ section h2::after {
 }
 
 footer {
-    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    background: linear-gradient(135deg, #b8c7d9, #a5b7cc);
     color: var(--text-light);
     text-align: center;
     padding: 20px;
@@ -233,7 +233,7 @@ tbody tr:hover {
 .card {
     background-color: var(--bg-light);
     border-radius: var(--radius-md);
-    padding: 30px;
+    padding: 25px;
     box-shadow: var(--shadow-md);
     transition: var(--transition);
     border: 1px solid var(--border-color);
@@ -274,8 +274,9 @@ tbody tr:hover {
     padding: var(--content-padding);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-md);
-    line-height: 1.8;
+    line-height: 1.9;
     border: 1px solid var(--border-color);
+    font-size: 1.05rem;
 }
 
 .document-content h1,
