@@ -27,6 +27,7 @@ show_help() {
     echo -e "  ${GREEN}check-tasks${NC} - 检查任务完成状态，显示未完成任务的文件"
     echo -e "  ${GREEN}clean${NC}    - 清理中间文件和临时文件"
     echo -e "  ${GREEN}daily${NC}    - 执行每日爬取与分析任务"
+    echo -e "  ${GREEN}rebuild-md${NC} - 重建元数据，从本地MD文件更新元数据"
     echo -e "  ${GREEN}help${NC}     - 显示此帮助信息"
     echo ""
     echo -e "${YELLOW}选项:${NC}"
@@ -44,6 +45,9 @@ show_help() {
     echo -e "  ${GREEN}--data${NC}                   - 清理data目录（仅用于clean命令）"
     echo -e "  ${GREEN}--detailed${NC}               - 显示详细信息（仅用于stats命令）"
     echo -e "  ${GREEN}--tasks-only${NC}             - 只显示任务信息（仅用于check-tasks命令）"
+    echo -e "  ${GREEN}--type${NC} [crawler|analysis] - 指定元数据类型（crawler 或 analysis，仅用于rebuild-md命令）"
+    echo -e "  ${GREEN}--force_clear${NC}             - 强制清空原有元数据（仅用于rebuild-md命令）"
+    echo -e "  ${GREEN}--force${NC}                   - 强制重建元数据，即使元数据已存在（仅用于rebuild-md命令）"
     echo ""
     echo -e "${YELLOW}示例:${NC}"
     echo -e "  $0 crawl                     # 爬取所有厂商的数据"
@@ -63,6 +67,8 @@ show_help() {
     echo -e "  $0 clean --logs              # 只清理日志文件"
     echo -e "  $0 clean --data              # 只清理data目录"
     echo -e "  $0 daily                     # 执行每日爬取与分析任务"
+    echo -e "  $0 rebuild-md                # 重建元数据，从本地MD文件更新元数据"
+    echo -e "  $0 rebuild-md --force        # 强制重建元数据，即使元数据已存在"
 }
 
 # 显示错误信息
@@ -283,12 +289,12 @@ validate_args() {
             done
             ;;
             
-        daily)
-            # daily命令没有特定参数，所有参数都传递给内部脚本
+        daily|rebuild-md)
+            # daily和rebuild-md命令没有特定参数，所有参数都传递给内部脚本
             return 0
             ;;
             
-        setup|driver|help)
+        setup|driver|help|rebuild-md)
             # 这些命令不接受任何参数
             if [[ $# -gt 0 ]]; then
                 invalid_args=("$@")
@@ -679,6 +685,17 @@ run_daily() {
     bash "$SCRIPT_DIR/scripts/daily_crawl_and_analyze.sh" "$@"
 }
 
+# 重建元数据，从本地MD文件更新元数据
+run_rebuild_metadata() {
+    echo -e "${BLUE}开始重建元数据...${NC}"
+    
+    # 激活虚拟环境
+    activate_venv
+    
+    # 调用Python模块
+    python -m src.utils.rebuild_metadata "$@"
+}
+
 # 主函数
 main() {
     # 如果没有参数，显示帮助信息
@@ -693,11 +710,11 @@ main() {
     
     # 验证命令是否有效
     case "$COMMAND" in
-        crawl|analyze|server|setup|driver|stats|check-tasks|clean|daily|help)
+        crawl|analyze|server|setup|driver|stats|check-tasks|clean|daily|rebuild-md|help)
             # 有效命令
             ;;
         *)
-            show_error "未知命令: $COMMAND。有效命令: crawl, analyze, server, setup, driver, stats, check-tasks, clean, daily, help"
+            show_error "未知命令: $COMMAND。有效命令: crawl, analyze, server, setup, driver, stats, check-tasks, clean, daily, rebuild-md, help"
             ;;
     esac
     
@@ -732,8 +749,10 @@ main() {
             clean_files "$@"
             ;;
         daily)
-            # validate_args "daily" "$@" || exit 1  # daily命令允许任意参数传递给内部脚本
             run_daily "$@"
+            ;;
+        rebuild-md)
+            run_rebuild_metadata "$@"
             ;;
         help)
             # 验证参数

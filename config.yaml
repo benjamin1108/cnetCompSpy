@@ -36,7 +36,7 @@ sources:
     whatsnew:
       url: "https://aws.amazon.com/about-aws/whats-new/networking_and_content_delivery"
       type: "what's new"
-      max_pages: 1200  # 最大爬取页数
+      max_pages: 200  # 最大爬取页数
   azure:
     blog:
       url: "https://azure.microsoft.com/en-us/blog/category/networking/"
@@ -85,7 +85,7 @@ sources:
 
 # AI分析基础配置
 ai_analyzer:
-  model: "grok-3-latest" # 使用的AI模型名称
+  model: "grok-3-mini-beta" # 使用的AI模型名称
   max_tokens: 99999 # 最大令牌数
   temperature: 0.5 # 温度参数
   max_workers: 4 # 同时分析的最大文件数，设置为4个线程同时运行
