@@ -101,8 +101,8 @@ class AzureUpdatesCrawler(BaseCrawler):
             filename = f"{pub_date}_{hashlib.md5(title.encode()).hexdigest()[:8]}.md"
             file_path = os.path.join(self.output_dir, filename)
 
-            # 将日期格式转换为更友好的显示格式
-            display_date = pub_date.replace('-', '_')
+            # 将日期格式保持为ISO格式，以便前端JavaScript可以正确解析
+            display_date = pub_date  # 保持YYYY-MM-DD格式
 
             # 构建Markdown内容
             metadata_lines = [
