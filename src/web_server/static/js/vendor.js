@@ -125,6 +125,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 初始化并渲染
         initializeFilteredCards();
+        // 默认按日期降序排序，确保最新在前
+        sortCards('date-desc');
         renderPage(1);
     }
 

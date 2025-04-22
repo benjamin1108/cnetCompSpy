@@ -40,9 +40,22 @@ def parse_md_file(filepath: str) -> Optional[Dict[str, Any]]:
         title_match = re.search(r'^# (.+)$', content, re.MULTILINE)
         title = title_match.group(1) if title_match else os.path.basename(filepath)
         
-        # 提取URL（假设内容中有URL字段）
+        # 提取URL（尝试匹配多种URL格式）
+        url = ''
+        # 首先尝试匹配 "URL: " 格式
         url_match = re.search(r'URL: (.+)', content)
-        url = url_match.group(1) if url_match else ''
+        if url_match:
+            url = url_match.group(1).strip()
+        else:
+            # 如果没有找到，尝试匹配 "**原始链接:** [URL](URL)" 格式
+            url_match = re.search(r'\*\*原始链接[:：]*\*\*.*?\[(.*?)\]\((.*?)\)', content)
+            if url_match:
+                url = url_match.group(2).strip()
+            else:
+                # 再尝试匹配 "**原始链接:** URL" 格式
+                url_match = re.search(r'\*\*原始链接[:：]*\*\*.*?(https?://[^\s\)]+)', content)
+                if url_match:
+                    url = url_match.group(1).strip()
         
         # 提取日期（假设内容中有日期字段）
         date_match = re.search(r'Date: (.+)', content)
@@ -416,13 +429,24 @@ def rebuild_metadata(base_dir: Optional[str] = None, type: str = 'all', force_cl
                     
                     # 确保filepath字段正确设置，这对于StatsAnalyzer非常重要
                     metadata['filepath'] = filepath
-                    # 使用URL作为键更新元数据
+                    # 使用URL作为键更新元数据，如果URL为空则使用filepath
                     url_key = metadata['url'] if metadata['url'] else filepath
                     # 检查是否已存在记录，如果存在则记录为覆盖
                     all_crawler_metadata = metadata_manager.get_all_crawler_metadata()
-                    if vendor in all_crawler_metadata and source_type in all_crawler_metadata[vendor] and url_key in all_crawler_metadata[vendor][source_type]:
-                        overwritten_crawler_metadata_count += 1
-                        logger.debug(f"Overwriting existing crawler metadata for: {filepath}")
+                    if vendor in all_crawler_metadata and source_type in all_crawler_metadata[vendor]:
+                        # 检查是否有以filepath为键的记录
+                        existing_key = None
+                        for key, entry in all_crawler_metadata[vendor][source_type].items():
+                            if entry.get('filepath') == filepath:
+                                existing_key = key
+                                break
+                        if existing_key:
+                            if existing_key != url_key:
+                                # 如果找到的键与当前要使用的键不同，删除旧记录
+                                del metadata_manager.crawler_metadata[vendor][source_type][existing_key]
+                                logger.debug(f"Removed old metadata entry with key {existing_key} for: {filepath}")
+                            overwritten_crawler_metadata_count += 1
+                            logger.debug(f"Overwriting existing crawler metadata for: {filepath}")
                     metadata_manager.update_crawler_metadata_entries_batch(vendor, source_type, {url_key: metadata})
                     successful_updates += 1
                     logger.info(f"Successfully updated crawler metadata for: {filepath}")

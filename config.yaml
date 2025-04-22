@@ -35,7 +35,7 @@ sources:
     whatsnew:
       url: "https://aws.amazon.com/about-aws/whats-new/networking_and_content_delivery"
       type: "what's new"
-      max_pages: 30  # 最大爬取页数
+      max_pages: 40  # 最大爬取页数
   azure:
     blog:
       url: "https://azure.microsoft.com/en-us/blog/category/networking/"

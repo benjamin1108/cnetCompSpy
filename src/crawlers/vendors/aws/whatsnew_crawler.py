@@ -215,7 +215,7 @@ class AwsWhatsnewCrawler(BaseCrawler):
                 "item.locale": "en_US",
                 "tags.id": "whats-new-v2#general-products#amazon-vpc|whats-new-v2#general-products#aws-direct-connect|whats-new-v2#general-products#amazon-route-53|whats-new-v2#general-products#elastic-load-balancing|whats-new-v2#general-products#amazon-cloudfront|whats-new-v2#general-products#amazon-api-gateway|whats-new-v2#marketing-marchitecture#networking|whats-new-v2#marketing-marchitecture#networking-and-content-delivery|whats-new-v2#general-products#aws-global-accelerator|whats-new-v2#general-products#aws-transit-gateway|whats-new-v2#general-products#aws-vpn|whats-new-v2#general-products#aws-site-to-site|whats-new-v2#general-products#aws-client-vpn|whats-new-v2#general-products#aws-app-mesh"
             }
-            page = 1
+            page = 0
             total_items = 0
             
             while True:
