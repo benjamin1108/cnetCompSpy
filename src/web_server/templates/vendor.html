@@ -681,6 +681,97 @@
                 }
             });
         });
+        
+        // 根据厂商名称定义tab顺序（与config.yaml中的sources配置一致）
+        const vendorTabOrders = {
+            // 为不同厂商定义不同的标签顺序
+            'aws': ['whatsnew','blog' ],
+            'azure': ['updates', 'tech-blog','blog' ],
+            'gcp': ['blog'],
+            'tencent': ['blog', 'docs'],
+            'huawei': ['blog', 'docs'],
+            'volcano': ['blog', 'docs']
+            // 可以根据需要添加更多厂商的配置
+        };
+        
+        // 默认标签顺序
+        const defaultTabOrder = ['blog', 'whatsnew', 'updates', 'tech_blog'];
+        
+        // 获取当前厂商名称
+        const vendorName = document.querySelector('.vendor-title').textContent.trim().split(' ')[0].toLowerCase();
+        
+        // 获取适用于当前厂商的标签顺序
+        const tabOrder = vendorTabOrders[vendorName] || defaultTabOrder;
+        
+        // 重新排序标签页
+        function reorderTabs() {
+            const tabNav = document.querySelector('.tab-nav');
+            if (!tabNav) return;
+            
+            // 获取所有标签按钮
+            const tabButtons = Array.from(tabNav.querySelectorAll('.tab-button'));
+            if (tabButtons.length === 0) return;
+            
+            // 创建一个新的排序后的按钮数组
+            const orderedButtons = [];
+            
+            // 首先按照指定顺序添加按钮
+            tabOrder.forEach(type => {
+                const button = tabButtons.find(btn => btn.getAttribute('data-tab').toLowerCase() === type.toLowerCase());
+                if (button && !orderedButtons.includes(button)) {
+                    orderedButtons.push(button);
+                }
+            });
+            
+            // 然后添加其他未在指定顺序中的按钮
+            tabButtons.forEach(button => {
+                const type = button.getAttribute('data-tab').toLowerCase();
+                if (!tabOrder.map(t => t.toLowerCase()).includes(type) && !orderedButtons.includes(button)) {
+                    orderedButtons.push(button);
+                }
+            });
+            
+            // 清空标签导航
+            tabNav.innerHTML = '';
+            
+            // 重新添加按钮，按照新的顺序
+            orderedButtons.forEach(button => {
+                tabNav.appendChild(button);
+            });
+            
+            // 重新排序内容区域
+            const tabContents = document.querySelectorAll('.tab-content');
+            const orderedContents = [];
+            
+            // 按照按钮的顺序排列内容
+            orderedButtons.forEach(button => {
+                const tabId = button.getAttribute('data-tab');
+                const content = Array.from(tabContents).find(div => div.id === `tab-${tabId}`);
+                if (content) {
+                    orderedContents.push(content);
+                }
+            });
+            
+            // 清空内容区域的父元素
+            if (tabContents.length > 0) {
+                const contentParent = tabContents[0].parentNode;
+                Array.from(tabContents).forEach(div => div.remove());
+                
+                // 重新添加内容，按照新的顺序
+                orderedContents.forEach(content => {
+                    contentParent.appendChild(content);
+                });
+            }
+            
+            // 默认激活第一个标签
+            if (orderedButtons.length > 0) {
+                // 模拟点击第一个标签
+                orderedButtons[0].click();
+            }
+        }
+        
+        // 执行标签页重排序
+        reorderTabs();
     });
 </script>
 <script src="{{ url_for('static', filename='js/vendor.js') }}"></script>
