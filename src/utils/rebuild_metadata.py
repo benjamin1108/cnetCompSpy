@@ -172,7 +172,168 @@ def load_required_tasks(base_dir: str) -> List[str]:
         # 返回默认任务列表
         return ["AI标题翻译", "AI竞争分析", "AI全文翻译"]
 
-def rebuild_metadata(base_dir: Optional[str] = None, type: str = 'all', force_clear: bool = False) -> None:
+def validate_task_content(task_type: str, content: str) -> Dict[str, Any]:
+    """
+    深入验证任务内容是否符合预期，检测'假完成'问题
+    
+    Args:
+        task_type: 任务类型
+        content: 任务内容
+        
+    Returns:
+        验证结果字典，包含是否有效、问题描述等信息
+    """
+    result = {
+        'is_valid': True,
+        'reason': None
+    }
+    
+    # 去除内容首尾空白字符
+    content = content.strip()
+    
+    # 如果内容为空，直接判定为无效
+    if not content:
+        result['is_valid'] = False
+        result['reason'] = f"{task_type}任务内容为空"
+        return result
+    
+    # 检查内容是否过短（根据任务类型设置不同的最小长度）
+    min_length_map = {
+        "AI标题翻译": 5,  # 标题至少5个字符
+        "AI竞争分析": 100,  # 竞争分析至少100个字符
+        "AI全文翻译": 200   # 全文翻译至少200个字符
+    }
+    
+    min_length = min_length_map.get(task_type, 30)  # 默认至少30个字符
+    
+    if len(content) < min_length:
+        result['is_valid'] = False
+        result['reason'] = f"{task_type}任务内容过短（仅{len(content)}字符，期望至少{min_length}字符）"
+        return result
+    
+    # 根据任务类型进行特定验证
+    if task_type == "AI标题翻译":
+        # 检查标题是否包含预期的标签前缀
+        if not (content.startswith("[解决方案]") or 
+                content.startswith("[新产品/新功能]") or 
+                content.startswith("[新产品]") or 
+                content.startswith("[新功能]") or
+                content.startswith("[产品更新]") or
+                content.startswith("[技术更新]") or
+                content.startswith("[案例分析]")):
+            result['is_valid'] = False
+            result['reason'] = "AI标题翻译缺少预期的标签前缀，如[解决方案]、[新功能]等"
+            return result
+            
+        # 检查标题是否包含非中文内容（允许部分专有名词如AWS、Azure等）
+        # 这里使用一个简单的启发式方法：如果非ASCII字符太少，可能没有正确翻译成中文
+        # non_ascii_chars = sum(1 for c in content if ord(c) > 127)
+        # if non_ascii_chars < len(content) * 0.3:  # 假设至少30%应该是中文字符
+        #     result['is_valid'] = False
+        #     result['reason'] = "AI标题翻译可能未正确翻译成中文"
+        #     return result
+            
+    elif task_type == "AI全文翻译":
+        # # 检查是否包含足够的中文内容
+        # non_ascii_chars = sum(1 for c in content if ord(c) > 127)
+        # if non_ascii_chars < len(content) * 0.3:  # 假设至少30%应该是中文字符
+        #     result['is_valid'] = False
+        #     result['reason'] = "AI全文翻译可能未正确翻译成中文，中文字符占比过低"
+        #     return result
+            
+        # 检查是否存在常见的未完成翻译特征
+        incomplete_markers = [
+            "I'll translate", "Here's the translation", "翻译如下", 
+            "以下是翻译", "Translation:", "The translation is",
+            "[以下内容已省略]", "[更多内容已省略]",
+            "to be continued", "未完待续"
+        ]
+        
+        for marker in incomplete_markers:
+            if marker.lower() in content.lower():
+                result['is_valid'] = False
+                result['reason'] = f"AI全文翻译可能未完成，包含'{marker}'等特征文本"
+                return result
+                
+        # 检查全文翻译是否有章节结构，大多数完整翻译应该包含标题结构
+        if not ('#' in content or '##' in content or '###' in content):
+            # 这是一个软性检查，只在内容较长时才执行
+            if len(content) > 1000 and '\n\n' not in content:
+                result['is_valid'] = False
+                result['reason'] = "AI全文翻译可能不完整，缺少章节结构或段落格式"
+                return result
+    
+    elif task_type == "AI竞争分析":
+        # 检查竞争分析是否包含预期的章节
+        expected_sections = ["概述", "方案", "价值", "产品", "评估"]
+        section_count = 0
+        
+        for section in expected_sections:
+            if section in content:
+                section_count += 1
+                
+        if section_count < 3:  # 至少应包含3个预期章节
+            result['is_valid'] = False
+            result['reason'] = "AI竞争分析内容不完整，缺少关键章节"
+            return result
+    
+    return result
+
+def deep_check_analysis_file(filepath: str, required_tasks: List[str]) -> Dict[str, Any]:
+    """
+    深入检查分析文件内容是否符合预期，包括检测"假完成"问题
+    
+    Args:
+        filepath: 分析文件路径
+        required_tasks: 必要的AI任务列表
+        
+    Returns:
+        检查结果字典，包含是否有效、问题描述等信息
+    """
+    result = {
+        'is_valid': True,
+        'invalid_tasks': [],
+        'reason': None
+    }
+    
+    try:
+        with open(filepath, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # 检查每个必要任务的内容
+        for task in required_tasks:
+            start_tag = f"<!-- AI_TASK_START: {task} -->"
+            end_tag = f"<!-- AI_TASK_END: {task} -->"
+            
+            if start_tag not in content or end_tag not in content:
+                # 任务标记不存在，由基本检查处理，这里跳过
+                continue
+            
+            # 提取任务内容
+            task_content = content.split(start_tag)[1].split(end_tag)[0].strip()
+            
+            # 验证任务内容
+            validation_result = validate_task_content(task, task_content)
+            
+            if not validation_result['is_valid']:
+                result['is_valid'] = False
+                result['invalid_tasks'].append({
+                    'task': task,
+                    'reason': validation_result['reason']
+                })
+        
+        # 设置总体原因
+        if not result['is_valid']:
+            reasons = [f"{item['task']}: {item['reason']}" for item in result['invalid_tasks']]
+            result['reason'] = "; ".join(reasons)
+            
+        return result
+    except Exception as e:
+        result['is_valid'] = False
+        result['reason'] = f"检查文件内容时出错: {str(e)}"
+        return result
+
+def rebuild_metadata(base_dir: Optional[str] = None, type: str = 'all', force_clear: bool = False, deep_check: bool = False, delete_invalid: bool = False) -> None:
     """
     重建元数据，从本地MD文件解析并更新元数据
     
@@ -180,6 +341,8 @@ def rebuild_metadata(base_dir: Optional[str] = None, type: str = 'all', force_cl
         base_dir: 项目根目录，如果为None则使用当前目录
         type: 元数据类型，crawler、analysis 或 all（默认刷新所有类型）
         force_clear: 是否强制清空原有元数据
+        deep_check: 是否启用深度内容验证，检测"假完成"问题
+        delete_invalid: 是否删除检测到的无效文件，仅在deep_check=True时有效
     """
     processed_files = 0
     successful_updates = 0
@@ -189,6 +352,16 @@ def rebuild_metadata(base_dir: Optional[str] = None, type: str = 'all', force_cl
     deleted_analysis_metadata_count = 0
     overwritten_crawler_metadata_count = 0
     overwritten_analysis_metadata_count = 0
+    invalid_content_files_count = 0
+    
+    # 用于记录检测到的问题文件（不删除时使用）
+    problem_files = []
+    
+    # 创建用于记录问题文件的日志文件
+    if deep_check and not delete_invalid:
+        os.makedirs("logs", exist_ok=True)
+        deep_check_log_file = os.path.join("logs", f"deep-check_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
+        logger.info(f"深度检查结果将被记录到: {deep_check_log_file}")
     
     # 记录所有处理过的文件路径，用于清理无效记录
     processed_file_paths = set()
@@ -329,6 +502,23 @@ def rebuild_metadata(base_dir: Optional[str] = None, type: str = 'all', force_cl
                     files_to_delete.append((filepath, reason))
                     continue
                 
+                # 深入检查分析文件内容是否符合预期（检测"假完成"问题）
+                if deep_check:
+                    validation_result = deep_check_analysis_file(filepath, required_tasks)
+                    if not validation_result['is_valid']:
+                        reason = validation_result['reason']
+                        if delete_invalid:
+                            # 删除模式：将文件加入删除列表
+                            log_error_red(f"需要删除内容异常的文件 {filepath}: {reason}")
+                            files_to_delete.append((filepath, reason))
+                            invalid_content_files_count += 1
+                            continue
+                        else:
+                            # 只记录模式：将问题文件记录到列表中，稍后写入日志文件
+                            log_error_red(f"检测到内容异常的文件 {filepath}: {reason}")
+                            problem_files.append((filepath, reason))
+                            # 虽然检测到问题，但仍继续处理，不跳过
+                
                 # 记录处理过的文件路径
                 raw_normalized_path = os.path.relpath(raw_path, metadata_manager.base_dir)
                 processed_file_paths.add(raw_normalized_path)
@@ -431,8 +621,14 @@ def rebuild_metadata(base_dir: Optional[str] = None, type: str = 'all', force_cl
         logger.info(f"覆盖分析元数据记录: {overwritten_analysis_metadata_count} 个")
         if deleted_files_count > 0:
             log_error_red(f"删除了 {deleted_files_count} 个不完整或无效的分析文件")
+        if invalid_content_files_count > 0:
+            log_error_red(f"删除了 {invalid_content_files_count} 个内容异常的分析文件（'假完成'问题）")
         if deleted_analysis_metadata_count > 0:
             log_error_red(f"删除了 {deleted_analysis_metadata_count} 个无效的分析元数据记录")
+    
+    if len(problem_files) > 0:
+        log_error_red(f"检测到 {len(problem_files)} 个内容异常的分析文件，但未删除（详见日志）")
+    
     if errors:
         logger.error(f"错误数: {len(errors)}")
         for error in errors:
@@ -441,6 +637,34 @@ def rebuild_metadata(base_dir: Optional[str] = None, type: str = 'all', force_cl
         logger.info("无错误发生")
     logger.info(f"{type} 元数据重建完成")
 
+    # 如果有检测到问题文件但选择不删除，将它们记录到日志文件中
+    if deep_check and not delete_invalid and problem_files:
+        try:
+            with open(deep_check_log_file, 'w', encoding='utf-8') as f:
+                f.write(f"# 深度检查结果 - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+                f.write(f"## 共检测到 {len(problem_files)} 个内容异常的文件\n\n")
+                
+                for filepath, reason in problem_files:
+                    f.write(f"### 文件：{filepath}\n")
+                    f.write(f"- 问题原因：{reason}\n")
+                    f.write(f"- 修改时间：{datetime.fromtimestamp(os.path.getmtime(filepath)).strftime('%Y-%m-%d %H:%M:%S')}\n")
+                    
+                    # 尝试读取文件内容的一部分，帮助用户判断问题
+                    try:
+                        with open(filepath, 'r', encoding='utf-8') as content_file:
+                            content = content_file.read(1000)  # 只读取前1000个字符
+                        f.write("\n```\n")
+                        f.write(f"{content}...")
+                        f.write("\n```\n\n")
+                    except Exception as e:
+                        f.write(f"\n无法读取文件内容：{str(e)}\n\n")
+                    
+                    f.write("---\n\n")
+                    
+            logger.info(f"已将检测到的问题文件信息写入日志文件: {deep_check_log_file}")
+        except Exception as e:
+            logger.error(f"写入问题文件日志时出错: {str(e)}")
+
 def main():
     """主函数"""
     parser = argparse.ArgumentParser(description="重建元数据，从本地MD文件解析并更新元数据")
@@ -448,6 +672,8 @@ def main():
     parser.add_argument("--type", default="all", help="指定元数据类型 (crawler、analysis 或 all)")
     parser.add_argument("--force_clear", action="store_true", help="强制清空原有元数据")
     parser.add_argument("--force", action="store_true", help="强制重建元数据，即使元数据已存在")
+    parser.add_argument("--deep-check", action="store_true", help="深度检查分析文件内容，识别'假完成'问题")
+    parser.add_argument("--delete", action="store_true", help="配合--deep-check使用，删除检测到的问题文件，否则只记录不删除")
     parser.add_argument("--debug", action="store_true", help="启用调试模式")
     
     args = parser.parse_args()
@@ -464,8 +690,15 @@ def main():
         logging.getLogger().addHandler(debug_handler)
         logger.debug("调试模式已启用")
     
+    # 记录深度检查模式
+    if args.deep_check:
+        if args.delete:
+            logger.info("深度内容验证模式已启用，将检测并删除分析文件中的'假完成'问题")
+        else:
+            logger.info("深度内容验证模式已启用，将检测分析文件中的'假完成'问题但不删除文件")
+    
     # 调用重建元数据函数
-    rebuild_metadata(args.base_dir, args.type, args.force_clear)
+    rebuild_metadata(args.base_dir, args.type, args.force_clear, args.deep_check, args.delete)
 
 if __name__ == "__main__":
     main()

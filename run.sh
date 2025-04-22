@@ -722,9 +722,19 @@ main() {
     case "$COMMAND" in
         crawl)
             crawl_data "$@"
+            RESULT=$?
+            if [ $RESULT -eq 0 ]; then
+                echo -e "${BLUE}爬取完成，正在重建元数据...${NC}"
+                run_rebuild_metadata --type crawler --deep-check
+            fi
             ;;
         analyze)
             analyze_data "$@"
+            RESULT=$?
+            if [ $RESULT -eq 0 ]; then
+                echo -e "${BLUE}分析完成，正在重建元数据...${NC}"
+                run_rebuild_metadata --type analysis --deep-check
+            fi
             ;;
         server)
             run_server "$@"
