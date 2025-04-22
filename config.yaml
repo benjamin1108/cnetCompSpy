@@ -46,6 +46,10 @@ sources:
       type: "tech-blog"
       test_mode: false
     
+    updates:
+      type: "updates"
+      test_mode: false
+    
     docs:
       url: "https://learn.microsoft.com/en-us/azure/"
       type: "documentation"
