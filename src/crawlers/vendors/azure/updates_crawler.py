@@ -11,6 +11,8 @@ from datetime import datetime
 from typing import List, Dict
 
 from src.crawlers.common.base_crawler import BaseCrawler
+from src.crawlers.common.base_crawler import BaseCrawler, metadata_lock
+
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -20,6 +22,7 @@ class AzureUpdatesCrawler(BaseCrawler):
 
     def __init__(self, config: Dict[str, Any], vendor: str, source_type: str):
         super().__init__(config, vendor, source_type)
+        self.batch_mode = False  # 添加 batch_mode 属性
         self.api_url = "https://www.microsoft.com/releasecommunications/api/v2/azure"
         self.params = {
             "$count": "true",
@@ -133,7 +136,7 @@ class AzureUpdatesCrawler(BaseCrawler):
                 }
 
                 # 更新内存中的metadata
-                with metadata_lock:
+                with BaseCrawler.metadata_lock:
                     self.metadata[created] = metadata_entry
 
                 # 如果是批量更新模式，则收集metadata条目，不立即写入文件
@@ -141,7 +144,7 @@ class AzureUpdatesCrawler(BaseCrawler):
                     self._pending_metadata_updates[created] = metadata_entry
                 else:
                     # 否则立即更新metadata文件
-                    with metadata_lock:
+                    with BaseCrawler.metadata_lock:
                         self.metadata_manager.update_crawler_metadata_entry(self.vendor, self.source_type, created, metadata_entry)
 
             file_paths.append(file_path)

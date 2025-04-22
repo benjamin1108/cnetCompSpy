@@ -41,8 +41,17 @@ metadata_lock = threading.RLock()
 # WebDriver管理锁，防止同时创建多个driver实例
 webdriver_init_lock = threading.RLock()
 
+# 引入全局锁
+from threading import RLock
+
+# 全局锁，用于保护元数据管理器的访问
+metadata_lock = RLock()
+
 class BaseCrawler(ABC):
     """爬虫基类，提供基础爬虫功能"""
+    
+    # 类属性，用于保护元数据管理器的访问
+    metadata_lock = metadata_lock
     
     def __init__(self, config: Dict[str, Any], vendor: str, source_type: str):
         """

@@ -132,23 +132,40 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 搜索功能
     function setupSearch() {
-        const searchInput = document.getElementById('document-search');
-        const allCards = Array.from(document.querySelectorAll('.doc-card'));
-
-        searchInput.addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase();
-            allCards.forEach(card => {
-                const title = card.getAttribute('data-title');
-                if (title.includes(searchTerm)) {
-                    card.style.display = '';
+        const searchInputs = document.querySelectorAll('#document-search');
+        
+        searchInputs.forEach(searchInput => {
+            // 获取当前标签页的内容
+            const tabContent = searchInput.closest('.tab-content');
+            if (!tabContent) return;
+            
+            const docType = tabContent.getAttribute('data-doc-type');
+            const cardsContainer = document.getElementById(`doc-cards-${docType}`);
+            const allCards = Array.from(cardsContainer.querySelectorAll('.doc-card'));
+            // 保存原始卡片，用于重置搜索
+            const originalCards = [...allCards];
+            
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                
+                // 如果搜索词为空，恢复所有卡片的显示状态
+                if (searchTerm === '') {
+                    originalCards.forEach(card => {
+                        card.style.display = '';
+                    });
                 } else {
-                    card.style.display = 'none';
+                    // 否则，根据搜索词过滤卡片
+                    originalCards.forEach(card => {
+                        const title = card.getAttribute('data-title');
+                        if (title.includes(searchTerm)) {
+                            card.style.display = '';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    });
                 }
-            });
-
-            // 重新渲染分页
-            document.querySelectorAll('.tab-content').forEach(content => {
-                const docType = content.getAttribute('data-doc-type');
+                
+                // 重新渲染分页
                 setupPagination(docType);
             });
         });
