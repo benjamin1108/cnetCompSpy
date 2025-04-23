@@ -31,31 +31,37 @@ show_help() {
     echo -e "  ${GREEN}help${NC}     - 显示此帮助信息"
     echo ""
     echo -e "${YELLOW}选项:${NC}"
-    echo -e "  ${GREEN}--vendor${NC} [aws|azure|gcp]  - 指定厂商（仅用于crawl命令）"
-    echo -e "  ${GREEN}--limit${NC} [数字]            - 限制爬取的文章数量（仅用于crawl命令）"
-    echo -e "  ${GREEN}--host${NC} [主机地址]         - 指定服务器主机地址（仅用于server命令）"
-    echo -e "  ${GREEN}--port${NC} [端口号]           - 指定服务器端口（仅用于server命令）"
-    echo -e "  ${GREEN}--debug${NC}                  - 启用调试模式"
-    echo -e "  ${GREEN}--clean${NC}                  - 清理数据目录（仅用于crawl和analyze命令）"
-    echo -e "  ${GREEN}--force${NC}                  - 强制执行，忽略本地metadata或文件是否已存在"
-    echo -e "  ${GREEN}--all${NC}                    - 清理所有中间文件（仅用于clean命令）"
-    echo -e "  ${GREEN}--pyc${NC}                    - 清理Python字节码文件（仅用于clean命令）"
-    echo -e "  ${GREEN}--logs${NC}                   - 清理日志文件（仅用于clean命令）"
-    echo -e "  ${GREEN}--temp${NC}                   - 清理临时文件（仅用于clean命令）"
-    echo -e "  ${GREEN}--data${NC}                   - 清理data目录（仅用于clean命令）"
-    echo -e "  ${GREEN}--detailed${NC}               - 显示详细信息（仅用于stats命令）"
-    echo -e "  ${GREEN}--tasks-only${NC}             - 只显示任务信息（仅用于check-tasks命令）"
-    echo -e "  ${GREEN}--type${NC} [crawler|analysis] - 指定元数据类型（crawler 或 analysis，仅用于rebuild-md命令）"
-    echo -e "  ${GREEN}--force_clear${NC}             - 强制清空原有元数据（仅用于rebuild-md命令）"
-    echo -e "  ${GREEN}--force${NC}                   - 强制重建元数据，即使元数据已存在（仅用于rebuild-md命令）"
+    echo -e "  ${GREEN}--vendor${NC} [aws|azure|gcp|tencent|huawei|volcano]  - 指定厂商（用于crawl和analyze命令）"
+    echo -e "  ${GREEN}--file${NC} [文件路径]              - 指定要分析的文件路径（仅用于analyze命令）"
+    echo -e "  ${GREEN}--limit${NC} [数字]                - 限制爬取/分析的文章数量"
+    echo -e "  ${GREEN}--config${NC} [配置文件]           - 指定配置文件路径"
+    echo -e "  ${GREEN}--host${NC} [主机地址]             - 指定服务器主机地址（仅用于server命令）"
+    echo -e "  ${GREEN}--port${NC} [端口号]               - 指定服务器端口（仅用于server命令）"
+    echo -e "  ${GREEN}--debug${NC}                      - 启用调试模式"
+    echo -e "  ${GREEN}--clean${NC}                      - 清理数据目录（仅用于crawl和analyze命令）"
+    echo -e "  ${GREEN}--force${NC}                      - 强制执行，忽略本地metadata或文件是否已存在"
+    echo -e "  ${GREEN}--all${NC}                        - 清理所有中间文件（仅用于clean命令）"
+    echo -e "  ${GREEN}--pyc${NC}                        - 清理Python字节码文件（仅用于clean命令）"
+    echo -e "  ${GREEN}--logs${NC}                       - 清理日志文件（仅用于clean命令）"
+    echo -e "  ${GREEN}--temp${NC}                       - 清理临时文件（仅用于clean命令）"
+    echo -e "  ${GREEN}--data${NC}                       - 清理data目录（仅用于clean命令）"
+    echo -e "  ${GREEN}--detailed${NC}                   - 显示详细信息（仅用于stats命令）"
+    echo -e "  ${GREEN}--tasks-only${NC}                 - 只显示任务信息（仅用于check-tasks命令）"
+    echo -e "  ${GREEN}--type${NC} [crawler|analysis]     - 指定元数据类型（crawler 或 analysis，仅用于rebuild-md命令）"
+    echo -e "  ${GREEN}--force_clear${NC}                 - 强制清空原有元数据（仅用于rebuild-md命令）"
+    echo -e "  ${GREEN}--force${NC}                       - 强制重建元数据，即使元数据已存在（仅用于rebuild-md命令）"
     echo ""
     echo -e "${YELLOW}示例:${NC}"
     echo -e "  $0 crawl                     # 爬取所有厂商的数据"
     echo -e "  $0 crawl --vendor aws        # 仅爬取AWS的数据"
     echo -e "  $0 crawl --limit 10          # 每个来源最多爬取10篇文章"
     echo -e "  $0 crawl --force             # 强制爬取所有数据，忽略本地metadata"
+    echo -e "  $0 crawl --config custom.yaml # 使用自定义配置文件爬取数据"
     echo -e "  $0 analyze                   # 分析所有爬取的数据"
+    echo -e "  $0 analyze --vendor aws      # 仅分析AWS的数据"
+    echo -e "  $0 analyze --file data/raw/aws/blog/文件名.md  # 分析特定文件"
     echo -e "  $0 analyze --force           # 强制分析所有数据，忽略文件是否已存在"
+    echo -e "  $0 analyze --config prod.yaml # 使用自定义配置文件分析数据"
     echo -e "  $0 server                    # 启动Web服务器（默认127.0.0.1:5000）"
     echo -e "  $0 server --host 0.0.0.0 --port 8080  # 指定主机和端口启动服务器"
     echo -e "  $0 setup                     # 设置环境"
@@ -78,6 +84,58 @@ show_error() {
     exit 1
 }
 
+# 显示警告信息
+show_warning() {
+    echo -e "${YELLOW}警告: $1${NC}"
+}
+
+# 显示提示信息
+show_info() {
+    echo -e "${BLUE}提示: $1${NC}"
+}
+
+# 检查文件是否存在
+check_file_exists() {
+    local file="$1"
+    if [ ! -f "$file" ]; then
+        show_error "文件不存在: $file"
+    fi
+}
+
+# 检查配置文件是否存在
+check_config_exists() {
+    local config="$1"
+    if [[ "$config" != /* ]]; then
+        # 相对路径，相对于脚本目录
+        config="$SCRIPT_DIR/$config"
+    fi
+    
+    if [ ! -f "$config" ]; then
+        show_error "配置文件不存在: $config\n您可以复制config.example.yaml作为起点"
+    fi
+    
+    # 简单验证YAML格式
+    if command -v python >/dev/null 2>&1; then
+        python -c "import yaml; yaml.safe_load(open('$config', 'r', encoding='utf-8'))" >/dev/null 2>&1
+        if [ $? -ne 0 ]; then
+            show_error "配置文件格式不正确: $config\n请检查YAML语法"
+        fi
+    fi
+}
+
+# 检查目录是否存在，如果不存在则创建
+check_and_create_dir() {
+    local dir="$1"
+    if [ ! -d "$dir" ]; then
+        mkdir -p "$dir"
+        if [ $? -ne 0 ]; then
+            show_error "无法创建目录: $dir"
+        else
+            show_info "已创建目录: $dir"
+        fi
+    fi
+}
+
 # 验证参数
 validate_args() {
     local cmd="$1"
@@ -88,8 +146,8 @@ validate_args() {
     case "$cmd" in
         crawl)
             # crawl命令有效参数
-            local valid_opts=("--vendor" "--source" "--limit" "--debug" "--clean" "--force")
-            local requires_value=("--vendor" "--source" "--limit")
+            local valid_opts=("--vendor" "--source" "--limit" "--debug" "--clean" "--force" "--config")
+            local requires_value=("--vendor" "--source" "--limit" "--config")
             
             # 验证参数
             while [[ $# -gt 0 ]]; do
@@ -114,12 +172,20 @@ validate_args() {
                         # 检查特定参数的值约束
                         if [[ "$current" == "--vendor" ]]; then
                             if [[ ! "$2" =~ ^(aws|azure|gcp)$ ]]; then
-                                show_error "无效的厂商: $2，有效值为: aws, azure, gcp"
+                                show_error "无效的厂商: $2\n有效值为: aws, azure, gcp"
                             fi
                         elif [[ "$current" == "--limit" ]]; then
                             if ! [[ "$2" =~ ^[0-9]+$ ]]; then
                                 show_error "文章数量限制必须是一个正整数: $2"
                             fi
+                            
+                            if [ "$2" -eq 0 ]; then
+                                show_warning "文章数量限制为0，将使用配置文件中的默认值"
+                            elif [ "$2" -gt 100 ]; then
+                                show_warning "文章数量限制设置很大($2)，这可能导致处理时间较长"
+                            fi
+                        elif [[ "$current" == "--config" ]]; then
+                            check_config_exists "$2"
                         fi
                         
                         shift
@@ -138,7 +204,8 @@ validate_args() {
             
         analyze)
             # analyze命令有效参数
-            local valid_opts=("--debug" "--clean" "--force")
+            local valid_opts=("--debug" "--clean" "--force" "--vendor" "--file" "--config" "--limit")
+            local requires_value=("--vendor" "--file" "--config" "--limit")
             
             # 验证参数
             while [[ $# -gt 0 ]]; do
@@ -149,6 +216,41 @@ validate_args() {
                 for opt in "${valid_opts[@]}"; do
                     if [[ "$current" == "$opt" ]]; then
                         is_valid=true
+                        break
+                    fi
+                done
+                
+                # 检查需要值的参数
+                for req in "${requires_value[@]}"; do
+                    if [[ "$current" == "$req" ]]; then
+                        if [[ -z "$2" || "$2" == --* ]]; then
+                            show_error "参数 $current 需要一个值"
+                        fi
+                        
+                        # 检查特定参数的值约束
+                        if [[ "$current" == "--vendor" ]]; then
+                            if [[ ! "$2" =~ ^(aws|azure|gcp|tencent|huawei|volcano)$ ]]; then
+                                show_error "无效的厂商: $2\n有效值为: aws, azure, gcp, tencent, huawei, volcano"
+                            fi
+                        elif [[ "$current" == "--file" ]]; then
+                            # 检查文件是否存在
+                            check_file_exists "$2"
+                        elif [[ "$current" == "--config" ]]; then
+                            # 检查配置文件是否存在
+                            check_config_exists "$2"
+                        elif [[ "$current" == "--limit" ]]; then
+                            if ! [[ "$2" =~ ^[0-9]+$ ]]; then
+                                show_error "文章数量限制必须是一个正整数: $2"
+                            fi
+                            
+                            if [ "$2" -eq 0 ]; then
+                                show_warning "文章数量限制为0，将使用配置文件中的默认值"
+                            elif [ "$2" -gt 100 ]; then
+                                show_warning "文章数量限制设置很大($2)，这可能导致处理时间较长"
+                            fi
+                        fi
+                        
+                        shift
                         break
                     fi
                 done
@@ -194,6 +296,21 @@ validate_args() {
                             fi
                             if [[ "$2" -lt 1 || "$2" -gt 65535 ]]; then
                                 show_error "端口必须在1-65535范围内: $2"
+                            fi
+                            
+                            # 常见端口冲突警告
+                            if [[ "$2" -lt 1024 ]]; then
+                                show_warning "端口 $2 是特权端口，可能需要管理员权限才能绑定"
+                            fi
+                            if [[ "$2" -eq 80 || "$2" -eq 443 || "$2" -eq 8080 ]]; then
+                                show_warning "端口 $2 是常用Web端口，可能已被其他服务占用"
+                            fi
+                        fi
+                        
+                        # 检查主机地址
+                        if [[ "$current" == "--host" ]]; then
+                            if [[ "$2" == "0.0.0.0" ]]; then
+                                show_warning "将绑定到所有网络接口(0.0.0.0)，服务将可从外部访问"
                             fi
                         fi
                         
@@ -289,15 +406,133 @@ validate_args() {
             done
             ;;
             
-        daily|rebuild-md)
-            # daily和rebuild-md命令没有特定参数，所有参数都传递给内部脚本
-            return 0
+        daily)
+            # daily命令有效参数
+            local valid_opts=("--no-email" "--no-stats" "--no-crawl" "--no-analyze" "--debug" "--vendor" "--limit")
+            local requires_value=("--vendor" "--limit")
+            
+            # 验证参数
+            while [[ $# -gt 0 ]]; do
+                local current="$1"
+                local is_valid=false
+                
+                # 检查参数是否有效
+                for opt in "${valid_opts[@]}"; do
+                    if [[ "$current" == "$opt" ]]; then
+                        is_valid=true
+                        break
+                    fi
+                done
+                
+                # 检查需要值的参数
+                for req in "${requires_value[@]}"; do
+                    if [[ "$current" == "$req" ]]; then
+                        if [[ -z "$2" || "$2" == --* ]]; then
+                            show_error "参数 $current 需要一个值"
+                        fi
+                        
+                        # 检查特定参数的值约束
+                        if [[ "$current" == "--vendor" ]]; then
+                            if [[ ! "$2" =~ ^(aws|azure|gcp|tencent|huawei|volcano|all)$ ]]; then
+                                show_error "无效的厂商: $2\n有效值为: aws, azure, gcp, tencent, huawei, volcano, all"
+                            fi
+                        elif [[ "$current" == "--limit" ]]; then
+                            if ! [[ "$2" =~ ^[0-9]+$ ]]; then
+                                show_error "文章数量限制必须是一个正整数: $2"
+                            fi
+                        fi
+                        
+                        shift
+                        break
+                    fi
+                done
+                
+                # 如果无效，添加到无效参数列表
+                if ! $is_valid; then
+                    invalid_args+=("$current")
+                fi
+                
+                shift
+            done
             ;;
             
-        setup|driver|help|rebuild-md)
+        setup|driver|help)
             # 这些命令不接受任何参数
             if [[ $# -gt 0 ]]; then
                 invalid_args=("$@")
+            fi
+            ;;
+            
+        rebuild-md)
+            # rebuild-md命令有效参数
+            local valid_opts=("--type" "--force" "--force_clear" "--deep-check" "--delete" "--debug")
+            local requires_value=("--type")
+            local has_deep_check=false
+            local has_delete=false
+            
+            # 验证参数
+            while [[ $# -gt 0 ]]; do
+                local current="$1"
+                local is_valid=false
+                
+                # 检查参数是否有效
+                for opt in "${valid_opts[@]}"; do
+                    if [[ "$current" == "$opt" ]]; then
+                        is_valid=true
+                        
+                        # 记录特殊参数
+                        if [[ "$current" == "--deep-check" ]]; then
+                            has_deep_check=true
+                        elif [[ "$current" == "--delete" ]]; then
+                            has_delete=true
+                        fi
+                        
+                        break
+                    fi
+                done
+                
+                # 检查需要值的参数
+                for req in "${requires_value[@]}"; do
+                    if [[ "$current" == "$req" ]]; then
+                        if [[ -z "$2" || "$2" == --* ]]; then
+                            show_error "参数 $current 需要一个值"
+                        fi
+                        
+                        # 检查特定参数的值约束
+                        if [[ "$current" == "--type" ]]; then
+                            if [[ ! "$2" =~ ^(crawler|analysis|all)$ ]]; then
+                                show_error "无效的元数据类型: $2\n有效值为: crawler, analysis, all"
+                            fi
+                        fi
+                        
+                        shift
+                        break
+                    fi
+                done
+                
+                # 如果无效，添加到无效参数列表
+                if ! $is_valid; then
+                    invalid_args+=("$current")
+                fi
+                
+                shift
+            done
+            
+            # 检查--delete参数是否与--deep-check一起使用
+            if [ "$has_delete" = true ] && [ "$has_deep_check" = false ]; then
+                show_error "--delete参数必须与--deep-check一起使用"
+            fi
+            
+            # 如果使用--delete，给出警告
+            if [ "$has_delete" = true ]; then
+                show_warning "已启用删除模式，这将删除检测到问题的文件！"
+                echo -e "${YELLOW}按Ctrl+C取消，或任意键继续...${NC}"
+                read -n 1 -s
+            fi
+            
+            # 如果使用--deep-check，给出提示
+            if [ "$has_deep_check" = true ] && [ "$has_delete" = false ]; then
+                show_info "深度检查模式已启用，将检测分析文件中的'假完成'问题但不删除文件"
             fi
             ;;
             
@@ -314,10 +549,10 @@ validate_args() {
         
         case "$cmd" in
             crawl)
-                echo -e "${GREEN}--vendor [aws|azure|gcp], --limit [数字], --debug, --clean, --force${NC}"
+                echo -e "${GREEN}--vendor [aws|azure|gcp], --source, --limit [数字], --config [配置文件], --debug, --clean, --force${NC}"
                 ;;
             analyze)
-                echo -e "${GREEN}--debug, --clean, --force${NC}"
+                echo -e "${GREEN}--vendor [aws|azure|gcp|tencent|huawei|volcano], --file [文件路径], --config [配置文件], --limit [数字], --debug, --clean, --force${NC}"
                 ;;
             server)
                 echo -e "${GREEN}--host [主机地址], --port [端口号], --debug${NC}"
@@ -483,6 +718,11 @@ crawl_data() {
     # 验证参数
     validate_args "crawl" "$@" || return 1
     
+    # 检查data目录是否存在
+    check_and_create_dir "$SCRIPT_DIR/data"
+    check_and_create_dir "$SCRIPT_DIR/data/raw"
+    check_and_create_dir "$SCRIPT_DIR/data/metadata"
+    
     # 激活虚拟环境
     activate_venv
     
@@ -496,6 +736,33 @@ analyze_data() {
     
     # 验证参数
     validate_args "analyze" "$@" || return 1
+    
+    # 检查data目录是否存在
+    check_and_create_dir "$SCRIPT_DIR/data"
+    check_and_create_dir "$SCRIPT_DIR/data/raw"
+    check_and_create_dir "$SCRIPT_DIR/data/analysis"
+    check_and_create_dir "$SCRIPT_DIR/data/metadata"
+    
+    # 检查是否存在raw目录下的MD文件
+    if ! find "$SCRIPT_DIR/data/raw" -name "*.md" | grep -q .; then
+        show_warning "未检测到原始数据文件，请先执行爬取命令: ./run.sh crawl"
+        echo -e "${BLUE}是否继续执行分析命令？这可能不会产生任何结果 [y/N]: ${NC}"
+        read -r confirm
+        if [[ ! $confirm =~ ^[Yy]$ ]]; then
+            show_info "已取消分析操作"
+            return 1
+        fi
+    fi
+    
+    # 检查是否存在配置文件
+    if [ ! -f "$SCRIPT_DIR/config.yaml" ]; then
+        show_error "未找到配置文件: config.yaml，请确保该文件存在"
+    fi
+    
+    # 检查是否存在敏感配置文件
+    if [ ! -f "$SCRIPT_DIR/config.secret.yaml" ]; then
+        show_error "未找到敏感配置文件: config.secret.yaml，您可以基于config.secret.yaml.example创建此文件"
+    fi
     
     # 激活虚拟环境
     activate_venv
@@ -689,11 +956,53 @@ run_daily() {
 run_rebuild_metadata() {
     echo -e "${BLUE}开始重建元数据...${NC}"
     
+    # 验证参数
+    validate_args "rebuild-md" "$@" || return 1
+    
+    # 检查data目录是否存在
+    check_and_create_dir "$SCRIPT_DIR/data/metadata"
+    
     # 激活虚拟环境
     activate_venv
     
-    # 调用Python模块
-    python -m src.utils.rebuild_metadata "$@"
+    # 创建临时文件存储输出
+    TEMP_OUTPUT=$(mktemp)
+    
+    # 调用Python模块并保存输出
+    python -m src.utils.rebuild_metadata "$@" > "$TEMP_OUTPUT" 2>&1
+    RESULT=$?
+    
+    # 使用awk提取关键信息
+    echo -e "${YELLOW}元数据重建结果:${NC}"
+    grep -E "重建任务总结|成功更新|覆盖.*元数据记录|删除了.*个|检测到.*个内容异常|元数据重建完成" "$TEMP_OUTPUT" | 
+    while read line; do
+        if [[ $line == *"删除了"* ]] || [[ $line == *"检测到"* && $line == *"内容异常"* ]]; then
+            echo -e "${RED}$line${NC}"
+        elif [[ $line == *"重建任务总结"* ]] || [[ $line == *"成功更新"* ]]; then
+            echo -e "${GREEN}$line${NC}"
+        elif [[ $line == *"元数据重建完成"* ]]; then
+            echo -e "${GREEN}✓ $line${NC}"
+        else
+            echo -e "${BLUE}$line${NC}"
+        fi
+    done
+    
+    # 如果有错误，显示错误信息
+    if grep -q "错误数:" "$TEMP_OUTPUT"; then
+        echo -e "${RED}发现错误:${NC}"
+        grep -A 5 "错误数:" "$TEMP_OUTPUT"
+    fi
+    
+    # 显示深度检查结果文件位置
+    LOG_FILE=$(grep -o "已将检测到的问题文件信息写入日志文件: .*" "$TEMP_OUTPUT" | sed 's/.*: //')
+    if [ ! -z "$LOG_FILE" ]; then
+        echo -e "${YELLOW}深度检查发现问题，详细信息已保存至: ${GREEN}$LOG_FILE${NC}"
+    fi
+    
+    # 删除临时文件
+    rm -f "$TEMP_OUTPUT"
+    
+    return $RESULT
 }
 
 # 主函数
@@ -724,16 +1033,26 @@ main() {
             crawl_data "$@"
             RESULT=$?
             if [ $RESULT -eq 0 ]; then
+                echo -e "${BLUE}==================================================${NC}"
                 echo -e "${BLUE}爬取完成，正在重建元数据...${NC}"
+                echo -e "${YELLOW}注意: 使用深度检查模式，但不会删除任何文件${NC}"
+                echo -e "${BLUE}==================================================${NC}"
                 run_rebuild_metadata --type crawler --deep-check
+                echo -e "${BLUE}==================================================${NC}"
+                echo -e "${GREEN}爬取及元数据更新流程已完成!${NC}"
             fi
             ;;
         analyze)
             analyze_data "$@"
             RESULT=$?
             if [ $RESULT -eq 0 ]; then
+                echo -e "${BLUE}==================================================${NC}"
                 echo -e "${BLUE}分析完成，正在重建元数据...${NC}"
+                echo -e "${YELLOW}注意: 使用深度检查模式，但不会删除任何文件${NC}"
+                echo -e "${BLUE}==================================================${NC}"
                 run_rebuild_metadata --type analysis --deep-check
+                echo -e "${BLUE}==================================================${NC}"
+                echo -e "${GREEN}分析及元数据更新流程已完成!${NC}"
             fi
             ;;
         server)

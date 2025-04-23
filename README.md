@@ -205,6 +205,9 @@ cloud-comp-spy/
    # 强制爬取所有数据，忽略本地metadata
    ./run.sh crawl --force
    
+   # 使用自定义配置文件爬取数据
+   ./run.sh crawl --config custom.yaml
+   
    # 强制分析所有数据，忽略metadata记录
    ./run.sh analyze --force
    
@@ -214,8 +217,41 @@ cloud-comp-spy/
    # 分析特定文件
    ./run.sh analyze --file data/raw/aws/blog/2025_03_10_8c2b1da4.md
    
-   # 强制分析特定文件
-   ./run.sh analyze --force --file data/raw/aws/blog/2025_03_10_8c2b1da4.md
+   # 使用自定义配置文件分析数据
+   ./run.sh analyze --config prod.yaml
+   
+   # 比较元数据和实际文件统计
+   ./run.sh stats
+   
+   # 显示详细的文件对比信息
+   ./run.sh stats --detailed
+   
+   # 检查任务完成状态，显示未完成任务的文件
+   ./run.sh check-tasks
+   
+   # 清理所有中间文件和临时文件
+   ./run.sh clean
+   
+   # 只清理Python字节码文件
+   ./run.sh clean --pyc
+   
+   # 只清理日志文件
+   ./run.sh clean --logs
+   
+   # 清理data目录
+   ./run.sh clean --data
+   
+   # 重建元数据，从本地MD文件更新元数据
+   ./run.sh rebuild-md
+   
+   # 强制重建元数据，即使元数据已存在
+   ./run.sh rebuild-md --force
+   
+   # 深度检查分析文件内容，识别"假完成"问题
+   ./run.sh rebuild-md --deep-check
+   
+   # 深度检查并删除问题文件
+   ./run.sh rebuild-md --deep-check --delete
    
    # 指定主机和端口启动服务器
    ./run.sh server --host 0.0.0.0 --port 8080
@@ -223,11 +259,8 @@ cloud-comp-spy/
    # 启用调试模式
    ./run.sh server --debug
    
-   # 清理数据目录
-   ./run.sh crawl --clean
-   
-   # 每日自动爬取与分析
-   ./scripts/daily_crawl_and_analyze.sh
+   # 执行每日自动爬取与分析
+   ./run.sh daily
    ```
    
    你仍然可以使用原始的Python命令：
@@ -243,406 +276,176 @@ cloud-comp-spy/
    python -m src.main --mode test
    ```
 
-   c. 命令行参数完整说明
-   ```
-   选项:
-     --mode {crawl,analyze,test}  运行模式: crawl(爬取数据), analyze(分析数据), test(测试模式)
-     --vendor VENDOR            爬取指定厂商的数据, 如aws, azure等，仅在crawl模式下有效
-     --clean                    清理所有中间文件
-     --limit LIMIT              爬取的文章数量限制，如设置为5则每个来源只爬取5篇，0表示使用配置文件中的默认值
-     --config CONFIG            指定配置文件路径(默认为根目录下的config.yaml)
-     --force                    强制执行，忽略本地metadata或文件是否已存在
-     -h, --help                 显示帮助信息
+## 命令参考
+
+### 主要命令
+
+| 命令         | 说明                               | 常用选项                                  |
+|-------------|-----------------------------------|------------------------------------------|
+| crawl       | 爬取数据                           | --vendor, --limit, --config, --force     |
+| analyze     | 分析数据                           | --vendor, --file, --limit, --config, --force |
+| server      | 启动Web服务器                      | --host, --port, --debug                  |
+| setup       | 设置环境                           | 无参数                                    |
+| driver      | 下载最新的WebDriver                | 无参数                                    |
+| stats       | 比较元数据和实际文件统计            | --detailed                                |
+| check-tasks | 检查任务完成状态                   | --tasks-only                              |
+| clean       | 清理中间文件和临时文件              | --all, --pyc, --logs, --temp, --data     |
+| daily       | 执行每日爬取与分析任务              | 无参数                                    |
+| rebuild-md  | 重建元数据                         | --type, --force, --deep-check, --delete  |
+| help        | 显示帮助信息                       | 无参数                                    |
+
+### 通用选项
+
+| 选项          | 适用命令                  | 说明                                       |
+|--------------|--------------------------|-------------------------------------------|
+| --vendor     | crawl, analyze           | 指定厂商 (aws\|azure\|gcp\|tencent\|huawei\|volcano) |
+| --limit      | crawl, analyze           | 限制爬取/分析的文章数量                      |
+| --config     | crawl, analyze           | 指定配置文件路径                             |
+| --force      | crawl, analyze, rebuild-md | 强制执行，忽略local metadata或文件是否已存在 |
+| --debug      | server                   | 启用调试模式                                |
+| --clean      | crawl, analyze           | 清理数据目录                                |
+
+### 爬虫和分析流程
+
+完整的数据处理流程通常包括以下步骤：
+
+1. **爬取数据**：从各厂商网站爬取原始数据
+   ```bash
+   ./run.sh crawl
    ```
 
-   d. 常用参数组合示例
-   ```
-   # 基本使用 - 完整流程
-   python -m src.main --mode test                     # 测试模式：清理并执行爬取+分析(每个源仅1篇)
-   python -m src.main --mode crawl                    # 正常爬取(使用配置文件中的默认限制)
-   python -m src.main --mode analyze                  # 分析已爬取的内容
-   
-   # 爬取控制
-   python -m src.main --mode crawl --vendor aws       # 只爬取AWS
-   python -m src.main --mode crawl --limit 20         # 每个来源爬取20篇
-   python -m src.main --mode crawl --vendor aws --limit 5  # 只爬取AWS且限制5篇
-   python -m src.main --mode crawl --force            # 强制爬取所有数据，忽略本地metadata
-   
-   # 分析控制
-   python -m src.main --mode analyze --force          # 强制分析所有数据，忽略metadata记录
-   python -m src.main --mode analyze --vendor aws     # 只分析AWS的数据
-   python -m src.main --mode analyze --file path/to/file.md  # 只分析特定文件
-   
-   # 配置和清理
-   python -m src.main --config production.yaml --mode crawl  # 使用自定义配置文件
-   python -m src.main --clean                         # 清理所有数据目录
-   python -m src.main --clean --mode crawl            # 清理后立即开始爬取
-   
-   # 测试组合
-   python -m src.main --mode test --vendor aws        # 测试模式仅处理AWS数据
+2. **分析数据**：对爬取的数据进行AI分析
+   ```bash
+   ./run.sh analyze
    ```
 
-## Web服务器
+3. **检查分析结果**：验证分析完整性
+   ```bash
+   ./run.sh check-tasks
+   ```
 
-项目提供了一个Web界面，用于浏览和查看爬取及分析的结果。服务器可以独立于主程序运行，方便部署和使用。
+4. **元数据维护**：重建或更新元数据
+   ```bash
+   ./run.sh rebuild-md
+   ```
 
-### 启动Web服务器
+5. **查看统计信息**：了解爬取和分析的情况
+   ```bash
+   ./run.sh stats --detailed
+   ```
+
+每次爬取或分析完成后，系统会自动运行`rebuild-md`命令进行元数据更新和深度检查（不会删除文件），确保数据完整性。
+
+## 自动化任务
+
+系统支持自动化任务，可以通过以下命令执行每日爬取与分析：
 
 ```bash
-# 基本启动命令（默认在127.0.0.1:5000上运行）
-python -m src.web_server.run
-
-# 自定义主机和端口
-python -m src.web_server.run --host 0.0.0.0 --port 8080
-
-# 启用调试模式
-python -m src.web_server.run --debug
-
-# 指定数据目录
-python -m src.web_server.run --data-dir /path/to/data
-
-# 调整日志级别
-python -m src.web_server.run --log-level DEBUG
+./run.sh daily
 ```
 
-### 命令行参数说明
+该命令会按顺序执行：
+1. 爬取所有厂商的新数据
+2. 分析新爬取的数据
+3. 重建元数据
+4. 生成统计报告
+5. 通过电子邮件发送结果摘要（如果在配置中启用）
 
-- `--host`：服务器监听的主机地址，默认为`127.0.0.1`（仅本机访问）
-- `--port`：服务器端口，默认为`5000`
-- `--data-dir`：数据目录路径，默认为项目根目录下的`data`目录
-- `--debug`：启用调试模式，便于开发和排错
-- `--log-level`：日志级别，可选值为DEBUG、INFO、WARNING、ERROR、CRITICAL
+您可以通过crontab设置此命令的自动执行，例如：
 
-### 使用说明
-
-服务器启动后，可以通过浏览器访问相应地址（如`http://127.0.0.1:5000`）来浏览和查看：
-
-1. 按云厂商分类的文章列表
-2. 原始爬取内容
-3. AI分析结果
-4. 支持全文检索功能
-5. 支持按日期、厂商、主题等过滤
-
-**提示**：如果需要允许其他设备通过网络访问，请使用`--host 0.0.0.0`参数启动服务器。
-
-## 配置说明
-
-### 配置文件系统
-
-项目使用两个YAML格式的配置文件进行配置，以提高安全性：
-- `config.yaml`：主配置文件，包含爬虫配置、数据源配置和AI分析的基本配置
-- `config.secret.yaml`：敏感配置文件，主要用于存储API密钥等敏感信息
-
-这种分离确保了敏感数据不会被意外提交到版本控制系统。
-
-```yaml
-# 基础配置示例 (config.yaml)
-sources:
-  aws:
-    blog:
-      url: https://aws.amazon.com/blogs/
-      test_mode: false  # 测试模式开关，true时只爬取1篇文章
-    docs: 
-      url: https://docs.aws.amazon.com/
-  azure:
-    blog: 
-      url: https://azure.microsoft.com/en-us/blog/
-    # 更多配置...
-
-# 爬虫配置  
-crawler:
-  article_limit: 50     # 每个来源最多爬取的文章数量(命令行--limit参数会覆盖此设置)
-  max_workers: 4        # 并发爬虫数量
-  timeout: 30           # 请求超时时间(秒)
-  retry: 3              # 请求失败重试次数
-  interval: 2           # 请求间隔时间(秒)
-  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"  # 自定义User-Agent
-  
-# AI分析配置
-ai_analyzer:
-  model: "${ANALYZER_MODEL}"     # 使用的AI模型
-  max_tokens: 4000      # 最大令牌数
-  temperature: 0.8      # 温度参数
-  api_base: "${API_BASE_URL}"  # API基础URL
-  system_prompt: "你是一个专业的云计算技术分析师..." # 系统提示词
-  tasks:
-    - type: "AI摘要"
-      prompt: "请对此云服务商的内容进行总结..."
-    # 更多任务...
+```bash
+# 每天凌晨2点执行爬取和分析
+0 2 * * * cd /path/to/cloud-comp-spy && ./run.sh daily
 ```
 
-```yaml
-# 敏感配置示例 (config.secret.yaml)
-ai_analyzer:
-  # API密钥
-  api_key: "your-api-key-here"
-  # 可以指定实际模型名称覆盖默认值
-  model: "qwen-max"
-  # API基础URL
-  api_base: "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
+## 元数据管理
+
+元数据是系统的重要组成部分，用于跟踪爬取和分析状态。可以通过以下命令管理元数据：
+
+```bash
+# 重建所有元数据
+./run.sh rebuild-md
+
+# 只重建爬虫元数据
+./run.sh rebuild-md --type crawler
+
+# 只重建分析元数据
+./run.sh rebuild-md --type analysis
+
+# 深度检查分析文件（识别"假完成"问题）
+./run.sh rebuild-md --deep-check
+
+# 删除有问题的文件（谨慎使用）
+./run.sh rebuild-md --deep-check --delete
 ```
 
-### 爬虫配置
-爬虫支持两种模式：
-1. **正常模式**：按照配置文件中的`article_limit`设置或命令行`--limit`参数爬取指定数量的文章
-2. **测试模式**：通过配置文件中的`test_mode: true`或使用`--mode test`命令启用，每个来源只爬取1篇文章
+深度检查功能可以识别分析中的"假完成"问题（内容异常但标记为已完成的文件），并可选择性地删除这些文件。检查结果会保存到日志文件中，以便进一步分析。
 
-命令行参数的优先级高于配置文件：
-- `--limit` 参数会覆盖配置文件中的 `article_limit` 设置
-- `--mode test` 会将所有来源的 `test_mode` 设置为 `true`
+## 网络服务器
 
-### 厂商爬虫配置示例
+系统内置了Web服务器，可以通过浏览器查看爬取和分析结果：
 
-#### 完整配置示例
-```yaml
-sources:
-  # AWS配置
-  aws:
-    # AWS博客
-    blog:
-      url: https://aws.amazon.com/blogs/
-      test_mode: false  # 测试模式开关
-      specific_categories:  # 可选，特定博客类别
-        - networking-content-delivery
-        - architecture
-      exclude_categories:  # 可选，排除的博客类别
-        - gametech
-    # AWS文档
-    docs:
-      url: https://docs.aws.amazon.com/
-      specific_services:  # 可选，特定服务文档
-        - vpc
-        - route53
-  
-  # Azure配置
-  azure:
-    blog:
-      url: https://azure.microsoft.com/en-us/blog/
-      test_mode: false
-      specific_tags:  # 可选，特定标签
-        - networking
-        - security
-    
-  # 谷歌云配置
-  google_cloud:
-    blog:
-      url: https://cloud.google.com/blog/
-      categories:  # 可选，特定分类
-        - networking
-        - security
-      
-  # 阿里云配置
-  aliyun:
-    blog:
-      url: https://www.alibabacloud.com/blog/
-      test_mode: false
+```bash
+# 启动默认服务器（localhost:5000）
+./run.sh server
+
+# 绑定到特定地址和端口
+./run.sh server --host 0.0.0.0 --port 8080
 ```
 
-#### 高级爬虫配置
-```yaml
-crawler:
-  # 基础设置
-  article_limit: 50      # 每个来源最多爬取的文章数量
-  max_workers: 4         # 并发爬虫数量
-  
-  # 网络请求设置
-  timeout: 30            # 请求超时时间(秒)
-  retry: 3               # 请求失败重试次数
-  interval: 2            # 请求间隔时间(秒)
+Web界面提供以下功能：
+- 按厂商浏览爬取的内容
+- 查看分析结果和摘要
+- 检查任务完成状态
+- 导出统计数据和报告
+
+## 系统维护
+
+定期维护可以保持系统运行良好：
+
+```bash
+# 清理所有临时文件（不包括数据）
+./run.sh clean
+
+# 清理旧日志文件
+./run.sh clean --logs
+
+# 更新WebDriver到最新版本
+./run.sh driver
 ```
 
-### 分析模块元数据功能
+建议定期执行元数据重建和统计分析，以保持系统数据的一致性。
 
-分析模块现在使用metadata记录每个文件的分析状态，提供以下优势：
+## 排错指南
 
-1. **智能防重复分析**：系统会记录每个文件的分析状态，包括每个任务是否成功完成，避免重复分析已处理的文件
-2. **任务级别跟踪**：对每个分析任务（如标题翻译、竞争分析、全文翻译等）单独跟踪成功状态
-3. **错误恢复**：如果某个任务失败，下次运行时只会重新执行失败的任务
-4. **强制模式**：使用`--force`参数可以忽略metadata记录，强制重新分析所有文件
+如果遇到问题，请尝试以下步骤：
 
-metadata文件存储在`data/metadata/analysis_metadata.json`中，包含以下信息：
-- 文件路径
-- 最后分析时间
-- 每个任务的状态（成功/失败）
-- 任务执行时间戳
-- 文件的元数据信息
-
-### AI分析功能详细说明
-
-#### 分析类型
-
-当前支持以下几种分析类型：
-
-1. **内容摘要**：提取文章的关键要点和主要内容
-2. **竞争分析**：深入分析云厂商的产品特点、市场定位和竞争策略
-3. **技术解读**：解释技术特性和创新点
-4. **战略意图解读**：分析产品发布背后的战略考量
-5. **市场预测**：基于新产品或功能预测市场趋势和竞争对手可能的反应
-
-#### AI分析配置示例
-
-```yaml
-ai_analyzer:
-  # 基础配置
-  model: "${ANALYZER_MODEL}"  # 使用的AI模型
-  max_tokens: 4000      # 最大令牌数
-  temperature: 0.8      # 温度参数
-  
-  # 分析任务
-  tasks:
-    - type: "AI摘要"
-      prompt: "请对此云服务商的博客内容进行专业摘要，提取关键技术点和主要公告。"
-      
-    - type: "竞争分析"
-      prompt: "作为一名云计算竞争分析专家，请对这篇博客进行详细的竞争分析，包括：
-        1. 概述：简要总结此博客所描述的产品/功能及其主要卖点
-        2. 关键技术洞察：技术特性的独特之处
-        3. 竞争对手对比：与AWS、Azure和GCP同类产品的详细对比
-        4. 市场影响分析：此产品对市场竞争格局的影响
-        5. 战略意图解读：推测该厂商发布这一产品/功能的战略考量
-        6. 市场预测：预测市场和客户的反应以及竞争对手的可能回应
-        7. 建议策略：给其他云厂商的应对建议"
-    
-    - type: "中文翻译"
-      prompt: "请将以下英文内容翻译成流畅、专业的中文，保留原文的技术术语准确性："
-      language: "zh"
-      condition: "language != 'zh'"  # 条件：仅当原文不是中文时执行
-```
-
-#### 文件命名规范
-
-为了便于管理和检索，本项目对爬取的内容和分析结果采用统一的文件命名规范：
-
-1. **原始爬取文件**：
+1. **检查日志文件**：
+   ```bash
+   cat logs/cnetCompSpy_*.log
    ```
-   YYYY_MM_DD_<url_hash>.md
+
+2. **验证元数据完整性**：
+   ```bash
+   ./run.sh rebuild-md --force
    ```
-   例如：`2025_04_08_af122aaf.md`
 
-2. **分析结果文件**：
+3. **检查未完成的任务**：
+   ```bash
+   ./run.sh check-tasks
    ```
-   <原文件名>_<分析类型>.md
+
+4. **更新WebDriver**：
+   ```bash
+   ./run.sh driver
    ```
-   例如：`2025_04_08_af122aaf_竞争分析.md`
 
-#### 元数据格式
+5. **清理缓存和临时文件**：
+   ```bash
+   ./run.sh clean --all
+   ```
 
-每个生成的文件都包含标准化的元数据头部：
-
-```markdown
-# 文章标题
-
-**原始链接:** [链接URL](链接URL)
-
-**发布时间:** YYYY-MM-DD
-
-**厂商:** AWS
-
-**类型:** BLOG
-
----
-
-正文内容...
-```
-
-对于分析文件，还会包含额外的分析元数据：
-
-```markdown
-# 文章标题 - AI分析：竞争分析
-
-**原始链接:** [链接URL](链接URL)
-
-**发布时间:** YYYY-MM-DD
-
-**厂商:** AWS
-
-**类型:** BLOG
-
-**分析类型:** 竞争分析
-
-**分析时间:** YYYY-MM-DD HH:MM:SS
-
----
-
-## AI分析结果
-
-### 概述
-...
-
-### 关键技术洞察
-...
-
-### 竞争对手对比
-...
-
-（更多分析内容...）
-```
-
-## 常见问题 (FAQ)
-
-### 1. 安装问题
-**Q: 安装时找不到chrome-headless-shell**
-A: 执行`bash scripts/setup_latest_driver.sh`重新安装WebDriver，或手动下载Chrome浏览器
-
-**Q: 依赖安装出错**
-A: 确保您的Python版本是3.8或更高版本，并且已安装pip的最新版本。尝试`pip install --upgrade pip`后重新安装
-
-**Q: 在Windows上安装出现问题**
-A: Windows用户可能需要安装Visual C++ Build Tools，或者使用WSL(Windows Subsystem for Linux)
-
-### 2. 爬虫问题
-**Q: 爬虫无法获取某些网站内容**
-A: 有些网站可能有反爬虫措施。尝试以下解决方案：
-- 调整`interval`参数增加请求间隔时间
-- 修改`user_agent`和自定义`headers`
-- 启用代理配置
-
-**Q: 如何只爬取特定类别的内容？**
-A: 在配置文件中设置`specific_categories`或`specific_tags`参数，详见"厂商爬虫配置示例"
-
-**Q: 报错"Chrome version must be between X and Y"**
-A: 执行`bash scripts/setup_latest_driver.sh`下载最新版本的chrome-headless-shell和匹配的ChromeDriver
-
-**Q: 爬虫运行时出现ChromeDriver错误**
-A: 版本兼容性问题导致。执行`bash scripts/setup_latest_driver.sh`，它会自动下载兼容的chrome-headless-shell和ChromeDriver
-
-### 3. AI分析问题
-**Q: AI分析没有生成结果**
-A: 检查以下几点：
-- 确认API密钥和API基础URL是否正确设置
-- 检查网络连接是否正常
-- 查看日志文件中是否有更详细的错误信息
-
-**Q: 如何优化AI分析质量？**
-A: 可以调整以下参数：
-- 修改`system_prompt`以更精确地定义AI助手的角色
-- 调整`temperature`参数（较低的值会使输出更确定性，较高的值会增加随机性）
-- 自定义`tasks`中的具体提示词
-
-**Q: AI模型调用失败**
-A: 检查您的API密钥是否正确，网络是否畅通，以及是否超出API调用限制
-
-### 4. 性能与优化
-**Q: 爬虫运行很慢**
-A: 可以尝试以下优化：
-- 增加`max_workers`参数以提高并发爬取能力
-- 减少`wait_time`参数以缩短页面加载等待时间
-- 使用特定参数限制爬取范围，如`specific_categories`
-
-**Q: 如何减少API调用次数？**
-A: 可以使用以下策略：
-- 设置合理的`article_limit`以限制处理的文章数量
-- 使用`filters`过滤掉不相关的内容
-- 先使用`--mode test`进行小规模测试
-
-**Q: 如何确保chrome-headless-shell和ChromeDriver版本匹配？**
-A: 使用`bash scripts/setup_latest_driver.sh`脚本，它会自动下载匹配的版本，确保两者兼容
-
-**Q: 如何修改爬取的内容范围？**
-A: 编辑`config.yaml`文件中相应厂商的配置，添加或修改特定类别、标签等
-
-**Q: 如何自定义AI分析任务？**
-A: 在`config.yaml`的`ai_analyzer.tasks`部分添加新的任务类型和提示词
+如有其他问题，请查看项目源代码或提交issue。
 
 ## 安全性说明
 
