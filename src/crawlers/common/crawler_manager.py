@@ -132,11 +132,9 @@ class CrawlerManager:
         crawler = crawler_class(config_copy, vendor, source_type)
         
         # 替换爬虫实例中的MetadataManager为共享实例
-        from src.crawlers.common.base_crawler import metadata_lock
-        with metadata_lock:
-            crawler.metadata_manager = self.metadata_manager
-            # 重新加载metadata，确保使用最新的数据
-            crawler.metadata = crawler.metadata_manager.get_crawler_metadata(vendor, source_type)
+        crawler.metadata_manager = self.metadata_manager
+        # 重新加载metadata，确保使用最新的数据
+        crawler.metadata = crawler.metadata_manager.get_crawler_metadata(vendor, source_type)
         
         return crawler.run()
     

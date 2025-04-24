@@ -16,7 +16,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-from src.crawlers.common.base_crawler import BaseCrawler, metadata_lock
+from src.crawlers.common.base_crawler import BaseCrawler
 
 logger = logging.getLogger(__name__)
 
@@ -143,7 +143,7 @@ class AzureTechBlogCrawler(BaseCrawler):
             filtered_article_info = []
             already_crawled_count = 0
             
-            with metadata_lock:  # 使用锁确保线程安全
+            with BaseCrawler.metadata_lock:  # 使用锁确保线程安全
                 for title, url, list_date in all_article_info:
                     # 只有当URL在metadata中存在且文件也存在时才跳过
                     if (url in self.metadata and 
