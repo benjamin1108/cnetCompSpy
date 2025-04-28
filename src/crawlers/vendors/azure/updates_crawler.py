@@ -32,6 +32,9 @@ class AzureUpdatesCrawler(BaseCrawler):
             "filter": "products/any(f:f%20in%20(%27Application%20Gateway%27,%20%27Azure%20Bastion%27,%20%27Azure%20DDoS%20Protection%27,%20%27Azure%20DNS%27,%20%27Azure%20ExpressRoute%27,%20%27Azure%20Firewall%27,%20%27Azure%20Firewall%20Manager%27,%20%27Azure%20Front%20Door%27,%20%27Azure%20NAT%20Gateway%27,%20%27Azure%20Private%20Link%27,%20%27Azure%20Route%20Server%27,%20%27Azure%20Virtual%20Network%20Manager%27,%20%27Content%20Delivery%20Network%27,%20%27Load%20Balancer%27,%20%27Network%20Watcher%27,%20%27Traffic%20Manager%27,%20%27Virtual%20Network%27,%20%27Virtual%20WAN%27,%20%27VPN%20Gateway%27,%20%27Web%20Application%20Firewall%27))",
             "orderby": "modified%20desc"
         }
+        
+        # 记录已处理的更新
+        self.processed_updates = set()
 
     def _crawl(self) -> List[str]:
         """具体爬虫逻辑"""
@@ -83,10 +86,47 @@ class AzureUpdatesCrawler(BaseCrawler):
             time.sleep(1)
 
         return updates
+    
+    def check_if_update_exists(self, title: str, created: str) -> bool:
+        """
+        检查更新是否已存在
+        
+        Args:
+            title: 更新标题
+            created: 创建时间
+            
+        Returns:
+            True如果更新已存在，否则False
+        """
+        # 首先检查是否在本次爬取中已处理过
+        if created in self.processed_updates:
+            return True
+            
+        # 检查元数据中是否存在
+        with BaseCrawler.metadata_lock:
+            # 检查标题对应的哈希值文件是否存在
+            pub_date = created.split('T')[0]  # 提取日期部分
+            filename = f"{pub_date}_{hashlib.md5(title.encode()).hexdigest()[:8]}.md"
+            file_path = os.path.join(self.output_dir, filename)
+            
+            # 检查文件是否存在
+            if os.path.exists(file_path):
+                logger.info(f"Update already exists: {title} ({created})")
+                return True
+                
+            # 检查created是否在metadata中
+            if created in self.metadata:
+                logger.info(f"Update metadata exists: {title} ({created})")
+                return True
+                
+            return False
 
     def save_updates(self, updates: List[Dict[str, Any]]) -> List[str]:
         """保存更新到Markdown文件"""
         file_paths = []
+        new_updates_count = 0
+        existing_updates_count = 0
+        
         for update in updates:
             title = update.get('title')
             created = update.get('created')
@@ -95,6 +135,15 @@ class AzureUpdatesCrawler(BaseCrawler):
             if not title or not created or not description:
                 logger.warning(f"Incomplete update record: {update}")
                 continue
+                
+            # 检查更新是否已存在
+            if self.check_if_update_exists(title, created):
+                existing_updates_count += 1
+                continue
+                
+            # 记录已处理的更新
+            self.processed_updates.add(created)
+            new_updates_count += 1
 
             # 创建文件名
             pub_date = created.split('T')[0]  # 提取日期部分
@@ -149,5 +198,11 @@ class AzureUpdatesCrawler(BaseCrawler):
 
             file_paths.append(file_path)
             logger.info(f"Saved update to {file_path}")
+            
+        # 输出统计信息
+        if existing_updates_count > 0:
+            logger.info(f"跳过了 {existing_updates_count} 个已存在的更新")
+        if new_updates_count == 0:
+            logger.info("没有新的Azure更新需要爬取")
 
         return file_paths

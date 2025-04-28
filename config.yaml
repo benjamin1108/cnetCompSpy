@@ -210,7 +210,7 @@ ai_analyzer:
 
 # 定时任务配置
 scheduler:
-  daily_task_time: "23:07"  # 每日定时任务执行时间，格式为 HH:MM（24小时制）
+  daily_task_time: "08:00"  # 每日定时任务执行时间，格式为 HH:MM（24小时制）
   check_interval: 10  # 检查配置文件的时间间隔（秒）
 
 # WebServer配置

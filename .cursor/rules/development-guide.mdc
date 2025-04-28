@@ -1,0 +1,58 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# 开发指南
+
+## 项目架构
+
+cnetCompSpy项目采用模块化架构，主要组件包括：
+
+1. **主程序入口**：[main.py](mdc:src/main.py) - 处理命令行参数和启动对应的功能模块
+2. **爬虫模块**：负责从各云服务提供商网站爬取数据
+3. **AI分析模块**：使用大语言模型分析爬取的数据
+4. **工具类**：提供日志、驱动管理、进程锁等通用功能
+
+## 添加新的厂商爬虫
+
+要添加新的云服务提供商爬虫，需要：
+
+1. 在 `src/crawlers/vendors/` 目录下创建新的厂商模块
+2. 实现厂商特定的爬虫类，继承自通用爬虫基类
+3. 在 `config.yaml` 中添加对应厂商的配置
+4. 更新元数据管理相关功能以支持新厂商
+
+## 添加新的分析功能
+
+要扩展AI分析功能，需要：
+
+1. 在 `src/ai_analyzer/analyzer.py` 中添加新的分析方法
+2. 更新配置文件添加对应的设置选项
+3. 必要时更新统计分析工具以处理新的分析结果
+
+## 日志与调试
+
+项目使用彩色日志记录运行状态：
+
+- 日志文件保存在 `logs/` 目录
+- 日志实现在 [colored_logger.py](mdc:src/utils/colored_logger.py)
+- 支持不同的日志级别（INFO、WARNING、ERROR等）
+
+## 性能优化
+
+项目使用以下机制优化性能：
+
+- **线程池**：[thread_pool.py](mdc:src/utils/thread_pool.py) 实现了线程池，用于并行执行爬虫和分析任务
+- **增量更新**：通过元数据记录避免重复爬取和分析
+- **进程锁**：[process_lock_manager.py](mdc:src/utils/process_lock_manager.py) 防止多个实例同时运行导致的资源冲突
+
+## 测试
+
+使用测试模式可快速验证功能：
+
+```bash
+python -m src.main --mode test --vendor aws
+```
+
+测试模式会限制爬取和分析的数据量，适合快速检验代码更改。
