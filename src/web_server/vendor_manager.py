@@ -256,3 +256,88 @@ class VendorManager:
                 docs[doc_type].sort(key=lambda x: x.get('date', ''), reverse=True)
         
         return docs
+        
+    def get_weekly_updates(self) -> Dict[str, List[Dict[str, Any]]]:
+        """
+        获取本周所有厂商的更新文章
+        
+        Returns:
+            按厂商分组的本周更新文章列表（仅包含有AI分析的文章）
+        """
+        from datetime import datetime, timedelta
+        import re
+        
+        # 获取当前周的起止日期（从周一到周日）
+        today = datetime.today()
+        start_of_week = today - timedelta(days=today.weekday())  # 周一
+        start_of_week = datetime(start_of_week.year, start_of_week.month, start_of_week.day)
+        end_of_week = start_of_week + timedelta(days=6)  # 周日
+        
+        self.logger.info(f"获取本周更新 ({start_of_week.strftime('%Y-%m-%d')} 到 {end_of_week.strftime('%Y-%m-%d')})")
+        
+        weekly_updates = {}
+        
+        # 遍历所有厂商目录
+        if os.path.exists(self.raw_dir):
+            for vendor in os.listdir(self.raw_dir):
+                vendor_dir = os.path.join(self.raw_dir, vendor)
+                
+                if os.path.isdir(vendor_dir):
+                    vendor_updates = []
+                    
+                    # 遍历厂商的所有文档类型
+                    for doc_type in os.listdir(vendor_dir):
+                        type_dir = os.path.join(vendor_dir, doc_type)
+                        
+                        if os.path.isdir(type_dir):
+                            # 遍历此类型下的所有文件
+                            for filename in os.listdir(type_dir):
+                                file_path = os.path.join(type_dir, filename)
+                                
+                                if os.path.isfile(file_path) and filename.endswith('.md'):
+                                    # 检查是否有AI分析版本
+                                    analysis_path = os.path.join(self.analyzed_dir, vendor, doc_type, filename)
+                                    if not os.path.isfile(analysis_path):
+                                        continue  # 如果没有分析版本，跳过此文件
+                                    
+                                    # 提取文档信息
+                                    meta = self.document_manager._extract_document_meta(file_path)
+                                    date_str = meta.get('date', '')
+                                    
+                                    # 检查日期是否在本周范围内
+                                    if date_str:
+                                        try:
+                                            # 处理不同的日期格式
+                                            if re.match(r'\d{4}-\d{1,2}-\d{1,2}', date_str):
+                                                doc_date = datetime.strptime(date_str, '%Y-%m-%d')
+                                            elif re.match(r'\d{4}_\d{1,2}_\d{1,2}', date_str):
+                                                doc_date = datetime.strptime(date_str, '%Y_%m_%d')
+                                            else:
+                                                continue
+                                            
+                                            # 检查是否在本周范围内
+                                            if start_of_week <= doc_date <= end_of_week:
+                                                # 获取分析文档的翻译标题
+                                                translated_title = self.document_manager._extract_translated_title(analysis_path)
+                                                original_title = meta.get('title', filename.replace('.md', ''))
+                                                
+                                                vendor_updates.append({
+                                                    'filename': filename,
+                                                    'path': f"{vendor}/{doc_type}/{filename}",
+                                                    'title': translated_title if translated_title else original_title,
+                                                    'original_title': original_title,
+                                                    'translated_title': translated_title,
+                                                    'date': date_str,
+                                                    'doc_type': doc_type,
+                                                    'vendor': vendor,
+                                                    'size': os.path.getsize(file_path)
+                                                })
+                                        except (ValueError, TypeError) as e:
+                                            self.logger.debug(f"解析日期出错: {date_str}, {e}")
+                    
+                    # 如果有更新，按日期排序并添加到结果中
+                    if vendor_updates:
+                        vendor_updates.sort(key=lambda x: x.get('date', ''), reverse=True)
+                        weekly_updates[vendor] = vendor_updates
+        
+        return weekly_updates

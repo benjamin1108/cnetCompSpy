@@ -11,6 +11,7 @@ import logging
 from typing import Any, Dict, List, Optional
 from flask import Flask, render_template, abort, request, jsonify
 from flask import redirect, url_for, session, flash
+from datetime import datetime, timedelta
 
 class RouteManager:
     """路由管理器类"""
@@ -57,6 +58,24 @@ class RouteManager:
                 'index.html',
                 title='云服务厂商竞争分析',
                 vendors=vendors
+            )
+        
+        # 本周更新页面 - 显示所有厂商本周的更新
+        @self.app.route('/weekly-updates')
+        def weekly_updates():
+            # 计算本周的日期范围
+            today = datetime.now()
+            start_of_week = today - timedelta(days=today.weekday())
+            start_of_week = datetime(start_of_week.year, start_of_week.month, start_of_week.day)
+            end_of_week = start_of_week + timedelta(days=6)
+            
+            weekly_updates = self.vendor_manager.get_weekly_updates()
+            return render_template(
+                'weekly_updates.html',
+                title='本周更新 - 云服务厂商竞争分析',
+                weekly_updates=weekly_updates,
+                start_of_week=start_of_week,
+                end_of_week=end_of_week
             )
         
         # 厂商页面 - 显示特定厂商的所有文档
