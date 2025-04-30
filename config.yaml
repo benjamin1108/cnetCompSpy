@@ -11,7 +11,7 @@ email:
 # 钉钉机器人通知配置
 dingtalk:
   enabled: true  # 启用钉钉机器人通知功能
-  keyword: "云计算竞争本周动态"  # 钉钉机器人安全设置的自定义关键词
+  keyword: "云网络竞争动态每周更新"  # 钉钉机器人安全设置的自定义关键词
   # webhook和secret存放在config.secret.yaml中
 
 # 爬虫配置
