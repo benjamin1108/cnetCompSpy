@@ -28,6 +28,7 @@ show_help() {
     echo -e "  ${GREEN}clean${NC}    - 清理中间文件和临时文件"
     echo -e "  ${GREEN}daily${NC}    - 执行每日爬取与分析任务"
     echo -e "  ${GREEN}rebuild-md${NC} - 重建元数据，从本地MD文件更新元数据"
+    echo -e "  ${GREEN}dingtalk${NC} - 通过钉钉机器人推送weekly-updates到钉钉群"
     echo -e "  ${GREEN}help${NC}     - 显示此帮助信息"
     echo ""
     echo -e "${YELLOW}选项:${NC}"
@@ -50,6 +51,12 @@ show_help() {
     echo -e "  ${GREEN}--type${NC} [crawler|analysis]     - 指定元数据类型（crawler 或 analysis，仅用于rebuild-md命令）"
     echo -e "  ${GREEN}--force_clear${NC}                 - 强制清空原有元数据（仅用于rebuild-md命令）"
     echo -e "  ${GREEN}--force${NC}                       - 强制重建元数据，即使元数据已存在（仅用于rebuild-md命令）"
+    echo -e "  ${GREEN}--no-email${NC}                    - 禁用电子邮件通知（仅用于daily命令）"
+    echo -e "  ${GREEN}--no-stats${NC}                    - 禁用统计任务（仅用于daily命令）"
+    echo -e "  ${GREEN}--no-crawl${NC}                    - 禁用爬取任务（仅用于daily命令）"
+    echo -e "  ${GREEN}--no-analyze${NC}                  - 禁用分析任务（仅用于daily命令）"
+    echo -e "  ${GREEN}--no-dingtalk${NC}                 - 禁用钉钉推送（仅用于daily命令）"
+    echo -e "  ${GREEN}--robot${NC}                        - 使用指定的钉钉机器人推送"
     echo ""
     echo -e "${YELLOW}示例:${NC}"
     echo -e "  $0 crawl                     # 爬取所有厂商的数据"
@@ -73,8 +80,14 @@ show_help() {
     echo -e "  $0 clean --logs              # 只清理日志文件"
     echo -e "  $0 clean --data              # 只清理data目录"
     echo -e "  $0 daily                     # 执行每日爬取与分析任务"
+    echo -e "  $0 daily --no-email          # 执行每日任务但不发送邮件"
+    echo -e "  $0 daily --no-dingtalk       # 执行每日任务但不推送到钉钉"
     echo -e "  $0 rebuild-md                # 重建元数据，从本地MD文件更新元数据"
     echo -e "  $0 rebuild-md --force        # 强制重建元数据，即使元数据已存在"
+    echo -e "  $0 dingtalk                  # 通过钉钉机器人推送weekly-updates"
+    echo -e "  $0 dingtalk --debug          # 以调试模式推送weekly-updates"
+    echo -e "  $0 dingtalk --config custom.yaml  # 使用自定义配置文件推送"
+    echo -e "  $0 dingtalk --robot 机器人1 --robot 机器人2  # 使用指定的钉钉机器人推送"
 }
 
 # 显示错误信息
@@ -408,7 +421,7 @@ validate_args() {
             
         daily)
             # daily命令有效参数
-            local valid_opts=("--no-email" "--no-stats" "--no-crawl" "--no-analyze" "--debug" "--vendor" "--limit")
+            local valid_opts=("--no-email" "--no-stats" "--no-crawl" "--no-analyze" "--no-dingtalk" "--debug" "--vendor" "--limit")
             local requires_value=("--vendor" "--limit")
             
             # 验证参数
@@ -534,6 +547,50 @@ validate_args() {
             if [ "$has_deep_check" = true ] && [ "$has_delete" = false ]; then
                 show_info "深度检查模式已启用，将检测分析文件中的'假完成'问题但不删除文件"
             fi
+            ;;
+            
+        dingtalk)
+            # dingtalk命令有效参数
+            local valid_opts=("--debug" "--config" "--robot")
+            local requires_value=("--config" "--robot")
+            
+            # 验证参数
+            while [[ $# -gt 0 ]]; do
+                local current="$1"
+                local is_valid=false
+                
+                # 检查参数是否有效
+                for opt in "${valid_opts[@]}"; do
+                    if [[ "$current" == "$opt" ]]; then
+                        is_valid=true
+                        break
+                    fi
+                done
+                
+                # 检查需要值的参数
+                for req in "${requires_value[@]}"; do
+                    if [[ "$current" == "$req" ]]; then
+                        if [[ -z "$2" || "$2" == --* ]]; then
+                            show_error "参数 $current 需要一个值"
+                        fi
+                        
+                        # 检查特定参数的值约束
+                        if [[ "$current" == "--config" ]]; then
+                            check_config_exists "$2"
+                        fi
+                        
+                        shift
+                        break
+                    fi
+                done
+                
+                # 如果无效，添加到无效参数列表
+                if ! $is_valid; then
+                    invalid_args+=("$current")
+                fi
+                
+                shift
+            done
             ;;
             
         *)
@@ -1005,6 +1062,54 @@ run_rebuild_metadata() {
     return $RESULT
 }
 
+# 执行钉钉推送
+run_dingtalk_push() {
+    echo -e "${BLUE}开始推送weekly-updates到钉钉群...${NC}"
+    
+    # 验证参数
+    validate_args "dingtalk" "$@" || return 1
+    
+    # 激活虚拟环境
+    activate_venv
+    
+    # 默认参数
+    DEBUG=""
+    CONFIG=""
+    ROBOT=""
+    
+    # 解析参数
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --debug)
+                DEBUG="--debug"
+                shift
+                ;;
+            --config)
+                CONFIG="--config $2"
+                shift 2
+                ;;
+            --robot)
+                ROBOT="$ROBOT --robot $2"
+                shift 2
+                ;;
+            *)
+                shift
+                ;;
+        esac
+    done
+    
+    # 执行推送命令
+    echo -e "${YELLOW}正在执行钉钉推送...${NC}"
+    python -m src.dingtalk_pusher $DEBUG $CONFIG $ROBOT
+    
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}✓ 钉钉推送成功${NC}"
+    else
+        echo -e "${RED}✗ 钉钉推送失败${NC}"
+        return 1
+    fi
+}
+
 # 主函数
 main() {
     # 如果没有参数，显示帮助信息
@@ -1019,11 +1124,11 @@ main() {
     
     # 验证命令是否有效
     case "$COMMAND" in
-        crawl|analyze|server|setup|driver|stats|check-tasks|clean|daily|rebuild-md|help)
+        crawl|analyze|server|setup|driver|stats|check-tasks|clean|daily|rebuild-md|help|dingtalk)
             # 有效命令
             ;;
         *)
-            show_error "未知命令: $COMMAND。有效命令: crawl, analyze, server, setup, driver, stats, check-tasks, clean, daily, rebuild-md, help"
+            show_error "未知命令: $COMMAND。有效命令: crawl, analyze, server, setup, driver, stats, check-tasks, clean, daily, rebuild-md, help, dingtalk"
             ;;
     esac
     
@@ -1082,6 +1187,11 @@ main() {
             ;;
         rebuild-md)
             run_rebuild_metadata "$@"
+            ;;
+        dingtalk)
+            # 验证参数
+            validate_args "dingtalk" "$@" || exit 1
+            run_dingtalk_push "$@"
             ;;
         help)
             # 验证参数

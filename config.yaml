@@ -8,6 +8,12 @@ email:
   recipients: ["21586750@qq.com","tianxiang.btx@alibaba-inc.com"]  # 收件人邮箱列表
   subject_prefix: "[云计算网络竞争动态分析]"  # 邮件主题前缀
 
+# 钉钉机器人通知配置
+dingtalk:
+  enabled: true  # 启用钉钉机器人通知功能
+  keyword: "云计算竞争本周动态"  # 钉钉机器人安全设置的自定义关键词
+  # webhook和secret存放在config.secret.yaml中
+
 # 爬虫配置
 crawler:
   timeout: 30 # 基本请求超时时间（秒）
