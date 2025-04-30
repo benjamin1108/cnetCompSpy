@@ -20,7 +20,7 @@ NO_EMAIL=false
 NO_STATS=false
 NO_CRAWL=false
 NO_ANALYZE=false
-NO_DINGTALK=false  # 添加钉钉推送开关
+NO_DINGTALK=true  # 默认不在每日任务中执行钉钉推送
 DEBUG=""
 VENDOR=""
 LIMIT=""
@@ -44,7 +44,7 @@ while [[ $# -gt 0 ]]; do
             NO_ANALYZE=true
             shift
             ;;
-        --no-dingtalk)  # 添加钉钉推送开关
+        --no-dingtalk)  # 保留参数，但默认已经设为true
             NO_DINGTALK=true
             shift
             ;;
@@ -77,7 +77,7 @@ echo -e "  - 爬取: $(if [ "$NO_CRAWL" = true ]; then echo "${RED}禁用${NC}";
 echo -e "  - 分析: $(if [ "$NO_ANALYZE" = true ]; then echo "${RED}禁用${NC}"; else echo "${GREEN}启用${NC}"; fi)"
 echo -e "  - 统计: $(if [ "$NO_STATS" = true ]; then echo "${RED}禁用${NC}"; else echo "${GREEN}启用${NC}"; fi)"
 echo -e "  - 邮件: $(if [ "$NO_EMAIL" = true ]; then echo "${RED}禁用${NC}"; else echo "${GREEN}启用${NC}"; fi)"
-echo -e "  - 钉钉推送: $(if [ "$NO_DINGTALK" = true ]; then echo "${RED}禁用${NC}"; else echo "${GREEN}启用${NC}"; fi)"
+echo -e "  - 钉钉推送: ${RED}禁用${NC} (将在配置的每周推送时间通过定时任务单独执行)"
 if [ ! -z "$VENDOR" ]; then
     echo -e "  - 厂商: ${YELLOW}${VENDOR/--vendor /}${NC}"
 fi
@@ -143,21 +143,8 @@ else
     echo -e "${YELLOW}[$(date +%H:%M:%S)] 统计任务已禁用，跳过${NC}" | tee -a "$LOG_FILE"
 fi
 
-# 执行钉钉推送任务
-if [ "$NO_DINGTALK" != true ]; then
-    echo -e "${BLUE}[$(date +%H:%M:%S)] 开始钉钉推送任务...${NC}"
-    $ROOT_DIR/run.sh dingtalk $DEBUG 2>&1 | tee -a "$LOG_FILE"
-    DINGTALK_RESULT=${PIPESTATUS[0]}
-    
-    if [ $DINGTALK_RESULT -eq 0 ]; then
-        echo -e "${GREEN}[$(date +%H:%M:%S)] 钉钉推送任务成功完成${NC}" | tee -a "$LOG_FILE"
-    else
-        echo -e "${RED}[$(date +%H:%M:%S)] 钉钉推送任务失败，退出代码: $DINGTALK_RESULT${NC}" | tee -a "$LOG_FILE"
-    fi
-else
-    echo -e "${YELLOW}[$(date +%H:%M:%S)] 钉钉推送任务已禁用，跳过${NC}" | tee -a "$LOG_FILE"
-        fi
-        
+# 移除钉钉推送任务部分 - 将通过定时任务在配置的每周时间单独执行
+
 # 发送电子邮件通知
 if [ "$NO_EMAIL" != true ]; then
     echo -e "${BLUE}[$(date +%H:%M:%S)] 发送电子邮件通知...${NC}"

@@ -14,8 +14,11 @@ class Scheduler:
     def __init__(self, config_path='config.yaml'):
         self.config_path = config_path
         self.last_run_date = None
+        self.last_dingtalk_push_date = None
         self.running = False
         self.current_daily_task_time = None
+        self.current_dingtalk_push_time = None
+        self.current_dingtalk_push_day = None
         self.current_check_interval = None
         self.load_config()
 
@@ -26,19 +29,48 @@ class Scheduler:
                 config = yaml.safe_load(file)
                 new_daily_task_time = config.get('scheduler', {}).get('daily_task_time', '02:00')
                 new_check_interval = config.get('scheduler', {}).get('check_interval', 10)
+                new_dingtalk_push_time = config.get('dingtalk', {}).get('weekly_push_time', '12:00')
+                new_dingtalk_push_day = config.get('dingtalk', {}).get('weekly_push_day', 5)  # 默认周五
+                
+                # 确保星期几的值在1-7之间
+                if not (1 <= new_dingtalk_push_day <= 7):
+                    logger.warning(f"钉钉推送星期几配置无效: {new_dingtalk_push_day}，应为1-7，已设为默认值5(周五)")
+                    new_dingtalk_push_day = 5
                 
                 # 只有在配置发生变化时才输出日志
-                if new_daily_task_time != self.current_daily_task_time or new_check_interval != self.current_check_interval:
-                    logger.info(f"定时任务配置已加载：每日任务时间={new_daily_task_time}, 检查间隔={new_check_interval}秒")
+                config_changed = False
+                
+                if new_daily_task_time != self.current_daily_task_time:
                     self.current_daily_task_time = new_daily_task_time
+                    config_changed = True
+                    
+                if new_check_interval != self.current_check_interval:
                     self.current_check_interval = new_check_interval
+                    config_changed = True
+                    
+                if new_dingtalk_push_time != self.current_dingtalk_push_time:
+                    self.current_dingtalk_push_time = new_dingtalk_push_time
+                    config_changed = True
+                
+                if new_dingtalk_push_day != self.current_dingtalk_push_day:
+                    self.current_dingtalk_push_day = new_dingtalk_push_day
+                    config_changed = True
+                
+                if config_changed:
+                    weekday_names = {1: "周一", 2: "周二", 3: "周三", 4: "周四", 5: "周五", 6: "周六", 7: "周日"}
+                    weekday_name = weekday_names.get(new_dingtalk_push_day, "未知")
+                    logger.info(f"定时任务配置已加载：每日任务时间={new_daily_task_time}, 钉钉推送时间={weekday_name} {new_dingtalk_push_time}, 检查间隔={new_check_interval}秒")
                 
                 self.daily_task_time = new_daily_task_time
                 self.check_interval = new_check_interval
+                self.dingtalk_push_time = new_dingtalk_push_time
+                self.dingtalk_push_day = new_dingtalk_push_day
         except Exception as e:
             logger.error(f"加载配置文件出错：{e}")
             self.daily_task_time = '02:00'
             self.check_interval = 10
+            self.dingtalk_push_time = '12:00'
+            self.dingtalk_push_day = 5  # 默认周五
 
     def should_run_task(self):
         """检查是否应该运行每日任务"""
@@ -64,6 +96,35 @@ class Scheduler:
         
         return False
 
+    def should_push_dingtalk(self):
+        """检查是否应该执行钉钉推送任务"""
+        current_time = datetime.datetime.now()
+        current_date = current_time.date()
+        
+        # 检查是否是配置的星期几
+        # isoweekday()返回1-7表示周一到周日
+        if current_time.isoweekday() != self.dingtalk_push_day:
+            return False
+        
+        push_hour, push_minute = map(int, self.dingtalk_push_time.split(':'))
+        push_time_today = current_time.replace(hour=push_hour, minute=push_minute, second=0, microsecond=0)
+        
+        # 检查是否已经推送过本周钉钉
+        # 本周的判断逻辑：上次推送日期是本周的同一天
+        if self.last_dingtalk_push_date == current_date:
+            return False
+        
+        # 检查当前时间是否在推送时间附近（例如5分钟内）
+        time_difference = (current_time - push_time_today).total_seconds()
+        if time_difference >= 0 and time_difference <= 300:  # 5分钟窗口
+            self.last_dingtalk_push_date = current_date
+            weekday_names = {1: "周一", 2: "周二", 3: "周三", 4: "周四", 5: "周五", 6: "周六", 7: "周日"}
+            weekday_name = weekday_names.get(self.dingtalk_push_day, "未知")
+            logger.info(f"今天是{weekday_name}，符合钉钉推送条件")
+            return True
+        
+        return False
+
     def run_daily_task(self):
         """运行每日任务脚本"""
         script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'scripts', 'daily_crawl_and_analyze.sh')
@@ -79,13 +140,43 @@ class Scheduler:
         except Exception as e:
             logger.error(f"执行每日任务脚本出错：{e}")
 
+    def run_dingtalk_push(self):
+        """运行钉钉推送任务"""
+        weekday_names = {1: "周一", 2: "周二", 3: "周三", 4: "周四", 5: "周五", 6: "周六", 7: "周日"}
+        weekday_name = weekday_names.get(self.dingtalk_push_day, "未知")
+        logger.info(f"启动钉钉推送任务({weekday_name} {self.dingtalk_push_time})...")
+        
+        try:
+            # 获取项目根目录
+            root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            run_script = os.path.join(root_dir, 'run.sh')
+            
+            # 执行钉钉推送命令
+            process = subprocess.Popen([run_script, 'dingtalk'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            stdout, stderr = process.communicate()
+            
+            if process.returncode == 0:
+                logger.info(f"钉钉推送任务执行成功：\n{stdout}")
+            else:
+                logger.error(f"钉钉推送任务执行失败：\n{stderr}")
+        except Exception as e:
+            logger.error(f"执行钉钉推送任务出错：{e}")
+
     def check_and_run(self):
         """检查并运行定时任务"""
         while self.running:
             self.load_config()  # 每次循环重新加载配置，允许动态修改
+            
+            # 检查每日任务
             if self.should_run_task():
                 logger.info(f"达到每日任务时间 {self.daily_task_time}，启动任务...")
                 self.run_daily_task()
+            
+            # 检查钉钉推送任务
+            if self.should_push_dingtalk():
+                logger.info(f"达到钉钉推送时间 {self.dingtalk_push_time}，启动钉钉推送...")
+                self.run_dingtalk_push()
+            
             time.sleep(self.check_interval)
 
     def start(self):
