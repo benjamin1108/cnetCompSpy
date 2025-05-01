@@ -445,9 +445,52 @@
     /* 分页控件 */
     .pagination {
         display: flex;
+        flex-wrap: wrap;
         justify-content: center;
+        align-items: center;
         margin-top: 20px;
         gap: 10px;
+    }
+    
+    .pagination-info {
+        background-color: rgba(0, 120, 212, 0.1);
+        color: #2c3e50;
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        margin-bottom: 10px;
+        text-align: center;
+        width: 100%;
+        font-weight: 500;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    
+    .pagination-info span {
+        flex: 1;
+        min-width: 200px;
+        margin-right: 10px;
+    }
+    
+    .view-all-link {
+        color: #0078d4;
+        text-decoration: none;
+        font-weight: 500;
+        white-space: nowrap;
+        margin-left: 10px;
+        border: 1px solid rgba(0, 120, 212, 0.3);
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        transition: all 0.2s ease;
+        display: inline-block; /* 确保按钮可见 */
+    }
+    
+    .view-all-link:hover {
+        background-color: rgba(0, 120, 212, 0.1);
+        border-color: rgba(0, 120, 212, 0.5);
     }
     
     .pagination button {
@@ -565,6 +608,23 @@
             gap: 10px;
         }
         
+        .filter-group {
+            width: 100%;
+        }
+        
+        .filter-select {
+            width: 100%;
+            height: 40px; /* 增加点击区域 */
+            font-size: 16px; /* 避免iOS自动缩放 */
+        }
+        
+        #document-search {
+            width: 100%;
+            padding: 8px 12px;
+            height: 40px;
+            font-size: 16px;
+        }
+        
         .quick-nav {
             width: 100%;
             position: relative;
@@ -575,9 +635,58 @@
             grid-template-columns: 1fr;
         }
         
+        .tab-nav {
+            overflow-x: auto;
+            white-space: nowrap;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE and Edge */
+            padding-bottom: 5px;
+        }
+        
+        .tab-nav::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
+        }
+        
         .tab-button {
-            padding: 10px 15px;
-            font-size: 0.9rem;
+            padding: 12px 18px;
+            font-size: 1rem;
+            touch-action: manipulation;
+        }
+        
+        /* 分页按钮在移动端增大点击区域 */
+        .pagination button {
+            min-width: 44px;
+            min-height: 44px;
+            margin: 0 3px;
+            touch-action: manipulation;
+        }
+        
+        .pagination-info {
+            flex-direction: column;
+            padding: 10px;
+            gap: 8px;
+        }
+        
+        .pagination-info span {
+            margin-right: 0;
+            text-align: center;
+            order: 1;
+        }
+        
+        .view-all-link {
+            margin-left: 0;
+            padding: 8px 15px;
+            font-size: 1rem;
+            order: 0;
+            align-self: center;
+            background-color: rgba(0, 120, 212, 0.15);
+            border: 2px solid rgba(0, 120, 212, 0.3);
+            border-radius: 20px;
+            display: block;
+            width: 80%;
+            text-align: center;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
     }
 </style>
@@ -615,7 +724,7 @@
                             </select>
                         </div>
                         <div class="filter-group" style="margin-left: auto;">
-                            <input type="text" id="document-search" placeholder="搜索文档标题..." class="filter-select" style="min-width: 200px; background-color: rgba(255, 255, 255, 0.8); color: #2c3e50; border: 1px solid rgba(0, 76, 153, 0.2);">
+                            <input type="text" id="search-{{ doc_type }}" placeholder="搜索文档标题..." class="filter-select document-search" style="min-width: 200px; background-color: rgba(255, 255, 255, 0.8); color: #2c3e50; border: 1px solid rgba(0, 76, 153, 0.2);">
                         </div>
                     </div>
                     <div class="doc-cards" id="doc-cards-{{ doc_type }}">
