@@ -266,25 +266,27 @@
     /* 过滤和排序控件 */
     .filter-controls {
         display: flex;
-        flex-wrap: wrap;
         gap: 15px;
         margin-bottom: 20px;
         padding: 15px;
         background-color: rgba(0, 76, 153, 0.1);
         border-radius: 8px;
         border: 1px solid rgba(0, 76, 153, 0.2);
+        flex-wrap: wrap;
     }
     
     .filter-group {
         display: flex;
         align-items: center;
         gap: 10px;
+        min-width: 200px;
     }
     
     .filter-label {
         font-weight: 500;
         color: #2c3e50;
         font-size: 0.9rem;
+        white-space: nowrap;
     }
     
     .filter-select {
@@ -295,6 +297,7 @@
         color: #2c3e50;
         font-size: 0.9rem;
         transition: all 0.3s ease;
+        flex: 1;
     }
     
     .filter-select:focus {
@@ -442,86 +445,97 @@
         white-space: nowrap;
     }
     
-    /* 分页控件 */
-    .pagination {
+    /* 瀑布流加载样式 */
+    .load-more-container {
         display: flex;
-        flex-wrap: wrap;
+        flex-direction: column;
+        align-items: center;
         justify-content: center;
-        align-items: center;
-        margin-top: 20px;
-        gap: 10px;
-    }
-    
-    .pagination-info {
-        background-color: rgba(0, 120, 212, 0.1);
-        color: #2c3e50;
-        padding: 8px 15px;
-        border-radius: 20px;
-        font-size: 0.9rem;
-        margin-bottom: 10px;
+        margin: 30px 0;
+        padding: 15px;
         text-align: center;
-        width: 100%;
-        font-weight: 500;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
     }
     
-    .pagination-info span {
-        flex: 1;
-        min-width: 200px;
-        margin-right: 10px;
-    }
-    
-    .view-all-link {
-        color: #0078d4;
-        text-decoration: none;
-        font-weight: 500;
-        white-space: nowrap;
-        margin-left: 10px;
-        border: 1px solid rgba(0, 120, 212, 0.3);
-        padding: 3px 8px;
-        border-radius: 12px;
-        font-size: 0.8rem;
-        transition: all 0.2s ease;
-        display: inline-block; /* 确保按钮可见 */
-    }
-    
-    .view-all-link:hover {
-        background-color: rgba(0, 120, 212, 0.1);
-        border-color: rgba(0, 120, 212, 0.5);
-    }
-    
-    .pagination button {
-        padding: 8px 12px;
-        border: 1px solid #e6e9ed;
-        background-color: white;
-        border-radius: 4px;
-        cursor: pointer;
-        color: #2c3e50;
-        transition: all 0.3s ease;
+    .load-more-info {
+        margin-bottom: 15px;
+        color: #5b6b7c;
         font-size: 0.9rem;
     }
     
-    .pagination button:hover {
+    .load-more-btn {
+        padding: 12px 25px;
         background-color: #0078d4;
         color: white;
-        border-color: #0078d4;
+        border: none;
+        border-radius: 8px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 1rem;
+        width: 200px;
+        position: relative;
+        overflow: hidden;
     }
     
-    .pagination button.active {
-        background-color: #0078d4;
-        color: white;
-        border-color: #0078d4;
-        font-weight: bold;
+    .load-more-btn:hover {
+        background-color: #005a9e;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
     }
     
-    .pagination button:disabled {
-        background-color: #f0f2f5;
-        color: #a0a9b3;
-        cursor: not-allowed;
-        border-color: #e6e9ed;
+    .load-more-btn:active {
+        transform: translateY(0);
+    }
+    
+    .load-more-btn.loading {
+        background-color: #bccad8;
+        color: #2c3e50;
+        pointer-events: none;
+    }
+    
+    .load-more-btn.loading::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 300%;
+        height: 100%;
+        background: linear-gradient(90deg, 
+            transparent, 
+            rgba(255, 255, 255, 0.2), 
+            transparent
+        );
+        animation: loading-sweep 1.5s infinite;
+    }
+    
+    @keyframes loading-sweep {
+        0% {
+            left: -100%;
+        }
+        100% {
+            left: 100%;
+        }
+    }
+    
+    .all-loaded-info {
+        padding: 10px 15px;
+        background-color: #f5f7fa;
+        color: #5b6b7c;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        opacity: 0.7;
+    }
+    
+    /* 无搜索结果提示 */
+    .no-results {
+        padding: 40px 20px;
+        text-align: center;
+        color: #5b6b7c;
+        font-size: 1.1rem;
+        background-color: #f5f7fa;
+        border-radius: 8px;
+        margin: 20px 0;
+        border: 1px dashed #e6e9ed;
     }
     
     /* 标签页样式 */
@@ -539,10 +553,17 @@
         border-bottom: 1px solid #e6e9ed;
         overflow-x: auto;
         background: linear-gradient(90deg, rgba(0, 120, 212, 0.05), rgba(43, 87, 154, 0.05));
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* IE and Edge */
+        padding-bottom: 5px;
+    }
+    
+    .tab-nav::-webkit-scrollbar {
+        display: none; /* Chrome, Safari, Opera */
     }
     
     .tab-button {
-        padding: 14px 24px;
+        padding: 12px 20px;
         background-color: transparent;
         border: none;
         border-bottom: 3px solid transparent;
@@ -553,6 +574,7 @@
         transition: all 0.3s ease;
         white-space: nowrap;
         position: relative;
+        touch-action: manipulation;
     }
     
     .tab-button:hover {
@@ -582,112 +604,6 @@
     
     .tab-content.active {
         display: block;
-    }
-    
-    /* 响应式调整 */
-    @media (max-width: 768px) {
-        .vendor-title {
-            font-size: 1.8rem;
-        }
-        
-        .vendor-subtitle {
-            font-size: 1rem;
-        }
-        
-        .view-option {
-            padding: 8px 15px;
-            font-size: 0.9rem;
-        }
-        
-        .doc-section {
-            padding: 20px 15px;
-        }
-        
-        .filter-controls {
-            flex-direction: column;
-            gap: 10px;
-        }
-        
-        .filter-group {
-            width: 100%;
-        }
-        
-        .filter-select {
-            width: 100%;
-            height: 40px; /* 增加点击区域 */
-            font-size: 16px; /* 避免iOS自动缩放 */
-        }
-        
-        #document-search {
-            width: 100%;
-            padding: 8px 12px;
-            height: 40px;
-            font-size: 16px;
-        }
-        
-        .quick-nav {
-            width: 100%;
-            position: relative;
-            margin-left: 0;
-        }
-        
-        .doc-cards {
-            grid-template-columns: 1fr;
-        }
-        
-        .tab-nav {
-            overflow-x: auto;
-            white-space: nowrap;
-            scrollbar-width: none; /* Firefox */
-            -ms-overflow-style: none; /* IE and Edge */
-            padding-bottom: 5px;
-        }
-        
-        .tab-nav::-webkit-scrollbar {
-            display: none; /* Chrome, Safari, Opera */
-        }
-        
-        .tab-button {
-            padding: 12px 18px;
-            font-size: 1rem;
-            touch-action: manipulation;
-        }
-        
-        /* 分页按钮在移动端增大点击区域 */
-        .pagination button {
-            min-width: 44px;
-            min-height: 44px;
-            margin: 0 3px;
-            touch-action: manipulation;
-        }
-        
-        .pagination-info {
-            flex-direction: column;
-            padding: 10px;
-            gap: 8px;
-        }
-        
-        .pagination-info span {
-            margin-right: 0;
-            text-align: center;
-            order: 1;
-        }
-        
-        .view-all-link {
-            margin-left: 0;
-            padding: 8px 15px;
-            font-size: 1rem;
-            order: 0;
-            align-self: center;
-            background-color: rgba(0, 120, 212, 0.15);
-            border: 2px solid rgba(0, 120, 212, 0.3);
-            border-radius: 20px;
-            display: block;
-            width: 80%;
-            text-align: center;
-            margin-bottom: 10px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
     }
 </style>
 {% endblock %}
@@ -743,145 +659,21 @@
                         {% endfor %}
                     </div>
                     <div class="pagination" id="pagination-{{ doc_type }}">
-                        <!-- Pagination controls will be added by JavaScript -->
+                        <!-- 加载更多按钮将由JavaScript添加 -->
                     </div>
                 </div>
             {% endif %}
         {% endfor %}
     </div>
+    
 {% else %}
-    <section class="no-data">
-        <p>该厂商暂无文档数据。</p>
-    </section>
+    <div class="no-data">
+        <p>暂无可用的文档数据</p>
+        <p>请先通过爬虫采集和分析数据</p>
+    </div>
 {% endif %}
-
 {% endblock %}
 
 {% block scripts %}
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // 为所有可折叠标题添加点击事件
-        const headers = document.querySelectorAll('.collapsible-header');
-        
-        headers.forEach(header => {
-            // 获取对应的内容区域
-            const content = header.nextElementSibling;
-            
-            // 默认展开第一个文档类型，其他折叠
-            if (header === headers[0]) {
-                header.classList.remove('collapsed');
-                content.classList.remove('collapsed');
-            } else {
-                header.classList.add('collapsed');
-                content.classList.add('collapsed');
-            }
-            
-            // 添加点击事件
-            header.addEventListener('click', function() {
-                // 切换折叠状态
-                this.classList.toggle('collapsed');
-                content.classList.toggle('collapsed');
-                
-                // 如果展开，确保内容完全显示
-                if (!content.classList.contains('collapsed')) {
-                    content.style.maxHeight = 'none';
-                } else {
-                    content.style.maxHeight = null;
-                }
-            });
-        });
-        
-        // 根据厂商名称定义tab顺序（与config.yaml中的sources配置一致）
-        const vendorTabOrders = {
-            // 为不同厂商定义不同的标签顺序
-            'aws': ['whatsnew','blog' ],
-            'azure': ['updates', 'tech-blog','blog' ],
-            'gcp': ['blog'],
-            'tencent': ['blog', 'docs'],
-            'huawei': ['blog', 'docs'],
-            'volcano': ['blog', 'docs']
-            // 可以根据需要添加更多厂商的配置
-        };
-        
-        // 默认标签顺序
-        const defaultTabOrder = ['blog', 'whatsnew', 'updates', 'tech_blog'];
-        
-        // 获取当前厂商名称
-        const vendorName = document.querySelector('.vendor-title').textContent.trim().split(' ')[0].toLowerCase();
-        
-        // 获取适用于当前厂商的标签顺序
-        const tabOrder = vendorTabOrders[vendorName] || defaultTabOrder;
-        
-        // 重新排序标签页
-        function reorderTabs() {
-            const tabNav = document.querySelector('.tab-nav');
-            if (!tabNav) return;
-            
-            // 获取所有标签按钮
-            const tabButtons = Array.from(tabNav.querySelectorAll('.tab-button'));
-            if (tabButtons.length === 0) return;
-            
-            // 创建一个新的排序后的按钮数组
-            const orderedButtons = [];
-            
-            // 首先按照指定顺序添加按钮
-            tabOrder.forEach(type => {
-                const button = tabButtons.find(btn => btn.getAttribute('data-tab').toLowerCase() === type.toLowerCase());
-                if (button && !orderedButtons.includes(button)) {
-                    orderedButtons.push(button);
-                }
-            });
-            
-            // 然后添加其他未在指定顺序中的按钮
-            tabButtons.forEach(button => {
-                const type = button.getAttribute('data-tab').toLowerCase();
-                if (!tabOrder.map(t => t.toLowerCase()).includes(type) && !orderedButtons.includes(button)) {
-                    orderedButtons.push(button);
-                }
-            });
-            
-            // 清空标签导航
-            tabNav.innerHTML = '';
-            
-            // 重新添加按钮，按照新的顺序
-            orderedButtons.forEach(button => {
-                tabNav.appendChild(button);
-            });
-            
-            // 重新排序内容区域
-            const tabContents = document.querySelectorAll('.tab-content');
-            const orderedContents = [];
-            
-            // 按照按钮的顺序排列内容
-            orderedButtons.forEach(button => {
-                const tabId = button.getAttribute('data-tab');
-                const content = Array.from(tabContents).find(div => div.id === `tab-${tabId}`);
-                if (content) {
-                    orderedContents.push(content);
-                }
-            });
-            
-            // 清空内容区域的父元素
-            if (tabContents.length > 0) {
-                const contentParent = tabContents[0].parentNode;
-                Array.from(tabContents).forEach(div => div.remove());
-                
-                // 重新添加内容，按照新的顺序
-                orderedContents.forEach(content => {
-                    contentParent.appendChild(content);
-                });
-            }
-            
-            // 默认激活第一个标签
-            if (orderedButtons.length > 0) {
-                // 模拟点击第一个标签
-                orderedButtons[0].click();
-            }
-        }
-        
-        // 执行标签页重排序
-        reorderTabs();
-    });
-</script>
 <script src="{{ url_for('static', filename='js/vendor.js') }}"></script>
 {% endblock %}

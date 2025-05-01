@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // 分页功能改为瀑布流加载
+    // 瀑布流加载功能
     function setupPagination(docType) {
         const cardsContainer = document.getElementById(`doc-cards-${docType}`);
         const paginationContainer = document.getElementById(`pagination-${docType}`);
@@ -41,30 +41,93 @@ document.addEventListener('DOMContentLoaded', function() {
             return { filterCards: () => {} };
         }
         
-        // 隐藏分页容器，因为我们不需要加载更多按钮
+        // 将分页容器转换为加载更多按钮容器
         if (paginationContainer) {
-            paginationContainer.style.display = 'none';
+            paginationContainer.className = 'load-more-container';
+            // 添加固定的ID以便后续引用
+            paginationContainer.setAttribute('data-pagination-id', `pagination-${docType}`);
         }
         
         const cards = Array.from(cardsContainer.querySelectorAll('.doc-card'));
         let filteredCards = [...cards]; // 使用展开运算符创建原始数组的真正副本
         
-        function renderAllCards() {
-            // 清空卡片容器
-            cardsContainer.innerHTML = '';
+        // 初始和增量加载的文章数量 - 所有设备统一使用相同数值
+        const initialLoadCount = 20; // 初始加载20篇文章
+        const loadMoreCount = 20; // 每次点击"加载更多"时加载20篇文章
+        let currentlyLoaded = 0;
+        
+        // 存储加载状态，防止重复操作
+        let isLoading = false;
+        
+        function renderCards(startIndex, count) {
+            const endIndex = Math.min(startIndex + count, filteredCards.length);
+            const cardsToRender = filteredCards.slice(startIndex, endIndex);
             
-            // 渲染所有卡片
-            filteredCards.forEach(card => {
+            cardsToRender.forEach(card => {
                 const cardClone = card.cloneNode(true);
                 cardsContainer.appendChild(cardClone);
             });
             
-            // 如果没有搜索结果，显示提示
-            if (filteredCards.length === 0) {
-                const noResultsDiv = document.createElement('div');
-                noResultsDiv.className = 'no-results';
-                noResultsDiv.textContent = '没有找到匹配的文章';
-                cardsContainer.appendChild(noResultsDiv);
+            return endIndex - startIndex; // 返回实际渲染的卡片数量
+        }
+        
+        function updateLoadMoreButton() {
+            if (!paginationContainer) return;
+            
+            // 清空加载更多按钮容器
+            paginationContainer.innerHTML = '';
+            
+            // 创建信息文本
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'load-more-info';
+            infoDiv.textContent = `显示 ${currentlyLoaded} / ${filteredCards.length} 篇文章`;
+            paginationContainer.appendChild(infoDiv);
+            
+            // 如果还有更多文章可以加载，显示加载更多按钮
+            if (currentlyLoaded < filteredCards.length) {
+                const loadMoreBtn = document.createElement('button');
+                loadMoreBtn.className = 'load-more-btn';
+                loadMoreBtn.textContent = `加载更多文章`;
+                
+                // 计算还剩多少文章可以加载
+                const remaining = filteredCards.length - currentlyLoaded;
+                if (remaining <= loadMoreCount) {
+                    loadMoreBtn.textContent = `加载剩余 ${remaining} 篇文章`;
+                }
+                
+                loadMoreBtn.addEventListener('click', function() {
+                    if (isLoading) return; // 防止重复点击
+                    
+                    isLoading = true;
+                    const added = renderCards(currentlyLoaded, loadMoreCount);
+                    currentlyLoaded += added;
+                    
+                    // 添加加载动画
+                    this.classList.add('loading');
+                    this.textContent = '加载中...';
+                    
+                    // 使用延迟来模拟加载过程，并提供更好的用户体验
+                    setTimeout(() => {
+                        isLoading = false;
+                        updateLoadMoreButton();
+                        // 滚动到新加载的内容，但不要滚太多
+                        if (added > 0) {
+                            const newCards = Array.from(cardsContainer.querySelectorAll('.doc-card'))
+                                .slice(-added);
+                            if (newCards.length > 0) {
+                                newCards[0].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                            }
+                        }
+                    }, 300);
+                });
+                
+                paginationContainer.appendChild(loadMoreBtn);
+            } else if (filteredCards.length > 0) {
+                // 全部加载完毕的提示
+                const allLoadedInfo = document.createElement('div');
+                allLoadedInfo.className = 'all-loaded-info';
+                allLoadedInfo.textContent = '已加载全部文章';
+                paginationContainer.appendChild(allLoadedInfo);
             }
         }
         
@@ -74,7 +137,7 @@ document.addEventListener('DOMContentLoaded', function() {
             sortSelect.addEventListener('change', function() {
                 const sortOption = this.value;
                 sortCards(sortOption);
-                renderAllCards(); // 排序后重新渲染所有卡片
+                resetAndRenderCards();
             });
         }
         
@@ -140,8 +203,31 @@ document.addEventListener('DOMContentLoaded', function() {
             const currentSortOption = sortSelect ? sortSelect.value : 'date-desc';
             sortCards(currentSortOption);
             
-            // 渲染所有卡片
-            renderAllCards();
+            // 重置并重新渲染卡片
+            resetAndRenderCards();
+        }
+        
+        function resetAndRenderCards() {
+            // 清空卡片容器
+            cardsContainer.innerHTML = '';
+            
+            // 重置加载计数
+            currentlyLoaded = 0;
+            
+            // 渲染初始卡片集
+            const added = renderCards(0, initialLoadCount);
+            currentlyLoaded += added;
+            
+            // 更新加载更多按钮
+            updateLoadMoreButton();
+            
+            // 如果没有搜索结果，显示提示
+            if (filteredCards.length === 0) {
+                const noResultsDiv = document.createElement('div');
+                noResultsDiv.className = 'no-results';
+                noResultsDiv.textContent = '没有找到匹配的文章';
+                cardsContainer.appendChild(noResultsDiv);
+            }
         }
         
         // 增加标签页可见性监听
@@ -152,6 +238,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (mutation.attributeName === 'class' && 
                         tabContent.classList.contains('active')) {
                         console.log(`Tab ${docType} became active, refreshing cards`);
+                        // 只刷新加载更多按钮，不重新加载卡片
+                        updateLoadMoreButton();
                     }
                 });
             });
@@ -163,12 +251,14 @@ document.addEventListener('DOMContentLoaded', function() {
         // 1. 先应用默认排序 (日期降序)
         sortCards('date-desc');
         
-        // 2. 直接渲染所有卡片
-        renderAllCards();
+        // 2. 初始渲染卡片
+        resetAndRenderCards();
         
         // 3. 公开筛选方法，供搜索功能使用
         return {
-            filterCards: filterCards
+            filterCards: filterCards,
+            docType: docType,
+            updateLoadMoreButton: updateLoadMoreButton
         };
     }
 
@@ -215,32 +305,4 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 初始化搜索功能，并传入分页控制器
     setupSearch(paginationControllers);
-    
-    // 处理窗口大小变化，重新计算分页和布局
-    let resizeTimeout;
-    window.addEventListener('resize', function() {
-        // 防抖动，避免频繁触发
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(function() {
-            console.log('Window resized, recalculating layout');
-            
-            // 重新初始化所有文档类型的分页
-            document.querySelectorAll('.tab-content').forEach(content => {
-                const docType = content.getAttribute('data-doc-type');
-                
-                // 获取当前活动的排序选项
-                const sortSelect = document.getElementById(`sort-${docType}`);
-                const currentSortOption = sortSelect ? sortSelect.value : 'date-desc';
-                
-                // 重新初始化分页
-                paginationControllers[docType] = setupPagination(docType);
-                
-                // 应用之前的排序选项
-                if (sortSelect) {
-                    sortSelect.value = currentSortOption;
-                    sortSelect.dispatchEvent(new Event('change'));
-                }
-            });
-        }, 250); // 250ms延迟
-    });
 });

@@ -675,6 +675,97 @@ tbody tr:hover {
     margin-right: 15px;
 }
 
+/* 加载更多样式 */
+.load-more-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 30px 0;
+    padding: 15px;
+    text-align: center;
+    min-height: 120px;
+    position: relative;
+    z-index: 10;
+    background-color: transparent;
+}
+
+.load-more-info {
+    margin-bottom: 15px;
+    color: var(--text-light);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.load-more-btn {
+    padding: 12px 25px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    font-size: 1rem;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    width: 200px;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.load-more-btn:hover {
+    background-color: var(--primary-dark);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.load-more-btn:active {
+    transform: translateY(0);
+}
+
+.load-more-btn.loading {
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+    pointer-events: none;
+}
+
+.load-more-btn.loading::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 300%;
+    height: 100%;
+    background: linear-gradient(90deg, 
+        transparent, 
+        rgba(255, 255, 255, 0.2), 
+        transparent
+    );
+    animation: loading-sweep 1.5s infinite;
+}
+
+@keyframes loading-sweep {
+    0% {
+        left: -100%;
+    }
+    100% {
+        left: 100%;
+    }
+}
+
+.all-loaded-info {
+    padding: 10px 15px;
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+    border-radius: var(--radius-md);
+    font-size: 0.9rem;
+    opacity: 0.7;
+}
+
 /* 无搜索结果提示 */
 .no-results {
     padding: 40px 20px;
