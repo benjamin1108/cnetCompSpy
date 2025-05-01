@@ -65,9 +65,9 @@ class RouteManager:
         def weekly_updates():
             # 计算本周的日期范围
             today = datetime.now()
-            start_of_week = today - timedelta(days=today.weekday())
+            start_of_week = today - timedelta(days=today.weekday())  # 周一
             start_of_week = datetime(start_of_week.year, start_of_week.month, start_of_week.day)
-            end_of_week = start_of_week + timedelta(days=6)
+            end_of_week = start_of_week + timedelta(days=6)  # 周日
             
             weekly_updates = self.vendor_manager.get_weekly_updates()
             return render_template(
@@ -76,6 +76,20 @@ class RouteManager:
                 weekly_updates=weekly_updates,
                 start_of_week=start_of_week,
                 end_of_week=end_of_week
+            )
+        
+        # 今日更新页面 - 显示所有厂商今日的更新
+        @self.app.route('/daily-updates')
+        def daily_updates():
+            # 获取今天的日期
+            today = datetime.now()
+            
+            daily_updates = self.vendor_manager.get_daily_updates()
+            return render_template(
+                'daily_updates.html',
+                title='今日更新 - 云服务厂商竞争分析',
+                daily_updates=daily_updates,
+                today=today
             )
         
         # 厂商页面 - 显示特定厂商的所有文档
