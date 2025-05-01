@@ -12,8 +12,107 @@ import os
 import sys
 import argparse
 import logging
+import logging.config # 导入 dictConfig
+import yaml # 导入 yaml 以加载配置
 from pathlib import Path
+from copy import deepcopy # 用于覆盖配置
+from typing import Dict, Any, Optional # 用于类型提示
 
+# 默认配置（主要用于结构，实际值来自config.yaml）
+DEFAULT_CONFIG = {
+    'logging': {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'formatters': {
+            'standard': {
+                'format': '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                'datefmt': '%Y-%m-%d %H:%M:%S'
+            }
+        },
+        'handlers': {
+            'console': {
+                'class': 'logging.StreamHandler',
+                'formatter': 'standard',
+                'level': 'INFO',
+                'stream': 'ext://sys.stdout'
+            }
+        },
+        'root': {
+            'level': 'INFO',
+            'handlers': ['console']
+        }
+    }
+}
+
+def merge_configs(base_config: Dict[str, Any], override_config: Dict[str, Any]) -> Dict[str, Any]:
+    """深度合并配置字典（与main.py中的版本相同）"""
+    result = deepcopy(base_config)
+    for key, value in override_config.items():
+        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+            result[key] = merge_configs(result[key], value)
+        else:
+            result[key] = value
+    return result
+
+def load_yaml_file(file_path: str) -> Dict[str, Any]:
+    """加载YAML文件（与main.py中的版本相同，但简化日志）"""
+    try:
+        with open(file_path, 'r', encoding='utf-8') as file:
+            return yaml.safe_load(file) or {}
+    except FileNotFoundError:
+        print(f"警告: 配置文件不存在: {file_path}")
+        return {}
+    except Exception as e:
+        print(f"错误: 加载配置文件时出错: {e}")
+        return {}
+
+def setup_unified_logging(config_path: str, log_level_override: Optional[str] = None, debug_mode: bool = False):
+    """使用字典配置统一设置日志系统"""
+    config_data = load_yaml_file(config_path)
+    log_config = config_data.get('logging')
+    
+    if not log_config:
+        # 如果配置文件或logging部分不存在，使用默认的基本配置
+        print("警告: 配置文件中未找到 'logging' 配置部分，将使用默认 basicConfig。")
+        level_to_set = logging.DEBUG if debug_mode else getattr(logging, log_level_override or 'INFO')
+        logging.basicConfig(level=level_to_set, 
+                            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                            datefmt='%Y-%m-%d %H:%M:%S')
+        if debug_mode:
+             logging.getLogger().info("Debug mode enabled, setting log level to DEBUG.")
+        return
+
+    try:
+        # 确保日志目录存在 (与main.py中的逻辑相同)
+        log_filename = log_config.get('handlers', {}).get('file', {}).get('filename')
+        if log_filename:
+            # 确保filename是绝对路径或相对于项目根目录
+            if not os.path.isabs(log_filename):
+                project_root = Path(config_path).resolve().parent
+                log_filename = os.path.join(project_root, log_filename)
+                log_config['handlers']['file']['filename'] = log_filename # 更新配置中的路径
+                
+            log_dir = os.path.dirname(log_filename)
+            if not os.path.exists(log_dir):
+                os.makedirs(log_dir, exist_ok=True)
+        
+        # 处理命令行或debug模式的日志级别覆盖 (与main.py中的逻辑相同)
+        if debug_mode:
+            if 'console' in log_config.get('handlers', {}):
+                log_config['handlers']['console']['level'] = 'DEBUG'
+            print("调试模式启用，控制台日志级别设置为 DEBUG。") # 在日志系统前打印
+        elif log_level_override:
+            if 'console' in log_config.get('handlers', {}):
+                 log_config['handlers']['console']['level'] = log_level_override.upper()
+
+        logging.config.dictConfig(log_config)
+        logging.getLogger(__name__).info("统一日志系统配置完成。") # 使用配置后的logger
+
+    except Exception as e:
+        print(f"错误：配置日志系统失败: {e}")
+        # 回退到基本配置
+        logging.basicConfig(level=logging.INFO)
+        logging.getLogger(__name__).error("日志系统配置失败，回退到基本配置。", exc_info=True)
 
 def parse_args():
     """
@@ -59,63 +158,52 @@ def parse_args():
         '--log-level',
         type=str,
         choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
-        default='INFO',
-        help='日志级别'
+        default=None, # 默认由配置文件控制，除非debug或明确指定
+        help='覆盖配置文件中的控制台日志级别'
     )
     
     return parser.parse_args()
-
-
-def setup_logging(log_level):
-    """
-    设置日志配置
-
-    Args:
-        log_level (str): 日志级别
-    """
-    # 配置根日志
-    logging.basicConfig(
-        level=getattr(logging, log_level),
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
-    )
-
 
 def main():
     """
     主函数
     """
-    # 解析命令行参数
     args = parse_args()
     
-    # 设置日志
-    setup_logging(args.log_level)
-    logger = logging.getLogger('web_server.run')
-    
-    # 获取项目根目录
+    # 获取项目根目录，用于定位配置文件
     try:
-        # 获取脚本所在目录
         script_dir = Path(__file__).resolve().parent
-        # 项目根目录应该是脚本所在目录的上两级
         project_root = script_dir.parent.parent
+        config_path = os.path.join(project_root, 'config.yaml')
         
         # 设置数据目录
         if args.data_dir is None:
             data_dir = os.path.join(project_root, 'data')
         else:
             data_dir = args.data_dir
-        
-        # 确保目录存在
+            
+        # 在配置日志系统之前，确保数据目录存在可能不是最佳实践
+        # 日志配置应首先进行
+            
+    except Exception as e:
+        print(f"错误：获取项目根目录或数据目录时出错: {e}")
+        sys.exit(1)
+
+    # 统一设置日志系统
+    setup_unified_logging(config_path, args.log_level, args.debug)
+    logger = logging.getLogger('web_server.run') # 获取配置好的logger
+
+    # 确保数据目录存在 (在日志系统配置好之后)
+    try: 
         if not os.path.isdir(data_dir):
             logger.warning(f"数据目录不存在: {data_dir}")
             os.makedirs(data_dir, exist_ok=True)
             logger.info(f"已创建数据目录: {data_dir}")
-    
     except Exception as e:
-        logger.error(f"获取项目根目录时出错: {e}", exc_info=True)
+        logger.error(f"创建数据目录失败: {e}", exc_info=True)
         sys.exit(1)
     
-    # 导入WebServer类和Scheduler类
+    # 导入WebServer类和Scheduler类 (移到日志配置之后)
     try:
         from src.web_server.server import WebServer
         from src.web_server.scheduler import Scheduler
@@ -136,7 +224,7 @@ def main():
         )
         
         # 启动定时任务
-        scheduler = Scheduler(config_path=os.path.join(project_root, 'config.yaml'))
+        scheduler = Scheduler(config_path=config_path)
         scheduler.start()
         logger.info("定时任务已启动，将根据配置文件执行每日任务")
         
@@ -144,11 +232,13 @@ def main():
     
     except KeyboardInterrupt:
         logger.info("收到退出信号，服务器正在关闭...")
-        scheduler.stop()
+        if 'scheduler' in locals(): # 确保scheduler已成功初始化
+            scheduler.stop()
     
     except Exception as e:
         logger.error(f"服务器运行时出错: {e}", exc_info=True)
-        scheduler.stop()
+        if 'scheduler' in locals(): # 确保scheduler已成功初始化
+            scheduler.stop()
         sys.exit(1)
 
 

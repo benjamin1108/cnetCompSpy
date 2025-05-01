@@ -205,6 +205,11 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link {% if request.path == '/admin/access-stats' or request.path == '/admin/access-details' %}active{% endif %}" href="{{ url_for('admin_access_stats') }}">
+                        <i class="bi bi-graph-up"></i> 访问统计
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link {% if request.path == '/admin/process-locks' %}active{% endif %}" href="{{ url_for('admin_process_locks') }}">
                         <i class="bi bi-lock"></i> 进程锁管理
                     </a>

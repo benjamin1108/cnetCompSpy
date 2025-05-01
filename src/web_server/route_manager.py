@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Optional
 from flask import Flask, render_template, abort, request, jsonify
 from flask import redirect, url_for, session, flash
 from datetime import datetime, timedelta
+import json
 
 class RouteManager:
     """路由管理器类"""
@@ -202,6 +203,56 @@ class RouteManager:
                 title='文件统计对比'
             )
         
+        # 访问统计页面 - 需要登录
+        @self.app.route('/admin/access-stats')
+        def admin_access_stats():
+            if not self.admin_manager.is_logged_in():
+                return redirect(url_for('login', next=request.url))
+            
+            # Fetch stats data needed directly by the template (PV/UV, top pages)
+            try:
+                full_stats = self.stats_manager.get_access_stats()
+                template_stats = {
+                    'week_pv': full_stats.get('week_pv', 0),
+                    'week_uv': full_stats.get('week_uv', 0),
+                    'today_pv': full_stats.get('today_pv', 0),
+                    'today_uv': full_stats.get('today_uv', 0),
+                    'total_pv': full_stats.get('total_pv', 0),
+                    'total_uv': full_stats.get('total_uv', 0),
+                    'top_pages': full_stats.get('top_pages', [])
+                }
+            except Exception as e:
+                 logging.getLogger(__name__).error(f"Error getting stats for template in admin_access_stats: {e}")
+                 template_stats = { # Provide default empty values on error
+                    'week_pv': 0, 'week_uv': 0, 'today_pv': 0, 'today_uv': 0, 
+                    'total_pv': 0, 'total_uv': 0, 'top_pages': []
+                 }
+            
+            return render_template(
+                'admin/access_stats.html',
+                title='访问统计',
+                # Pass the specific stats needed by the template
+                access_stats=template_stats 
+            )
+        
+        # 访问详情页面 - 需要登录
+        @self.app.route('/admin/access-details')
+        def admin_access_details():
+            if not self.admin_manager.is_logged_in():
+                return redirect(url_for('login', next=request.url))
+            
+            limit = int(request.args.get('limit', 1000))
+            
+            # 获取访问详情
+            access_details = self.stats_manager.get_access_details(limit=limit)
+            
+            return render_template(
+                'admin/access_details.html',
+                title='访问详情',
+                access_details=access_details,
+                limit=limit
+            )
+        
         # 兼容旧路径，重定向到新路径
         @self.app.route('/stats')
         def stats_page():
@@ -369,6 +420,28 @@ class RouteManager:
             except Exception as e:
                 self.logger.error(f"清除进程锁失败: {e}")
                 return jsonify({'success': False, 'error': str(e)}), 500
+        
+        # --- 新增 API: 获取访问统计图表数据 --- 
+        @self.app.route('/api/admin/access-stats-data')
+        def api_access_stats_data():
+            if not self.admin_manager.is_logged_in():
+                return jsonify({'error': '用户未登录或权限不足'}), 401
+            
+            try:
+                access_stats = self.stats_manager.get_access_stats()
+                # 只返回图表需要的数据部分，减少传输量 (可选优化)
+                chart_data = {
+                    'daily_pv_trend': access_stats.get('daily_pv_trend', []),
+                    'device_types': access_stats.get('device_types', []),
+                    'os_types': access_stats.get('os_types', []),
+                    'browser_types': access_stats.get('browser_types', []),
+                    # 可以选择性地不返回 PV/UV 等其他数据
+                }
+                return jsonify(chart_data)
+            except Exception as e:
+                self.logger.error(f"获取访问统计图表数据失败: {e}")
+                return jsonify({'error': f'获取统计数据失败: {e}'}), 500
+        # --- 结束新增 API --- 
     
     def _register_error_handlers(self):
         """注册错误处理器"""

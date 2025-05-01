@@ -1,0 +1,272 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="mb-4">访问统计</h2>
+    
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">本周访问</div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>PV</h5>
+                            <h3 class="text-primary">{{ access_stats.week_pv }}</h3>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>UV</h5>
+                            <h3 class="text-success">{{ access_stats.week_uv }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">今日访问</div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>PV</h5>
+                            <h3 class="text-primary">{{ access_stats.today_pv }}</h3>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>UV</h5>
+                            <h3 class="text-success">{{ access_stats.today_uv }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">总访问量</div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>PV</h5>
+                            <h3 class="text-primary">{{ access_stats.total_pv }}</h3>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>UV</h5>
+                            <h3 class="text-success">{{ access_stats.total_uv }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>访问量趋势（最近30天）</span>
+                        <a href="{{ url_for('admin_access_details') }}" class="btn btn-sm btn-primary">查看详情</a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <canvas id="pvChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">设备类型分布</div>
+                <div class="card-body">
+                    <canvas id="deviceChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">操作系统分布</div>
+                <div class="card-body">
+                    <canvas id="osChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">浏览器分布</div>
+                <div class="card-body">
+                    <canvas id="browserChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card mb-4">
+                <div class="card-header">热门页面</div>
+                <div class="card-body">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>页面标题</th>
+                                <th>访问次数</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for page in access_stats.top_pages %}
+                            <tr>
+                                <td>{{ page.title }}</td>
+                                <td>{{ page.views }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="2" class="text-center">暂无数据</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("Fetching access stats data..."); 
+
+    // Helper function to create chart safely (remains the same)
+    function createChart(canvasId, chartType, data, options) {
+        var canvasElement = document.getElementById(canvasId);
+        if (!canvasElement) {
+            console.warn(`Chart Warning: Canvas element '#${canvasId}' not found.`);
+            return;
+        }
+        var ctx = canvasElement.getContext('2d');
+        if (!data || !data.labels || data.labels.length === 0 || !data.datasets || data.datasets.length === 0 || !data.datasets[0].data || data.datasets[0].data.length === 0 ) {
+             console.warn(`Chart Warning: No data provided for chart '#${canvasId}'.`);
+             ctx.font = '16px Arial';
+             ctx.fillStyle = '#aaa';
+             ctx.textAlign = 'center';
+             ctx.fillText('暂无数据', canvasElement.width / 2, canvasElement.height / 2);
+             return;
+        }
+        try {
+            new Chart(ctx, { type: chartType, data: data, options: options });
+        } catch (error) {
+             console.error(`Error creating chart '#${canvasId}':`, error);
+             ctx.font = '16px Arial';
+             ctx.fillStyle = '#f00'; // Indicate error
+             ctx.textAlign = 'center';
+             ctx.fillText('图表加载错误', canvasElement.width / 2, canvasElement.height / 2);
+        }
+    }
+    
+    // Fetch data from the API endpoint
+    fetch('/api/admin/access-stats-data')
+        .then(response => {
+            if (!response.ok) {
+                // Handle HTTP errors (like 401, 500)
+                return response.json().then(errData => {
+                    throw new Error(errData.error || `HTTP error ${response.status}`);
+                });
+            }
+            return response.json(); // Parse JSON body
+        })
+        .then(accessStatsData => {
+            console.log("Received access stats data:", accessStatsData);
+            
+            // Access data from the fetched response
+            var pvData = accessStatsData.daily_pv_trend || [];
+            var deviceData = accessStatsData.device_types || [];
+            var osData = accessStatsData.os_types || [];
+            var browserData = accessStatsData.browser_types || [];
+
+            // --- Prepare Chart Data (logic remains the same) ---
+            var pvLabels = pvData.map(function(item) { return item.date; });
+            var pvValues = pvData.map(function(item) { return item.pv; });
+            var pvChartData = {
+                labels: pvLabels,
+                datasets: [{
+                    label: '访问量(PV)',
+                    data: pvValues,
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    fill: true,
+                    tension: 0.3
+                }]
+            };
+            var pvChartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { x: { grid: { display: false } }, y: { beginAtZero: true } }
+            };
+
+            var deviceLabels = deviceData.map(function(item) { return item.name; });
+            var deviceValues = deviceData.map(function(item) { return item.value; });
+            var deviceChartData = {
+                labels: deviceLabels,
+                datasets: [{
+                    data: deviceValues,
+                    backgroundColor: ['rgba(54, 162, 235, 0.7)', 'rgba(255, 99, 132, 0.7)', 'rgba(255, 206, 86, 0.7)', 'rgba(75, 192, 192, 0.7)', 'rgba(153, 102, 255, 0.7)']
+                }]
+            };
+            var deviceChartOptions = { responsive: true, maintainAspectRatio: false };
+
+            var osLabels = osData.map(function(item) { return item.name; });
+            var osValues = osData.map(function(item) { return item.value; });
+            var osChartData = {
+                labels: osLabels,
+                datasets: [{ label: '操作系统', data: osValues, backgroundColor: 'rgba(54, 162, 235, 0.7)' }]
+            };
+            var osChartOptions = { 
+                responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } }
+            };
+
+            var browserLabels = browserData.map(function(item) { return item.name; });
+            var browserValues = browserData.map(function(item) { return item.value; });
+            var browserChartData = {
+                labels: browserLabels,
+                datasets: [{ label: '浏览器', data: browserValues, backgroundColor: 'rgba(255, 99, 132, 0.7)' }]
+            };
+            var browserChartOptions = {
+                 responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } }
+            };
+            
+            // --- Create Charts ---
+            createChart('pvChart', 'line', pvChartData, pvChartOptions);
+            createChart('deviceChart', 'doughnut', deviceChartData, deviceChartOptions);
+            createChart('osChart', 'bar', osChartData, osChartOptions);
+            createChart('browserChart', 'bar', browserChartData, browserChartOptions);
+
+        })
+        .catch(error => {
+            console.error('Error fetching or processing access stats data:', error);
+            // Optionally display a general error message on the page
+            // You might want to target a specific element to show the error
+            // document.getElementById('some-error-display-area').textContent = '无法加载统计图表数据: ' + error.message;
+            
+            // You could also try to display error messages on each chart canvas
+            var canvasIds = ['pvChart', 'deviceChart', 'osChart', 'browserChart'];
+            canvasIds.forEach(id => {
+                 var canvasElement = document.getElementById(id);
+                 if (canvasElement) {
+                     var ctx = canvasElement.getContext('2d');
+                     ctx.font = '16px Arial';
+                     ctx.fillStyle = '#f00'; // Red for error
+                     ctx.textAlign = 'center';
+                     ctx.fillText('加载数据失败', canvasElement.width / 2, canvasElement.height / 2);
+                 }
+            });
+        });
+});
+</script>
+{% endblock %} 

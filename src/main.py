@@ -5,6 +5,7 @@ import argparse
 import importlib
 import json
 import logging
+import logging.config
 import os
 import re
 import shutil
@@ -20,23 +21,18 @@ import tqdm
 base_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 sys.path.insert(0, base_dir)
 
-from src.utils.colored_logger import setup_colored_logging
-
+# 获取logger，但配置将由dictConfig处理
 logger = logging.getLogger(__name__)
-logger.info(f"已将项目根目录添加到路径: {base_dir}")
 
 from src.crawlers.common.crawler_manager import CrawlerManager
 from src.ai_analyzer.analyzer import AIAnalyzer
 
-# 移除原有的日志配置代码，由main函数中的setup_colored_logging替代
-logger = logging.getLogger(__name__)
+# 配置第三方库的日志级别 - 这部分现在可以移到 config.yaml 的 loggers 部分
+# logging.getLogger('urllib3').setLevel(logging.WARNING)
+# logging.getLogger('selenium').setLevel(logging.WARNING)
+# logging.getLogger('filelock').setLevel(logging.WARNING)
 
-# 配置第三方库的日志级别
-logging.getLogger('urllib3').setLevel(logging.WARNING)
-logging.getLogger('selenium').setLevel(logging.WARNING)
-logging.getLogger('filelock').setLevel(logging.WARNING)
-
-# 默认配置
+# 默认配置 - logging部分可以移除，因为它将在config.yaml中定义
 DEFAULT_CONFIG = {
     'crawlers': {
         'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36',
@@ -118,25 +114,27 @@ def get_config(args: argparse.Namespace) -> Dict[str, Any]:
     config = DEFAULT_CONFIG.copy()
     
     # 获取项目根目录路径
-    base_dir = os.path.dirname(os.path.dirname(__file__))
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
     
     # 加载主配置文件
     config_path_yaml = os.path.join(base_dir, 'config.yaml')
     if os.path.exists(config_path_yaml):
         config_data = load_yaml_file(config_path_yaml)
         config = merge_configs(config, config_data)
-        logger.info(f"已加载主配置: {config_path_yaml}")
+        # 不再在这里记录日志，因为日志系统尚未配置
+        # logger.info(f"已加载主配置: {config_path_yaml}")
     else:
-        logger.warning(f"主配置文件不存在: {config_path_yaml}")
+        print(f"警告: 主配置文件不存在: {config_path_yaml}") # 在日志系统前打印
     
     # 加载敏感配置文件
     secret_config_path = os.path.join(base_dir, 'config.secret.yaml')
     if os.path.exists(secret_config_path):
         secret_config_data = load_yaml_file(secret_config_path)
         config = merge_configs(config, secret_config_data)
-        logger.info(f"已加载敏感配置: {secret_config_path}")
-    else:
-        logger.warning(f"敏感配置文件不存在: {secret_config_path}")
+        # 不再在这里记录日志
+        # logger.info(f"已加载敏感配置: {secret_config_path}")
+    # else:
+        # logger.warning(f"敏感配置文件不存在: {secret_config_path}") # 可选，可能不需要警告
     
     return config
 
@@ -187,6 +185,50 @@ def clean_data_dir(data_dir: str, dry_run: bool = False) -> None:
                     shutil.rmtree(vendor_dir)
     
     logger.info("所有数据目录清理完成")
+
+def setup_unified_logging(config: Dict[str, Any], log_level_override: Optional[str] = None, debug_mode: bool = False):
+    """使用字典配置统一设置日志系统"""
+    log_config = config.get('logging')
+    if not log_config:
+        print("警告: 配置文件中未找到 'logging' 配置部分，将使用默认 basicConfig。")
+        logging.basicConfig(level=logging.INFO, 
+                            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                            datefmt='%Y-%m-%d %H:%M:%S')
+        return
+
+    try:
+        # 确保日志目录存在
+        log_filename = log_config.get('handlers', {}).get('file', {}).get('filename')
+        if log_filename:
+            log_dir = os.path.dirname(log_filename)
+            if not os.path.exists(log_dir):
+                os.makedirs(log_dir, exist_ok=True)
+        
+        # 处理命令行或debug模式的日志级别覆盖
+        if debug_mode:
+            # 强制将控制台 handler 级别设为 DEBUG
+            if 'console' in log_config.get('handlers', {}):
+                log_config['handlers']['console']['level'] = 'DEBUG'
+            # 也可以考虑将根 logger 级别也设为 DEBUG，如果需要文件也记录DEBUG
+            # if 'root' in log_config:
+            #     log_config['root']['level'] = 'DEBUG' 
+            print("调试模式启用，控制台日志级别设置为 DEBUG。") # 在日志系统前打印
+        elif log_level_override:
+             # 覆盖控制台 handler 级别
+            if 'console' in log_config.get('handlers', {}):
+                 log_config['handlers']['console']['level'] = log_level_override.upper()
+             # 也可以选择覆盖根 logger 级别
+             # if 'root' in log_config:
+             #    log_config['root']['level'] = log_level_override.upper()
+
+        logging.config.dictConfig(log_config)
+        logger.info("统一日志系统配置完成。")
+
+    except Exception as e:
+        print(f"错误：配置日志系统失败: {e}")
+        # 回退到基本配置
+        logging.basicConfig(level=logging.INFO)
+        logger.error("日志系统配置失败，回退到基本配置。", exc_info=True)
 
 def crawl_main(args: argparse.Namespace) -> int:
     """
@@ -339,34 +381,15 @@ def main() -> int:
     Returns:
         int: 0表示成功，非0表示失败
     """
-    # 使用彩色日志替换原有的日志配置
-    base_dir = os.path.dirname(os.path.dirname(__file__))
-    logs_dir = os.path.join(base_dir, "logs")
-    os.makedirs(logs_dir, exist_ok=True)
-    
-    # 使用时间戳作为日志文件名，避免冲突
-    timestamp = time.strftime("%Y%m%d_%H%M%S")
-    log_file = os.path.join(logs_dir, f"cnetCompSpy_{timestamp}.log")
-    
-    setup_colored_logging(
-        level=logging.INFO,
-        log_file=log_file,
-        fmt='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
-    )
-    
-    logger.info(f"日志文件路径: {log_file}")
-    
-    # 设置第三方库的日志级别
-    logging.getLogger("urllib3").setLevel(logging.WARNING)
-    logging.getLogger("matplotlib").setLevel(logging.WARNING)
-    logging.getLogger("PIL").setLevel(logging.WARNING)
-    logging.getLogger('selenium').setLevel(logging.WARNING)
-    logging.getLogger('filelock').setLevel(logging.WARNING)
-    
-    # 解析命令行参数
     args = parse_arguments()
+    config = get_config(args)
     
+    # 在执行任何操作前设置日志
+    # 注意：目前 main.py 的参数解析没有 log_level 或 debug，这些是在 web_server/run.py 中的
+    # 如果需要 main.py 也支持这些，需要添加到 parse_arguments
+    # 这里暂时只使用配置文件中的设置
+    setup_unified_logging(config)
+
     # 如果指定了clean参数，清理数据目录
     if args.clean:
         clean_data_dir(os.path.dirname(os.path.dirname(__file__)), True)

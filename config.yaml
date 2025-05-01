@@ -221,3 +221,54 @@ scheduler:
 # WebServer配置
 webserver:
   show_raw_data: true  # 是否展示原始资料，设置为false时页面只展示AI分析内容
+
+# 新增：统一日志配置
+logging:
+  version: 1
+  disable_existing_loggers: false  # 避免禁用已存在的logger
+  formatters:
+    standard:
+      format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+      datefmt: '%Y-%m-%d %H:%M:%S'
+    colored:
+      format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s' # 格式会由 ColoredFormatter 处理
+      datefmt: '%Y-%m-%d %H:%M:%S'
+      # 使用自定义的彩色格式化器
+      (): src.utils.colored_logger.ColoredFormatter
+  handlers:
+    console:
+      class: logging.StreamHandler
+      formatter: colored
+      level: INFO  # 控制台默认级别
+      stream: ext://sys.stdout
+    file:
+      class: logging.handlers.RotatingFileHandler
+      formatter: standard
+      filename: logs/app.log  # 日志文件路径
+      maxBytes: 10485760  # 10MB
+      backupCount: 5      # 保留5个备份文件
+      encoding: utf8
+      level: INFO  # 文件默认级别
+  loggers:
+    werkzeug:
+      level: WARNING  # 减少werkzeug的日志输出
+      handlers: [console, file]
+      propagate: false # 防止werkzeug日志被root logger重复处理
+    # 可以为其他特别吵闹的库添加配置
+    # some_noisy_library:
+    #   level: WARNING
+    #   handlers: [console, file]
+    #   propagate: false
+    # 移除对 stats_manager logger 的显式配置，依赖 root logger
+    # src.web_server.stats_manager:
+    #   level: DEBUG
+    #   handlers: [console, file]
+    #   propagate: false
+    # 移除对 route_manager logger 的显式配置 (临时调试)
+    # src.web_server.route_manager:
+    #   level: DEBUG
+    #   handlers: [console] 
+    #   propagate: false 
+  root:
+    level: DEBUG  # 根logger级别设为DEBUG，具体级别由handler控制
+    handlers: [console, file]

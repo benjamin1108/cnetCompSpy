@@ -40,22 +40,28 @@ class WebServer(BaseServer):
         # 获取项目根目录
         self.base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         
-        # 初始化进程锁管理器
-        self.process_lock_manager = ProcessLockManager.get_instance(ProcessType.WEB_SERVER)
-        
-        # 获取进程锁
-        if not self.process_lock_manager.acquire_lock():
-            self.logger.error("无法获取Web服务器进程锁，可能有其他Web服务器实例正在运行")
-            self.logger.error("请先关闭现有的Web服务器实例，或使用clear_process_locks.sh脚本清除锁")
-            # 抛出异常，阻止Web服务器启动
-            raise RuntimeError("无法获取Web服务器进程锁，服务器启动失败")
-        
-        self.logger.info("已获取Web服务器进程锁")
-        # 注册退出时释放锁的函数
-        atexit.register(self._release_lock)
+        # 初始化进程锁管理器 - 仅在非Debug模式下获取锁
+        self.process_lock_manager = None
+        if not self.debug:
+            self.process_lock_manager = ProcessLockManager.get_instance(ProcessType.WEB_SERVER)
+            # 获取进程锁
+            if not self.process_lock_manager.acquire_lock():
+                self.logger.error("无法获取Web服务器进程锁，可能有其他Web服务器实例正在运行")
+                self.logger.error("请先关闭现有的Web服务器实例，或使用clear_process_locks.sh脚本清除锁")
+                # 抛出异常，阻止Web服务器启动
+                raise RuntimeError("无法获取Web服务器进程锁，服务器启动失败")
+            
+            self.logger.info("已获取Web服务器进程锁")
+            # 注册退出时释放锁的函数
+            atexit.register(self._release_lock)
+        else:
+            self.logger.warning("调试模式已启用，进程锁检查被禁用")
         
         # 初始化各个管理器
         self._init_managers()
+        
+        # 注册访问记录中间件
+        self.register_access_logger(self.stats_manager, self.document_manager)
         
         # 初始化WebSocket管理器
         self.socket_manager = SocketManager(self.app)
@@ -92,7 +98,8 @@ class WebServer(BaseServer):
     
     def _release_lock(self):
         """释放进程锁"""
-        if hasattr(self, 'process_lock_manager'):
+        # 仅当 process_lock_manager 存在时才尝试释放（即非Debug模式）
+        if hasattr(self, 'process_lock_manager') and self.process_lock_manager:
             self.process_lock_manager.release_lock()
             self.logger.info("已释放Web服务器进程锁")
     

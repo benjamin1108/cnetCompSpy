@@ -9,7 +9,7 @@
 
 import os
 import logging
-from flask import Flask
+from flask import Flask, request, g
 from datetime import datetime
 
 class BaseServer:
@@ -74,6 +74,30 @@ class BaseServer:
         @self.app.context_processor
         def inject_now():
             return {'now': datetime.now()}
+    
+    def register_access_logger(self, stats_manager, document_manager=None):
+        """
+        注册访问记录中间件
+        
+        Args:
+            stats_manager: 统计管理器实例
+            document_manager: 文档管理器实例，用于获取文档标题
+        """
+        @self.app.before_request
+        def before_request():
+            # 忽略静态文件请求
+            if not request.path.startswith('/static/'):
+                g.stats_manager = stats_manager
+                g.document_manager = document_manager
+        
+        @self.app.after_request
+        def after_request(response):
+            # 忽略静态文件请求
+            if not request.path.startswith('/static/'):
+                # 记录访问详情
+                if hasattr(g, 'stats_manager'):
+                    g.stats_manager.record_access(document_manager=g.document_manager if hasattr(g, 'document_manager') else None)
+            return response
     
     def run(self):
         """启动Web服务器"""
