@@ -493,9 +493,11 @@ class DingTalkNotifier:
             for i, update in enumerate(sorted_updates):
                 md_content += self._format_update_item(i+1, update)
         
-        # 添加网站链接
-        site_url = "http://cnetspy.site/"
-        md_content += f"\n\n---\n*本消息由[云网络竞争分析平台]({site_url})自动发送*"
+        # 添加页面链接
+        site_url = f"http://cnetspy.site/recent-updates?days={days}"
+        site_home = "http://cnetspy.site"
+        md_content += f"\n\n---\n> [🔍 查看最近{days}天所有更新]({site_url})"
+        md_content += f"\n\n---\n*本消息由[云网络竞争分析平台]({site_home})自动发送*"
         
         # 发送到指定机器人或所有机器人
         success = False
@@ -562,14 +564,52 @@ def send_updates_to_dingtalk(update_type: str = "weekly", days: int = 3, config_
         if update_type == "weekly":
             # 获取本周更新
             updates = vendor_manager.get_weekly_updates()
+            # 精确验证是否有文章可推送
+            total_articles = 0
+            if updates and isinstance(updates, dict):
+                for vendor, articles in updates.items():
+                    if isinstance(articles, list):
+                        total_articles += len(articles)
+            
+            if total_articles == 0:
+                logging.info(f"本周无新文章更新，不推送空消息")
+                return True  # 返回成功，因为这是预期行为
+            
+            logging.info(f"本周有 {total_articles} 篇文章更新，准备推送")
             return notifier.send_weekly_updates(updates, robot_names)
+            
         elif update_type == "daily":
             # 获取今日更新
             updates = vendor_manager.get_daily_updates()
+            # 精确验证是否有文章可推送
+            total_articles = 0
+            if updates and isinstance(updates, dict):
+                for vendor, articles in updates.items():
+                    if isinstance(articles, list):
+                        total_articles += len(articles)
+            
+            if total_articles == 0:
+                logging.info(f"今日无新文章更新，不推送空消息")
+                return True  # 返回成功，因为这是预期行为
+            
+            logging.info(f"今日有 {total_articles} 篇文章更新，准备推送")
             return notifier.send_daily_updates(updates, robot_names)
+            
         elif update_type == "recent":
             # 获取最近几天更新
             updates = vendor_manager.get_recently_updates(days)
+            # 精确验证是否有文章可推送
+            total_articles = 0
+            if updates and isinstance(updates, dict):
+                for vendor, articles in updates.items():
+                    if isinstance(articles, list):
+                        total_articles += len(articles)
+            
+            if total_articles == 0:
+                logging.info(f"最近{days}天无新文章更新，不推送空消息")
+                return True  # 返回成功，因为这是预期行为
+            
+            logging.info(f"最近{days}天有 {total_articles} 篇文章更新，准备推送")
             return notifier.send_recently_updates(updates, days, robot_names)
         else:
             logging.error(f"未知的更新类型: {update_type}")
