@@ -29,6 +29,7 @@ show_help() {
     echo -e "  ${GREEN}daily${NC}    - 执行每日爬取与分析任务"
     echo -e "  ${GREEN}rebuild-md${NC} - 重建元数据，从本地MD文件更新元数据"
     echo -e "  ${GREEN}dingtalk${NC} - 通过钉钉机器人推送weekly-updates到钉钉群"
+    echo -e "  ${GREEN}dingpush${NC} - 使用钉钉推送，支持weekly、daily和recent子命令"
     echo -e "  ${GREEN}help${NC}     - 显示此帮助信息"
     echo ""
     echo -e "${YELLOW}选项:${NC}"
@@ -88,6 +89,9 @@ show_help() {
     echo -e "  $0 dingtalk --debug          # 以调试模式推送weekly-updates"
     echo -e "  $0 dingtalk --config custom.yaml  # 使用自定义配置文件推送"
     echo -e "  $0 dingtalk --robot 机器人1 --robot 机器人2  # 使用指定的钉钉机器人推送"
+    echo -e "  $0 dingpush weekly           # 通过钉钉机器人推送本周更新"
+    echo -e "  $0 dingpush daily            # 通过钉钉机器人推送今日更新"
+    echo -e "  $0 dingpush recent 7         # 通过钉钉机器人推送最近7天更新"
 }
 
 # 显示错误信息
@@ -561,6 +565,90 @@ validate_args() {
                 
                 # 检查参数是否有效
                 for opt in "${valid_opts[@]}"; do
+                    if [[ "$current" == "$opt" ]]; then
+                        is_valid=true
+                        break
+                    fi
+                done
+                
+                # 检查需要值的参数
+                for req in "${requires_value[@]}"; do
+                    if [[ "$current" == "$req" ]]; then
+                        if [[ -z "$2" || "$2" == --* ]]; then
+                            show_error "参数 $current 需要一个值"
+                        fi
+                        
+                        # 检查特定参数的值约束
+                        if [[ "$current" == "--config" ]]; then
+                            check_config_exists "$2"
+                        fi
+                        
+                        shift
+                        break
+                    fi
+                done
+                
+                # 如果无效，添加到无效参数列表
+                if ! $is_valid; then
+                    invalid_args+=("$current")
+                fi
+                
+                shift
+            done
+            ;;
+            
+        dingpush)
+            # dingpush命令有效参数
+            local valid_opts=("weekly" "daily" "recent")
+            local has_recent=false
+            
+            # 检查是否有子命令及其是否有效
+            if [ $# -gt 0 ]; then
+                local subcmd="$1"
+                local is_valid=false
+                
+                for opt in "${valid_opts[@]}"; do
+                    if [[ "$subcmd" == "$opt" ]]; then
+                        is_valid=true
+                        # 记录是否使用了recent子命令
+                        if [[ "$subcmd" == "recent" ]]; then
+                            has_recent=true
+                        fi
+                        break
+                    fi
+                done
+                
+                if ! $is_valid; then
+                    invalid_args+=("$subcmd")
+                    return 1
+                fi
+                
+                # 如果是recent子命令，验证下一个参数是否为数字
+                if $has_recent; then
+                    if [ $# -lt 2 ] || ! [[ "$2" =~ ^[0-9]+$ ]]; then
+                        # 这里不添加到invalid_args，因为错误会在run_dingpush中处理
+                        # 我们只需让验证通过即可
+                        :
+                    else
+                        # 验证通过，跳过子命令和天数参数的进一步检查
+                        shift 2
+                    fi
+                else
+                    # 如果不是recent子命令，跳过子命令参数的进一步检查
+                    shift
+                fi
+            fi
+            
+            # 检查剩余参数
+            local valid_extra_opts=("--debug" "--config" "--robot")
+            local requires_value=("--config" "--robot")
+            
+            while [[ $# -gt 0 ]]; do
+                local current="$1"
+                local is_valid=false
+                
+                # 检查参数是否有效
+                for opt in "${valid_extra_opts[@]}"; do
                     if [[ "$current" == "$opt" ]]; then
                         is_valid=true
                         break
@@ -1110,6 +1198,96 @@ run_dingtalk_push() {
     fi
 }
 
+# 执行钉钉推送(支持子命令)
+run_dingpush() {
+    echo -e "${BLUE}开始执行钉钉推送...${NC}"
+    
+    # 激活虚拟环境
+    activate_venv
+    
+    # 默认参数
+    DEBUG=""
+    CONFIG=""
+    ROBOT=""
+    COMMAND=""
+    DAYS=""
+    
+    # 检查是否有子命令
+    if [ $# -eq 0 ]; then
+        show_error "未指定推送子命令，可用子命令: weekly, daily, recent"
+        return 1
+    fi
+    
+    # 获取子命令
+    COMMAND="$1"
+    shift
+    
+    # 验证子命令
+    case "$COMMAND" in
+        weekly|daily)
+            echo -e "${BLUE}正在准备 ${COMMAND} 推送...${NC}"
+            # 有效子命令
+            ;;
+        recent)
+            # 检查是否指定了天数
+            if [ $# -eq 0 ] || [[ ! "$1" =~ ^[0-9]+$ ]]; then
+                show_error "使用recent子命令时必须指定天数，如: dingpush recent 7"
+                return 1
+            fi
+            DAYS="$1"
+            echo -e "${BLUE}正在准备 recent(${DAYS}天) 推送...${NC}"
+            shift
+            ;;
+        *)
+            show_error "未知子命令: $COMMAND。有效子命令: weekly, daily, recent"
+            return 1
+            ;;
+    esac
+    
+    # 解析其他参数
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --debug)
+                DEBUG="--debug"
+                echo -e "${YELLOW}启用调试模式${NC}"
+                shift
+                ;;
+            --config)
+                CONFIG="--config $2"
+                echo -e "${YELLOW}使用配置文件: $2${NC}"
+                shift 2
+                ;;
+            --robot)
+                ROBOT="$ROBOT --robot $2"
+                echo -e "${YELLOW}使用机器人: $2${NC}"
+                shift 2
+                ;;
+            *)
+                echo -e "${RED}警告: 忽略未知参数: $1${NC}"
+                shift
+                ;;
+        esac
+    done
+    
+    # 执行推送命令
+    echo -e "${YELLOW}正在执行钉钉推送 (${COMMAND})...${NC}"
+    
+    if [ "$COMMAND" == "recent" ]; then
+        echo -e "${BLUE}命令: python -m src.dingtalk_pusher_cli $DEBUG $CONFIG $ROBOT $COMMAND $DAYS${NC}"
+        python -m src.dingtalk_pusher_cli $DEBUG $CONFIG $ROBOT $COMMAND $DAYS
+    else
+        echo -e "${BLUE}命令: python -m src.dingtalk_pusher_cli $DEBUG $CONFIG $ROBOT $COMMAND${NC}"
+        python -m src.dingtalk_pusher_cli $DEBUG $CONFIG $ROBOT $COMMAND
+    fi
+    
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}✓ 钉钉推送成功${NC}"
+    else
+        echo -e "${RED}✗ 钉钉推送失败${NC}"
+        return 1
+    fi
+}
+
 # 主函数
 main() {
     # 如果没有参数，显示帮助信息
@@ -1124,11 +1302,11 @@ main() {
     
     # 验证命令是否有效
     case "$COMMAND" in
-        crawl|analyze|server|setup|driver|stats|check-tasks|clean|daily|rebuild-md|help|dingtalk)
+        crawl|analyze|server|setup|driver|stats|check-tasks|clean|daily|rebuild-md|help|dingtalk|dingpush)
             # 有效命令
             ;;
         *)
-            show_error "未知命令: $COMMAND。有效命令: crawl, analyze, server, setup, driver, stats, check-tasks, clean, daily, rebuild-md, help, dingtalk"
+            show_error "未知命令: $COMMAND。有效命令: crawl, analyze, server, setup, driver, stats, check-tasks, clean, daily, rebuild-md, help, dingtalk, dingpush"
             ;;
     esac
     
@@ -1192,6 +1370,11 @@ main() {
             # 验证参数
             validate_args "dingtalk" "$@" || exit 1
             run_dingtalk_push "$@"
+            ;;
+        dingpush)
+            # 验证参数
+            validate_args "dingpush" "$@" || exit 1
+            run_dingpush "$@"
             ;;
         help)
             # 验证参数

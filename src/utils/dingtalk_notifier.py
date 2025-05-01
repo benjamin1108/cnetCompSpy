@@ -233,6 +233,34 @@ class DingTalkNotifier:
         
         self.logger.info(f"初始化了 {len(self.robots)} 个机器人")
     
+    def _format_update_item(self, index: int, update: Dict[str, Any]) -> str:
+        """
+        格式化单个更新项的Markdown内容
+        
+        Args:
+            index: 更新项的序号
+            update: 更新项数据
+            
+        Returns:
+            格式化后的Markdown内容
+        """
+        # 提取标题
+        title = update.get('translated_title') or update.get('original_title')
+        date = update.get('date', '').replace('_', '-')
+        doc_type = update.get('doc_type', '').upper()
+        
+        # 构建文档URL
+        vendor = update.get('vendor', '')
+        filename = update.get('filename', '')
+        url = f"http://cnetspy.site/analysis/document/{vendor}/{doc_type.lower()}/{filename}"
+        
+        # 格式化Markdown内容
+        md_content = f"{index}. **[{title}]({url})**\n\n"
+        md_content += f"   • 类型: {doc_type}  \n"
+        md_content += f"   • 日期: {date}\n\n"
+        
+        return md_content
+    
     def send_weekly_updates(self, weekly_updates: Dict[str, List[Dict[str, Any]]], robot_names: Optional[List[str]] = None) -> bool:
         """
         发送本周更新到钉钉群
@@ -290,25 +318,13 @@ class DingTalkNotifier:
             
             # 展示更新
             for i, update in enumerate(sorted_updates):
-                # 提取标题
-                title = update.get('translated_title') or update.get('original_title')
-                date = update.get('date', '').replace('_', '-')
-                doc_type = update.get('doc_type', '').upper()
-                
-                # 构建文档URL
-                vendor = update.get('vendor', '')
-                filename = update.get('filename', '')
-                url = f"http://cnetspy.site/analysis/document/{vendor}/{doc_type.lower()}/{filename}"
-                
-                # 将标题改为Markdown超链接格式
-                md_content += f"{i+1}. **[{title}]({url})**\n"
-                md_content += f"   - 类型: {doc_type}\n"
-                md_content += f"   - 日期: {date}\n\n"
+                md_content += self._format_update_item(i+1, update)
         
         # 添加页面链接
         site_url = "http://cnetspy.site/weekly-updates"
-        md_content += f"\n> [🔍 查看所有更新]({site_url})"
-        md_content += f"\n\n---\n*本消息由云网络竞争分析平台自动发送*"
+        site_home = "http://cnetspy.site"
+        md_content += f"\n> [🔍 查看本周所有更新]({site_url})"
+        md_content += f"\n\n---\n*本消息由[云网络竞争分析平台]({site_home})自动发送*"
         
         # 发送到指定机器人或所有机器人
         success = False
@@ -332,13 +348,186 @@ class DingTalkNotifier:
                 self.logger.error(f"通过机器人 {robot.name} 发送钉钉通知失败")
         
         return success
+    
+    def send_daily_updates(self, daily_updates: Dict[str, List[Dict[str, Any]]], robot_names: Optional[List[str]] = None) -> bool:
+        """
+        发送今日更新到钉钉群
+        
+        Args:
+            daily_updates: 今日更新数据，格式与vendor_manager.get_daily_updates()相同
+            robot_names: 指定要发送的机器人名称列表，如果为None则发送给所有机器人
+            
+        Returns:
+            至少有一个机器人发送成功返回True，否则返回False
+        """
+        if not self.config["enabled"]:
+            self.logger.warning("钉钉机器人通知功能未启用")
+            return False
+        
+        if not self.robots:
+            self.logger.warning("未配置有效的钉钉机器人")
+            return False
+        
+        if not daily_updates:
+            self.logger.warning("今日无更新数据，不发送通知")
+            return False
+        
+        # 获取今天的日期
+        today = datetime.now()
+        
+        # 构造消息
+        title = f"云计算竞争今日动态 ({today.strftime('%Y.%m.%d')})"
+        
+        # 构造markdown内容
+        md_content = f"# {title}\n\n"
+        
+        # 统计总数
+        total_count = sum(len(updates) for updates in daily_updates.values())
+        md_content += f"📊 今日共有 **{total_count}** 条云计算网络竞争情报\n\n"
+        
+        # 按厂商分组展示
+        for vendor, updates in daily_updates.items():
+            # 厂商图标
+            vendor_icon = "☁️"
+            if vendor.lower() == "aws":
+                vendor_icon = "🟠"
+            elif vendor.lower() == "azure":
+                vendor_icon = "🔵"
+            elif vendor.lower() == "gcp":
+                vendor_icon = "🔴"
+            
+            md_content += f"## {vendor_icon} {vendor.upper()} ({len(updates)}条)\n\n"
+            
+            # 按日期排序，最新的在前面
+            sorted_updates = sorted(updates, key=lambda x: x.get('date', ''), reverse=True)
+            
+            # 展示更新
+            for i, update in enumerate(sorted_updates):
+                md_content += self._format_update_item(i+1, update)
+        
+        # 添加页面链接
+        site_url = "http://cnetspy.site/daily-updates"
+        site_home = "http://cnetspy.site"
+        md_content += f"\n\n---\n> [🔍 查看今日所有更新]({site_url})"
+        md_content += f"\n\n---\n*本消息由[云网络竞争分析平台]({site_home})自动发送*"
+        
+        # 发送到指定机器人或所有机器人
+        success = False
+        robots_to_use = []
+        
+        if robot_names:
+            # 使用指定的机器人
+            robots_to_use = [robot for robot in self.robots if robot.name in robot_names]
+            if not robots_to_use:
+                self.logger.warning(f"指定的机器人 {robot_names} 不存在，尝试使用所有机器人")
+                robots_to_use = self.robots
+        else:
+            # 使用所有机器人
+            robots_to_use = self.robots
+        
+        for robot in robots_to_use:
+            if robot.send_markdown(title, md_content):
+                success = True
+                self.logger.info(f"通过机器人 {robot.name} 发送钉钉通知成功")
+            else:
+                self.logger.error(f"通过机器人 {robot.name} 发送钉钉通知失败")
+        
+        return success
+    
+    def send_recently_updates(self, recently_updates: Dict[str, List[Dict[str, Any]]], days: int, robot_names: Optional[List[str]] = None) -> bool:
+        """
+        发送最近几天更新到钉钉群
+        
+        Args:
+            recently_updates: 最近更新数据，格式与vendor_manager.get_recently_updates()相同
+            days: 天数，最近几天的更新
+            robot_names: 指定要发送的机器人名称列表，如果为None则发送给所有机器人
+            
+        Returns:
+            至少有一个机器人发送成功返回True，否则返回False
+        """
+        if not self.config["enabled"]:
+            self.logger.warning("钉钉机器人通知功能未启用")
+            return False
+        
+        if not self.robots:
+            self.logger.warning("未配置有效的钉钉机器人")
+            return False
+        
+        if not recently_updates:
+            self.logger.warning(f"最近{days}天无更新数据，不发送通知")
+            return False
+        
+        # 计算最近几天的日期范围
+        today = datetime.now()
+        today_date = datetime(today.year, today.month, today.day)
+        start_date = today_date - timedelta(days=days-1)  # days-1是因为包含今天在内的days天
+        
+        # 构造消息
+        title = f"云计算竞争近{days}天动态 ({start_date.strftime('%Y.%m.%d')}-{today_date.strftime('%Y.%m.%d')})"
+        
+        # 构造markdown内容
+        md_content = f"# {title}\n\n"
+        
+        # 统计总数
+        total_count = sum(len(updates) for updates in recently_updates.values())
+        md_content += f"📊 近{days}天共有 **{total_count}** 条云计算网络竞争情报\n\n"
+        
+        # 按厂商分组展示
+        for vendor, updates in recently_updates.items():
+            # 厂商图标
+            vendor_icon = "☁️"
+            if vendor.lower() == "aws":
+                vendor_icon = "🟠"
+            elif vendor.lower() == "azure":
+                vendor_icon = "🔵"
+            elif vendor.lower() == "gcp":
+                vendor_icon = "🔴"
+            
+            md_content += f"## {vendor_icon} {vendor.upper()} ({len(updates)}条)\n\n"
+            
+            # 按日期排序，最新的在前面
+            sorted_updates = sorted(updates, key=lambda x: x.get('date', ''), reverse=True)
+            
+            # 展示更新
+            for i, update in enumerate(sorted_updates):
+                md_content += self._format_update_item(i+1, update)
+        
+        # 添加网站链接
+        site_url = "http://cnetspy.site/"
+        md_content += f"\n\n---\n*本消息由[云网络竞争分析平台]({site_url})自动发送*"
+        
+        # 发送到指定机器人或所有机器人
+        success = False
+        robots_to_use = []
+        
+        if robot_names:
+            # 使用指定的机器人
+            robots_to_use = [robot for robot in self.robots if robot.name in robot_names]
+            if not robots_to_use:
+                self.logger.warning(f"指定的机器人 {robot_names} 不存在，尝试使用所有机器人")
+                robots_to_use = self.robots
+        else:
+            # 使用所有机器人
+            robots_to_use = self.robots
+        
+        for robot in robots_to_use:
+            if robot.send_markdown(title, md_content):
+                success = True
+                self.logger.info(f"通过机器人 {robot.name} 发送近{days}天更新通知成功")
+            else:
+                self.logger.error(f"通过机器人 {robot.name} 发送近{days}天更新通知失败")
+        
+        return success
 
 
-def send_weekly_updates_to_dingtalk(config_path: str = None, robot_names: Optional[List[str]] = None) -> bool:
+def send_updates_to_dingtalk(update_type: str = "weekly", days: int = 3, config_path: str = None, robot_names: Optional[List[str]] = None) -> bool:
     """
-    发送本周更新到钉钉群的便捷函数
+    发送各类型更新到钉钉群的统一函数
     
     Args:
+        update_type: 更新类型，可选值为 "weekly"(本周更新)、"daily"(今日更新)、"recent"(最近几天更新)
+        days: 当update_type为"recent"时有效，获取最近几天的更新，默认为3天
         config_path: 配置文件路径，默认为None，使用默认配置文件
         robot_names: 指定要发送的机器人名称列表，如果为None则发送给所有机器人
         
@@ -367,16 +556,41 @@ def send_weekly_updates_to_dingtalk(config_path: str = None, robot_names: Option
         document_manager = DocumentManager(raw_dir, analyzed_dir)
         vendor_manager = VendorManager(raw_dir, analyzed_dir, document_manager)
         
-        # 获取本周更新
-        weekly_updates = vendor_manager.get_weekly_updates()
-        
-        # 发送钉钉通知
+        # 根据更新类型获取相应的更新数据
         notifier = DingTalkNotifier(config_path)
-        return notifier.send_weekly_updates(weekly_updates, robot_names)
+        
+        if update_type == "weekly":
+            # 获取本周更新
+            updates = vendor_manager.get_weekly_updates()
+            return notifier.send_weekly_updates(updates, robot_names)
+        elif update_type == "daily":
+            # 获取今日更新
+            updates = vendor_manager.get_daily_updates()
+            return notifier.send_daily_updates(updates, robot_names)
+        elif update_type == "recent":
+            # 获取最近几天更新
+            updates = vendor_manager.get_recently_updates(days)
+            return notifier.send_recently_updates(updates, days, robot_names)
+        else:
+            logging.error(f"未知的更新类型: {update_type}")
+            return False
     except Exception as e:
         logging.error(f"发送钉钉通知出错: {e}")
         return False
 
+
+# 为了向后兼容，保留原有函数名，但实现调用统一函数
+def send_weekly_updates_to_dingtalk(config_path: str = None, robot_names: Optional[List[str]] = None) -> bool:
+    """发送本周更新到钉钉群（向后兼容）"""
+    return send_updates_to_dingtalk("weekly", config_path=config_path, robot_names=robot_names)
+
+def send_daily_updates_to_dingtalk(config_path: str = None, robot_names: Optional[List[str]] = None) -> bool:
+    """发送今日更新到钉钉群（向后兼容）"""
+    return send_updates_to_dingtalk("daily", config_path=config_path, robot_names=robot_names)
+
+def send_recently_updates_to_dingtalk(days: int = 3, config_path: str = None, robot_names: Optional[List[str]] = None) -> bool:
+    """发送最近几天更新到钉钉群（向后兼容）"""
+    return send_updates_to_dingtalk("recent", days=days, config_path=config_path, robot_names=robot_names)
 
 if __name__ == "__main__":
     # 配置日志
@@ -386,7 +600,7 @@ if __name__ == "__main__":
     )
     
     # 发送周报
-    success = send_weekly_updates_to_dingtalk()
+    success = send_updates_to_dingtalk("weekly")
     
     # 显示结果
     if success:
