@@ -511,6 +511,7 @@
 </section>
 
 {% if vendors %}
+    <!-- 厂商卡片部分 -->
     <section class="vendor-list">
         <h2 class="section-title">厂商列表</h2>
         
@@ -539,26 +540,6 @@
             {% endfor %}
         </div>
     </section>
-
-    <div class="dashboard">
-        <div class="dashboard-card">
-            <h3><i class="bi bi-building"></i> 厂商总数</h3>
-            <div class="value">{{ vendors|length }}</div>
-            <p class="description">监控的云服务提供商数量</p>
-        </div>
-        
-        <div class="dashboard-card">
-            <h3><i class="bi bi-file-earmark-text"></i> 文档总数</h3>
-            <div class="value">{{ vendors|map(attribute='doc_count')|sum }}</div>
-            <p class="description">收集的技术博客和文档总数</p>
-        </div>
-        
-        <div class="dashboard-card">
-            <h3><i class="bi bi-robot"></i> AI智能分析总数</h3>
-            <div class="value">{{ vendors|map(attribute='analysis_count')|sum }}</div>
-            <p class="description">AI智能分析和翻译的文档总数</p>
-        </div>
-    </div>
     
     <!-- 最近更新时间轴 -->
     <section class="timeline-section">
@@ -610,6 +591,27 @@
             {% endif %}
         </div>
     </section>
+
+    <!-- 统计卡片 -->
+    <div class="dashboard">
+        <div class="dashboard-card">
+            <h3><i class="bi bi-building"></i> 厂商总数</h3>
+            <div class="value">{{ vendors|length }}</div>
+            <p class="description">监控的云服务提供商数量</p>
+        </div>
+        
+        <div class="dashboard-card">
+            <h3><i class="bi bi-file-earmark-text"></i> 文档总数</h3>
+            <div class="value">{{ vendors|map(attribute='doc_count')|sum }}</div>
+            <p class="description">收集的技术博客和文档总数</p>
+        </div>
+        
+        <div class="dashboard-card">
+            <h3><i class="bi bi-robot"></i> AI智能分析总数</h3>
+            <div class="value">{{ vendors|map(attribute='analysis_count')|sum }}</div>
+            <p class="description">AI智能分析和翻译的文档总数</p>
+        </div>
+    </div>
 {% else %}
     <div class="no-data">
         <p>暂无厂商数据</p>
