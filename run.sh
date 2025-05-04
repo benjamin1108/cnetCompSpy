@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# 获取脚本所在目录
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# 确保工作目录为项目根目录
+cd "$SCRIPT_DIR"
+
 # 颜色定义
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -7,9 +13,6 @@ YELLOW='\033[0;33m'
 BLUE='\033[0;34m'
 PURPLE='\033[0;35m'
 NC='\033[0m' # 无颜色
-
-# 获取脚本所在目录
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # 显示帮助信息
 show_help() {
@@ -871,8 +874,8 @@ crawl_data() {
     # 激活虚拟环境
     activate_venv
     
-    # 调用Python模块
-    python -m src.main --mode crawl "$@"
+    # 调用Python模块，明确指定配置文件路径
+    python -m src.main --mode crawl --config "$SCRIPT_DIR/config.yaml" "$@"
 }
 
 # 分析数据
@@ -912,8 +915,8 @@ analyze_data() {
     # 激活虚拟环境
     activate_venv
     
-    # 调用Python模块
-    python -m src.main --mode analyze "$@"
+    # 调用Python模块，明确指定配置文件路径
+    python -m src.main --mode analyze --config "$SCRIPT_DIR/config.yaml" "$@"
 }
 
 # 比较元数据和实际文件统计

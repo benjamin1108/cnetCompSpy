@@ -12,7 +12,9 @@ logger = logging.getLogger('Scheduler')
 
 class Scheduler:
     def __init__(self, config_path='config.yaml'):
-        self.config_path = config_path
+        # 确保配置文件路径基于项目根目录
+        root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        self.config_path = os.path.join(root_dir, 'config.yaml') if not os.path.isabs(config_path) else config_path
         self.last_run_date = None
         self.last_dingtalk_push_date = None
         self.running = False

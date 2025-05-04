@@ -8,6 +8,9 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # 获取项目根目录
 ROOT_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 
+# 确保工作目录为项目根目录
+cd "$ROOT_DIR"
+
 # 颜色定义
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -148,7 +151,7 @@ fi
 # 发送电子邮件通知
 if [ "$NO_EMAIL" != true ]; then
     echo -e "${BLUE}[$(date +%H:%M:%S)] 发送电子邮件通知...${NC}"
-    python -m src.utils.send_email --log "$LOG_FILE" $DEBUG 2>&1 | tee -a "$LOG_FILE"
+    python -m src.utils.email_notifier --log "$LOG_FILE" $DEBUG 2>&1 | tee -a "$LOG_FILE"
     EMAIL_RESULT=${PIPESTATUS[0]}
     
     if [ $EMAIL_RESULT -eq 0 ]; then

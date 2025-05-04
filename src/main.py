@@ -114,27 +114,40 @@ def get_config(args: argparse.Namespace) -> Dict[str, Any]:
     config = DEFAULT_CONFIG.copy()
     
     # 获取项目根目录路径
-    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    # 注意：这个 base_dir 计算方式假设 main.py 在 src 目录下
+    # 如果 main.py 移动到项目根目录，这个计算需要调整
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    base_dir = os.path.dirname(script_dir) # 项目根目录是 src 的父目录
     
+    # 确定主配置文件路径：优先使用命令行参数，其次是项目根目录下的 config.yaml
+    if args.config:
+        # 如果命令行指定了路径
+        config_path_yaml = args.config
+        # 如果是相对路径，则相对于当前工作目录解析
+        if not os.path.isabs(config_path_yaml):
+            config_path_yaml = os.path.abspath(config_path_yaml)
+        print(f"信息: 使用命令行指定的配置文件: {config_path_yaml}") # 在日志系统前打印
+    else:
+        # 否则使用项目根目录下的 config.yaml
+        config_path_yaml = os.path.join(base_dir, 'config.yaml')
+        print(f"信息: 未指定配置文件，尝试加载默认路径: {config_path_yaml}") # 在日志系统前打印
+
     # 加载主配置文件
-    config_path_yaml = os.path.join(base_dir, 'config.yaml')
     if os.path.exists(config_path_yaml):
         config_data = load_yaml_file(config_path_yaml)
         config = merge_configs(config, config_data)
         # 不再在这里记录日志，因为日志系统尚未配置
-        # logger.info(f"已加载主配置: {config_path_yaml}")
     else:
-        print(f"警告: 主配置文件不存在: {config_path_yaml}") # 在日志系统前打印
+        print(f"警告: 配置文件不存在: {config_path_yaml}") # 在日志系统前打印
     
-    # 加载敏感配置文件
+    # 加载敏感配置文件 (路径通常相对于项目根目录)
     secret_config_path = os.path.join(base_dir, 'config.secret.yaml')
     if os.path.exists(secret_config_path):
         secret_config_data = load_yaml_file(secret_config_path)
         config = merge_configs(config, secret_config_data)
         # 不再在这里记录日志
-        # logger.info(f"已加载敏感配置: {secret_config_path}")
     # else:
-        # logger.warning(f"敏感配置文件不存在: {secret_config_path}") # 可选，可能不需要警告
+        # print(f"警告: 敏感配置文件不存在: {secret_config_path}") # 可选，根据需要取消注释
     
     return config
 
