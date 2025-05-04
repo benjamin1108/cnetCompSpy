@@ -33,8 +33,13 @@ class StatsManager:
         self.data_dir = data_dir
         self.access_log_file = os.path.join(data_dir, 'access_log.json')
         
+        # 新增: 创建log目录下的完整访问日志文件
+        self.log_dir = os.path.join(os.path.dirname(os.path.dirname(data_dir)), 'logs')
+        self.all_access_log_file = os.path.join(self.log_dir, 'all_access_log.json')
+        
         # 确保访问日志文件存在
         self._ensure_access_log_file()
+        self._ensure_all_access_log_file()
         
         # 记录服务器启动时间
         self.server_start_time = datetime.now()
@@ -50,6 +55,16 @@ class StatsManager:
             with open(self.access_log_file, 'w', encoding='utf-8') as f:
                 json.dump([], f, ensure_ascii=False)
             self.logger.info(f"已创建访问日志文件: {self.access_log_file}")
+    
+    def _ensure_all_access_log_file(self):
+        """确保完整访问日志文件存在"""
+        if not os.path.exists(self.log_dir):
+            os.makedirs(self.log_dir, exist_ok=True)
+        
+        if not os.path.exists(self.all_access_log_file):
+            with open(self.all_access_log_file, 'w', encoding='utf-8') as f:
+                json.dump([], f, ensure_ascii=False)
+            self.logger.info(f"已创建完整访问日志文件: {self.all_access_log_file}")
     
     def _parse_user_agent(self, user_agent_string: str) -> Dict[str, Any]:
         """
@@ -181,31 +196,18 @@ class StatsManager:
             self.logger.error(f"获取文档标题失败: {e}")
             return path
     
-    def record_access(self, path: str = None, document_manager = None):
+    def record_access(self, path: str = None, document_manager = None, path_exists: bool = True):
         """
         记录访问详情
         
         Args:
             path: 请求路径，如果为None则使用当前请求的路径
             document_manager: 文档管理器实例，用于获取文档标题
+            path_exists: 路径是否存在，不存在的路径（扫描访问）不会记录到主统计中
         """
-        # 移除调试打印语句
-        # print(f"[DEBUG] Entering record_access for path: {request.path if request else path}")
         try:
             if not path and request:
                 path = request.path
-            
-            # 如果是静态文件或favicon，不记录
-            if path and (path.startswith('/static/') or path == '/favicon.ico'):
-                return
-                
-            # 移除打印原始请求头的调试日志
-            # self.logger.debug(f"Request Headers: {request.headers}")
-            
-            # 直接从 headers 获取 User-Agent (保留此方式)
-            user_agent_string = request.headers.get('User-Agent', 'unknown')
-            # 恢复原始的日志记录
-            self.logger.debug(f"Received User-Agent: {user_agent_string}")
             
             # 获取访问详情
             access_info = {
@@ -214,12 +216,65 @@ class StatsManager:
                 'ip': request.remote_addr if request else 'unknown',
                 'path': path or 'unknown',
                 'title': self._get_document_title(path, document_manager),
-                'user_agent': user_agent_string,
-                'user_agent_info': self._parse_user_agent(user_agent_string),
+                'user_agent': request.headers.get('User-Agent', 'unknown'),
+                'user_agent_info': self._parse_user_agent(request.headers.get('User-Agent', 'unknown')),
                 'timestamp': int(time.time()),
-                'referer': request.referrer if request else None
+                'referer': request.referrer if request else None,
+                'path_exists': path_exists  # 添加路径是否存在的标记
             }
             
+            # 始终记录到完整访问日志
+            self._record_to_all_access_log(access_info)
+            
+            # 如果是静态文件或favicon，或者路径不存在，不记录到主统计中
+            if path and (path.startswith('/static/') or path == '/favicon.ico' or not path_exists):
+                return
+            
+            # 记录到主访问日志（用于统计分析）
+            self._record_to_main_access_log(access_info)
+            
+        except Exception as e:
+            self.logger.error(f"记录访问详情失败: {e}")
+    
+    def _record_to_all_access_log(self, access_info: Dict[str, Any]):
+        """
+        记录到完整访问日志
+        
+        Args:
+            access_info: 访问信息字典
+        """
+        try:
+            # 加载现有完整访问日志
+            all_access_details = []
+            try:
+                with open(self.all_access_log_file, 'r', encoding='utf-8') as f:
+                    all_access_details = json.load(f)
+            except (json.JSONDecodeError, FileNotFoundError):
+                self.logger.warning(f"读取完整访问日志文件失败，将创建新文件: {self.all_access_log_file}")
+                all_access_details = []
+            
+            # 添加新的访问记录
+            all_access_details.append(access_info)
+            
+            # 限制日志大小（只保留最近的50000条记录）
+            if len(all_access_details) > 50000:
+                all_access_details = all_access_details[-50000:]
+            
+            # 保存完整访问日志
+            with open(self.all_access_log_file, 'w', encoding='utf-8') as f:
+                json.dump(all_access_details, f, ensure_ascii=False, indent=2)
+                
+        except Exception as e:
+            self.logger.error(f"记录到完整访问日志失败: {e}")
+    
+    def _record_to_main_access_log(self, access_info: Dict[str, Any]):
+        """
+        记录到主访问日志（用于统计分析）
+        
+        Args:
+            access_info: 访问信息字典
+        """
+        try:
             # 加载现有访问日志
             access_details = []
             try:
@@ -232,12 +287,16 @@ class StatsManager:
             # 添加新的访问记录
             access_details.append(access_info)
             
+            # 限制日志大小（只保留最近的10000条记录）
+            if len(access_details) > 10000:
+                access_details = access_details[-10000:]
+            
             # 保存访问日志
             with open(self.access_log_file, 'w', encoding='utf-8') as f:
                 json.dump(access_details, f, ensure_ascii=False, indent=2)
-            
+                
         except Exception as e:
-            self.logger.error(f"记录访问详情失败: {e}")
+            self.logger.error(f"记录到主访问日志失败: {e}")
     
     def get_access_details(self, limit: int = 1000) -> List[Dict[str, Any]]:
         """
@@ -264,6 +323,38 @@ class StatsManager:
         
         except Exception as e:
             self.logger.error(f"获取访问详情失败: {e}")
+            return []
+    
+    def get_all_access_details(self, limit: int = 1000, include_non_existent: bool = True) -> List[Dict[str, Any]]:
+        """
+        获取完整访问详情
+        
+        Args:
+            limit: 最大记录数，默认1000
+            include_non_existent: 是否包含不存在路径的访问，默认True
+            
+        Returns:
+            访问详情列表
+        """
+        try:
+            if not os.path.exists(self.all_access_log_file):
+                return []
+            
+            with open(self.all_access_log_file, 'r', encoding='utf-8') as f:
+                all_access_details = json.load(f)
+            
+            # 按时间戳倒序排序
+            all_access_details.sort(key=lambda x: x.get('timestamp', 0), reverse=True)
+            
+            # 是否过滤不存在路径的访问
+            if not include_non_existent:
+                all_access_details = [record for record in all_access_details if record.get('path_exists', True)]
+            
+            # 限制记录数
+            return all_access_details[:limit]
+        
+        except Exception as e:
+            self.logger.error(f"获取完整访问详情失败: {e}")
             return []
     
     def get_access_stats(self) -> Dict[str, Any]:
