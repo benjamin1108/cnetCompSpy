@@ -55,10 +55,24 @@ class RouteManager:
         @self.app.route('/')
         def index():
             vendors = self.vendor_manager.get_vendors()
+            
+            # 获取最近7天的更新数据用于时间轴展示
+            recent_updates = self.vendor_manager.get_recently_updates(days=7)
+            
+            # 将所有厂商的更新整合成一个按日期排序的列表
+            timeline_updates = []
+            for vendor, updates in recent_updates.items():
+                for update in updates:
+                    timeline_updates.append(update)
+            
+            # 按日期降序排序
+            timeline_updates.sort(key=lambda x: x.get('date', ''), reverse=True)
+            
             return render_template(
                 'index.html',
                 title='云服务厂商竞争分析',
-                vendors=vendors
+                vendors=vendors,
+                timeline_updates=timeline_updates
             )
         
         # 本周更新页面 - 显示所有厂商本周的更新

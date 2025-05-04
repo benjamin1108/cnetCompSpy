@@ -298,6 +298,209 @@
             padding: 20px 15px;
         }
     }
+    
+    /* 时间轴样式 */
+    .timeline-section {
+        margin-top: 50px;
+        margin-bottom: 50px;
+        position: relative;
+    }
+    
+    .timeline-container {
+        position: relative;
+        padding: 20px 0;
+    }
+    
+    .timeline-container::before {
+        content: '';
+        position: absolute;
+        left: 20px;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: linear-gradient(to bottom, #0078d4, #00b294);
+        border-radius: 2px;
+        z-index: 0;
+    }
+    
+    .timeline-item {
+        position: relative;
+        margin-left: 50px;
+        padding: 20px;
+        background-color: #d1dbe8;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.07);
+        border: 1px solid #bccad8;
+        transition: all 0.3s ease;
+        z-index: 1;
+    }
+    
+    .timeline-item:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -28px;
+        top: 28px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background-color: #fff;
+        border: 4px solid;
+        z-index: 1;
+    }
+    
+    .timeline-item.aws::before {
+        border-color: #ff9900;
+    }
+    
+    .timeline-item.azure::before {
+        border-color: #0078d4;
+    }
+    
+    .timeline-item.gcp::before {
+        border-color: #ea4335;
+    }
+    
+    .timeline-item::after {
+        content: '';
+        position: absolute;
+        left: -12px;
+        top: 32px;
+        width: 12px;
+        height: 4px;
+        background-color: #bccad8;
+        z-index: 1;
+    }
+    
+    .timeline-date {
+        position: absolute;
+        left: -70px;
+        top: 25px;
+        width: 40px;
+        text-align: right;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #5b6b7c;
+    }
+    
+    .timeline-title {
+        margin-top: 0;
+        margin-bottom: 5px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #2c3e50;
+    }
+    
+    .timeline-subtitle {
+        font-size: 0.9rem;
+        color: #5a7391;
+        font-style: italic;
+        margin-bottom: 8px;
+    }
+    
+    .timeline-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.8rem;
+        color: #6c757d;
+        margin-top: 10px;
+    }
+    
+    .timeline-vendor {
+        display: flex;
+        align-items: center;
+        font-weight: 600;
+    }
+    
+    .timeline-vendor-icon {
+        margin-right: 5px;
+    }
+    
+    .timeline-type {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-weight: 500;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        background-color: #e2eaf2;
+        color: #4a6b8a;
+    }
+    
+    .timeline-empty {
+        text-align: center;
+        padding: 30px;
+        color: #6c757d;
+        font-style: italic;
+        background-color: rgba(255, 255, 255, 0.5);
+        border-radius: 8px;
+        margin-left: 50px;
+        z-index: 1;
+        position: relative;
+    }
+    
+    .timeline-date-header {
+        margin-left: 50px;
+        margin-bottom: 15px;
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #0078d4;
+        padding: 5px 15px;
+        background-color: rgba(0, 120, 212, 0.1);
+        border-radius: 20px;
+        display: inline-block;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        position: relative;
+        z-index: 2;
+    }
+    
+    .timeline-date-divider {
+        height: 30px;
+        margin-left: 20px;
+        position: relative;
+    }
+    
+    /* 时间轴响应式调整 */
+    @media (max-width: 768px) {
+        .timeline-container::before {
+            left: 15px;
+        }
+        
+        .timeline-item {
+            margin-left: 40px;
+        }
+        
+        .timeline-item::before {
+            left: -23px;
+            width: 12px;
+            height: 12px;
+        }
+        
+        .timeline-item::after {
+            left: -11px;
+            width: 11px;
+        }
+        
+        .timeline-empty {
+            margin-left: 40px;
+        }
+        
+        .timeline-date-header {
+            margin-left: 40px;
+            font-size: 1rem;
+            padding: 4px 12px;
+        }
+        
+        .timeline-date-divider {
+            margin-left: 15px;
+        }
+    }
 </style>
 {% endblock %}
 
@@ -356,6 +559,57 @@
             <p class="description">AI智能分析和翻译的文档总数</p>
         </div>
     </div>
+    
+    <!-- 最近更新时间轴 -->
+    <section class="timeline-section">
+        <h2 class="section-title">最近更新时间轴</h2>
+        
+        <div class="timeline-container">
+            {% if timeline_updates %}
+                {% set current_date = None %}
+                {% for update in timeline_updates %}
+                    {% set update_date = update.date.replace('_', '-') %}
+                    {% if update_date != current_date %}
+                        {% if not loop.first %}
+                            <div class="timeline-date-divider"></div>
+                        {% endif %}
+                        <div class="timeline-date-header">{{ update_date }}</div>
+                        {% set current_date = update_date %}
+                    {% endif %}
+                    <div class="timeline-item {{ update.vendor }}">
+                        <h4 class="timeline-title">
+                            <a href="{{ url_for('analysis_document_page', vendor=update.vendor, doc_type=update.doc_type, filename=update.filename) }}" class="text-decoration-none">
+                                {{ update.original_title }}
+                            </a>
+                        </h4>
+                        {% if update.translated_title %}
+                            <div class="timeline-subtitle">{{ update.translated_title }}</div>
+                        {% endif %}
+                        <div class="timeline-meta">
+                            <div class="timeline-vendor">
+                                {% if update.vendor == 'aws' %}
+                                    <i class="bi bi-cloud-fill timeline-vendor-icon" style="color: #ff9900;"></i>
+                                {% elif update.vendor == 'azure' %}
+                                    <i class="bi bi-cloud-fill timeline-vendor-icon" style="color: #0078d4;"></i>
+                                {% elif update.vendor == 'gcp' %}
+                                    <i class="bi bi-cloud-fill timeline-vendor-icon" style="color: #ea4335;"></i>
+                                {% else %}
+                                    <i class="bi bi-cloud-fill timeline-vendor-icon"></i>
+                                {% endif %}
+                                {{ update.vendor|upper }}
+                            </div>
+                            <span class="timeline-type">{{ update.doc_type }}</span>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="timeline-empty">
+                    <i class="bi bi-exclamation-circle me-2"></i>
+                    最近7天内暂无更新内容
+                </div>
+            {% endif %}
+        </div>
+    </section>
 {% else %}
     <div class="no-data">
         <p>暂无厂商数据</p>
