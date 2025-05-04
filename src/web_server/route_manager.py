@@ -82,15 +82,33 @@ class RouteManager:
         # 今日更新页面 - 显示所有厂商今日的更新
         @self.app.route('/daily-updates')
         def daily_updates():
+            # 获取天数参数，默认为1（今日）
+            days = request.args.get('days', '1')
+            try:
+                days = int(days)
+                # 限制天数范围在1-7天之间
+                days = max(1, min(7, days))
+            except ValueError:
+                days = 1
+            
             # 获取今天的日期
             today = datetime.now()
             
-            daily_updates = self.vendor_manager.get_daily_updates()
+            # 根据天数决定使用哪个函数获取数据
+            if days == 1:
+                updates = self.vendor_manager.get_daily_updates()
+                page_title = '今日更新'
+            else:
+                updates = self.vendor_manager.get_recently_updates(days=days)
+                page_title = f'近{days}天更新'
+            
             return render_template(
                 'daily_updates.html',
-                title='今日更新 - 云服务厂商竞争分析',
-                daily_updates=daily_updates,
-                today=today
+                title=f'{page_title} - 云服务厂商竞争分析',
+                daily_updates=updates,
+                today=today,
+                days=days,
+                timedelta=timedelta  # 传递timedelta给模板
             )
         
         # 厂商页面 - 显示特定厂商的所有文档

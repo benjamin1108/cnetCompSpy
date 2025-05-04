@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}今日更新 - {{ super() }}{% endblock %}
+{% block title %}{% if days == 1 %}今日更新{% else %}近{{ days }}天更新{% endif %} - {{ super() }}{% endblock %}
 
 {% block head %}
 {{ super() }}
@@ -186,15 +186,52 @@
             gap: 0.5rem;
         }
     }
+
+    .date-range-selector {
+        margin-top: 1rem;
+        padding-top: 0.8rem;
+        border-top: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    
+    .date-range-selector .form-select {
+        min-width: 70px;
+        color: #2c3e50;
+        font-weight: 500;
+        border-color: #d1dbe8;
+        box-shadow: none;
+    }
+    
+    .date-range-selector .form-select:focus {
+        border-color: #0078d4;
+        box-shadow: 0 0 0 0.2rem rgba(0, 120, 212, 0.15);
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="daily-update-header">
-    <h1>今日更新</h1>
+    <h1>{% if days == 1 %}今日更新{% else %}近{{ days }}天更新{% endif %}</h1>
 
     <div class="daily-update-date">
-        {{ today.strftime('%Y年%m月%d日') }}
+        {% if days == 1 %}
+            {{ today.strftime('%Y年%m月%d日') }}
+        {% else %}
+            {{ (today - timedelta(days=days-1)).strftime('%Y年%m月%d日') }} 至 {{ today.strftime('%Y年%m月%d日') }}
+        {% endif %}
+    </div>
+    
+    <div class="date-range-selector mt-3">
+        <form class="d-flex align-items-center" method="get" action="{{ url_for('daily_updates') }}">
+            <div class="d-flex align-items-center">
+                <span class="me-2 text-muted"><i class="bi bi-filter"></i> 显示近</span>
+                <select name="days" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+                    {% for d in [1, 2, 3, 5, 7] %}
+                    <option value="{{ d }}" {% if days == d %}selected{% endif %}>{{ d }}天</option>
+                    {% endfor %}
+                </select>
+                <span class="ms-2 text-muted">的更新内容</span>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -249,7 +286,7 @@
 {% else %}
 <div class="empty-message">
     <i class="bi bi-calendar-x empty-icon"></i>
-    <p>今日暂无更新内容</p>
+    <p>{% if days == 1 %}今日暂无更新内容{% else %}近{{ days }}天暂无更新内容{% endif %}</p>
 </div>
 {% endif %}
 {% endblock %} 
