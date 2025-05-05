@@ -1,0 +1,16 @@
+# 爬虫配置
+crawler:
+  timeout: 30 # 基本请求超时时间（秒）
+  retry: 3 # 重试次数
+  interval: 2 # 请求间隔时间（秒）
+  article_limit: 50 # 每个来源最多爬取的文章数量
+  max_workers: 50 # 并发爬虫数量，设置为4个线程同时运行
+  page_load_timeout: 45 # 页面加载超时（秒）- 适用于复杂页面
+  script_timeout: 30 # JavaScript脚本执行超时（秒）
+  implicit_wait: 10 # 查找元素的隐式等待时间（秒）
+  default_element_timeout: 15 # 默认元素出现超时（秒）- 显式等待用
+  long_element_timeout: 25 # 长等待元素超时（秒）- 用于复杂动态内容
+  screenshot_debug: true # 是否保存页面截图用于调试
+  api_rate_limit: 1000
+  headers:
+    User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36" 

@@ -172,16 +172,18 @@ def load_required_tasks(base_dir: str) -> List[str]:
     Returns:
         必要的AI任务列表
     """
-    config_path = os.path.join(base_dir, 'config.yaml')
     try:
-        with open(config_path, 'r', encoding='utf-8') as f:
-            config = yaml.safe_load(f)
+        # 使用通用配置加载器
+        from src.utils.config_loader import get_config
+        
+        # 加载配置
+        config = get_config(base_dir=base_dir)
         
         # 从配置中提取任务列表
         tasks = [task.get('type') for task in config.get('ai_analyzer', {}).get('tasks', [])]
         return [task for task in tasks if task]  # 过滤掉None值
     except Exception as e:
-        logger.error(f"加载配置文件失败: {e}")
+        logger.error(f"加载配置失败: {e}")
         # 返回默认任务列表
         return ["AI标题翻译", "AI竞争分析", "AI全文翻译"]
 

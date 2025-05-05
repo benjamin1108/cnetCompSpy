@@ -151,7 +151,7 @@ fi
 # 发送电子邮件通知
 if [ "$NO_EMAIL" != true ]; then
     echo -e "${BLUE}[$(date +%H:%M:%S)] 发送电子邮件通知...${NC}"
-    python -m src.utils.email_notifier --log "$LOG_FILE" $DEBUG 2>&1 | tee -a "$LOG_FILE"
+    python -m src.utils.email_notifier --log-file "$LOG_FILE" --secret-config "$ROOT_DIR/config.secret.yaml" $DEBUG 2>&1 | tee -a "$LOG_FILE"
     EMAIL_RESULT=${PIPESTATUS[0]}
     
     if [ $EMAIL_RESULT -eq 0 ]; then

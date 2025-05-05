@@ -1,0 +1,40 @@
+# 统一日志配置
+logging:
+  version: 1
+  disable_existing_loggers: false  # 避免禁用已存在的logger
+  formatters:
+    standard:
+      format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+      datefmt: '%Y-%m-%d %H:%M:%S'
+    colored:
+      format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s' # 格式会由 ColoredFormatter 处理
+      datefmt: '%Y-%m-%d %H:%M:%S'
+      # 使用自定义的彩色格式化器
+      (): src.utils.colored_logger.ColoredFormatter
+  handlers:
+    console:
+      class: logging.StreamHandler
+      formatter: colored
+      level: INFO  # 控制台默认级别
+      stream: ext://sys.stdout
+    file:
+      class: logging.handlers.RotatingFileHandler
+      formatter: standard
+      filename: logs/app.log  # 日志文件路径
+      maxBytes: 10485760  # 10MB
+      backupCount: 5      # 保留5个备份文件
+      encoding: utf8
+      level: INFO  # 文件默认级别
+  loggers:
+    werkzeug:
+      level: WARNING  # 减少werkzeug的日志输出
+      handlers: [console, file]
+      propagate: false # 防止werkzeug日志被root logger重复处理
+    # 可以为其他特别吵闹的库添加配置
+    # some_noisy_library:
+    #   level: WARNING
+    #   handlers: [console, file]
+    #   propagate: false
+  root:
+    level: DEBUG  # 根logger级别设为DEBUG，具体级别由handler控制
+    handlers: [console, file] 

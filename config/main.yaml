@@ -1,0 +1,12 @@
+# 主配置文件
+# 此文件用于导入所有子配置文件
+
+# 导入配置的顺序很重要，后导入的配置会覆盖先导入的配置
+imports:
+  - notification.yaml  # 通知配置
+  - crawler.yaml       # 爬虫配置
+  - sources.yaml       # 数据源配置
+  - ai_analyzer.yaml   # AI分析配置
+  - scheduler.yaml     # 定时任务配置
+  - webserver.yaml     # Web服务器配置
+  - logging.yaml       # 日志配置 

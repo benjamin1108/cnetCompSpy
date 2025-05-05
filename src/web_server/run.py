@@ -66,14 +66,13 @@ def load_yaml_file(file_path: str) -> Dict[str, Any]:
         print(f"错误: 加载配置文件时出错: {e}")
         return {}
 
-def setup_unified_logging(config_path: str, log_level_override: Optional[str] = None, debug_mode: bool = False):
+def setup_unified_logging(config: Dict[str, Any], log_level_override: Optional[str] = None, debug_mode: bool = False):
     """使用字典配置统一设置日志系统"""
-    config_data = load_yaml_file(config_path)
-    log_config = config_data.get('logging')
+    log_config = config.get('logging')
     
     if not log_config:
-        # 如果配置文件或logging部分不存在，使用默认的基本配置
-        print("警告: 配置文件中未找到 'logging' 配置部分，将使用默认 basicConfig。")
+        # 如果配置中没有logging部分，使用默认的基本配置
+        print("警告: 配置中未找到 'logging' 配置部分，将使用默认 basicConfig。")
         level_to_set = logging.DEBUG if debug_mode else getattr(logging, log_level_override or 'INFO')
         logging.basicConfig(level=level_to_set, 
                             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -83,20 +82,15 @@ def setup_unified_logging(config_path: str, log_level_override: Optional[str] = 
         return
 
     try:
-        # 确保日志目录存在 (与main.py中的逻辑相同)
+        # 确保日志目录存在
         log_filename = log_config.get('handlers', {}).get('file', {}).get('filename')
         if log_filename:
-            # 确保filename是绝对路径或相对于项目根目录
-            if not os.path.isabs(log_filename):
-                project_root = Path(config_path).resolve().parent
-                log_filename = os.path.join(project_root, log_filename)
-                log_config['handlers']['file']['filename'] = log_filename # 更新配置中的路径
-                
+            # 确保路径存在
             log_dir = os.path.dirname(log_filename)
             if not os.path.exists(log_dir):
                 os.makedirs(log_dir, exist_ok=True)
         
-        # 处理命令行或debug模式的日志级别覆盖 (与main.py中的逻辑相同)
+        # 处理命令行或debug模式的日志级别覆盖
         if debug_mode:
             if 'console' in log_config.get('handlers', {}):
                 log_config['handlers']['console']['level'] = 'DEBUG'
@@ -113,7 +107,7 @@ def setup_unified_logging(config_path: str, log_level_override: Optional[str] = 
         # 回退到基本配置
         logging.basicConfig(level=logging.INFO)
         logging.getLogger(__name__).error("日志系统配置失败，回退到基本配置。", exc_info=True)
-
+        
 def parse_args():
     """
     解析命令行参数
@@ -170,11 +164,14 @@ def main():
     """
     args = parse_args()
     
-    # 获取项目根目录，用于定位配置文件
+    # 获取项目根目录，用于定位配置文件和数据目录
     try:
         script_dir = Path(__file__).resolve().parent
         project_root = script_dir.parent.parent
-        config_path = os.path.join(project_root, 'config.yaml')
+        
+        # 加载配置
+        from src.utils.config_loader import get_config
+        config = get_config(base_dir=project_root)
         
         # 设置数据目录
         if args.data_dir is None:
@@ -182,15 +179,12 @@ def main():
         else:
             data_dir = args.data_dir
             
-        # 在配置日志系统之前，确保数据目录存在可能不是最佳实践
-        # 日志配置应首先进行
-            
     except Exception as e:
-        print(f"错误：获取项目根目录或数据目录时出错: {e}")
+        print(f"错误：获取项目根目录或加载配置时出错: {e}")
         sys.exit(1)
 
     # 统一设置日志系统
-    setup_unified_logging(config_path, args.log_level, args.debug)
+    setup_unified_logging(config, args.log_level, args.debug)
     logger = logging.getLogger('web_server.run') # 获取配置好的logger
 
     # 确保数据目录存在 (在日志系统配置好之后)
@@ -223,8 +217,8 @@ def main():
             debug=args.debug
         )
         
-        # 启动定时任务
-        scheduler = Scheduler(config_path=config_path)
+        # 启动定时任务，不再需要传递config_path
+        scheduler = Scheduler()
         scheduler.start()
         logger.info("定时任务已启动，将根据配置文件执行每日任务")
         

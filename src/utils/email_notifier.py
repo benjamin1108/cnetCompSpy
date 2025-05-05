@@ -36,34 +36,40 @@ class EmailNotifier:
         初始化邮件通知器
         
         Args:
-            config_path: 配置文件路径，默认为项目根目录下的config.yaml
+            config_path: 配置文件路径，可以是目录或文件
             secret_config_path: 敏感配置文件路径，默认为项目根目录下的config.secret.yaml
         """
         self.config = {}
         self.secret_config = {}
         self.email_config = {}
         
-        # 如果未指定配置文件路径，尝试在项目根目录查找
-        if config_path is None or secret_config_path is None:
-            # 获取当前脚本所在目录
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            # 推测项目根目录（假设utils是src下的子目录）
-            project_root = os.path.abspath(os.path.join(current_dir, '..', '..'))
-            
-            if config_path is None:
-                config_path = os.path.join(project_root, 'config.yaml')
-                
-            if secret_config_path is None:
-                secret_config_path = os.path.join(project_root, 'config.secret.yaml')
-        
-        # 加载主配置文件
         try:
-            with open(config_path, 'r', encoding='utf-8') as f:
-                self.config = yaml.safe_load(f)
+            # 使用通用配置加载器
+            from src.utils.config_loader import get_config
+            
+            # 加载配置（会自动加载敏感配置）
+            loaded_config = get_config(config_path=config_path)
+            
+            if loaded_config:
+                self.config = loaded_config
                 
-            # 检查是否存在email配置部分
-            if 'email' not in self.config:
-                logger.warning("配置文件中未找到email部分，将使用默认配置")
+                # 检查是否存在email配置部分
+                if 'email' not in self.config:
+                    logger.warning("配置文件中未找到email部分，将使用默认配置")
+                    # 设置默认配置
+                    self.email_config = {
+                        'enabled': False,
+                        'smtp_server': 'smtp.example.com',
+                        'smtp_port': 587,
+                        'use_tls': True,
+                        'sender': 'your_email@example.com',
+                        'recipients': ['recipient@example.com'],
+                        'subject_prefix': '[云计算网络竞争动态分析]'
+                    }
+                else:
+                    self.email_config = self.config['email']
+            else:
+                logger.warning("未能加载配置，将使用默认配置")
                 # 设置默认配置
                 self.email_config = {
                     'enabled': False,
@@ -74,8 +80,6 @@ class EmailNotifier:
                     'recipients': ['recipient@example.com'],
                     'subject_prefix': '[云计算网络竞争动态分析]'
                 }
-            else:
-                self.email_config = self.config['email']
                 
         except Exception as e:
             logger.error(f"加载配置文件失败: {str(e)}")
@@ -90,16 +94,33 @@ class EmailNotifier:
                 'subject_prefix': '[云计算网络竞争动态分析]'
             }
             
-        # 加载敏感配置文件
+        # 尝试再单独加载敏感配置文件
         try:
+            # 如果未指定敏感配置路径，尝试使用默认路径
+            if not secret_config_path:
+                # 获取项目根目录
+                base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+                secret_config_path = os.path.join(base_dir, 'config.secret.yaml')
+                
             if os.path.exists(secret_config_path):
                 with open(secret_config_path, 'r', encoding='utf-8') as f:
                     self.secret_config = yaml.safe_load(f)
-                logger.info("成功加载敏感配置文件")
+                logger.info(f"成功加载敏感配置文件: {secret_config_path}")
+                
+                # 如果敏感配置中有email部分，覆盖或合并到email_config
+                if self.secret_config and 'email' in self.secret_config:
+                    # 复制基本配置
+                    if not self.email_config:
+                        self.email_config = {}
+                    
+                    # 合并敏感配置
+                    for key, value in self.secret_config['email'].items():
+                        self.email_config[key] = value
             else:
-                logger.warning(f"敏感配置文件不存在: {secret_config_path}")
+                logger.warning(f"敏感配置文件不存在: {secret_config_path}，仅使用基本配置")
         except Exception as e:
             logger.error(f"加载敏感配置文件失败: {str(e)}")
+            logger.warning("未能加载敏感配置，邮件发送可能会失败")
     
     def _determine_real_status(self, summary, status):
         """

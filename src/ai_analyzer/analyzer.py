@@ -155,8 +155,18 @@ class AIAnalyzer:
             self.api_key = config['ai_analyzer']['api_key']
             
         self.api_base = self.ai_config.get('api_base', '')
-        self.system_prompt = self.ai_config.get('system_prompt', "你是一个专业的云计算技术分析师，擅长分析和解读各类云计算技术文档。")
+        
+        # 加载系统提示词（从prompt目录中的system_prompt.txt文件）
+        self.system_prompt = self._load_prompt_file('system_prompt.txt')
+        if not self.system_prompt:
+            self.system_prompt = self.ai_config.get('system_prompt', "你是一个专业的云计算技术分析师，擅长分析和解读各类云计算技术文档。")
+        
+        # 加载任务（保留任务配置，但prompt将从文件加载）
         self.tasks = self.ai_config.get('tasks', [])
+        
+        # 校验每个任务是否有对应的prompt文件
+        self._validate_task_prompts()
+        
         self.raw_dir = 'data/raw'
         self.analysis_dir = 'data/analysis'
         self.metadata_file = 'data/metadata/analysis_metadata.json'
@@ -186,39 +196,79 @@ class AIAnalyzer:
         # 初始化AI模型
         self.model = self._init_model()
     
+    def _load_prompt_file(self, filename: str) -> str:
+        """
+        从prompt目录加载prompt文件
+        
+        Args:
+            filename: 文件名
+            
+        Returns:
+            prompt文件内容, 如果文件不存在则返回空字符串
+        """
+        # 获取项目根目录
+        base_dir = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+        prompt_path = os.path.join(base_dir, 'prompt', filename)
+        
+        if not os.path.exists(prompt_path):
+            logger.warning(f"Prompt文件不存在: {prompt_path}")
+            return ""
+        
+        try:
+            with open(prompt_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+                logger.debug(f"已加载prompt文件: {filename}, 大小: {len(content)} 字符")
+                return content
+        except Exception as e:
+            logger.error(f"加载prompt文件时出错: {e}")
+            return ""
+    
+    def _validate_task_prompts(self):
+        """
+        验证每个任务是否有对应的prompt文件
+        如果没有，会从配置中加载prompt
+        """
+        for task in self.tasks:
+            task_type = task.get('type')
+            if not task_type:
+                continue
+                
+            # 根据task_type找到对应的prompt文件名
+            filename = self._get_prompt_filename(task_type)
+            prompt_content = self._load_prompt_file(filename)
+            
+            if not prompt_content:
+                logger.warning(f"任务 {task_type} 没有对应的prompt文件 {filename}，将使用配置中的prompt")
+            else:
+                logger.info(f"任务 {task_type} 对应的prompt文件已加载: {filename}")
+    
+    def _get_prompt_filename(self, task_type: str) -> str:
+        """
+        根据任务类型获取对应的prompt文件名
+        
+        Args:
+            task_type: 任务类型
+            
+        Returns:
+            prompt文件名
+        """
+        # 映射任务类型到文件名
+        task_file_map = {
+            "AI标题翻译": "title_translation.txt",
+            "AI竞争分析": "competitive_analysis.txt",
+            "AI全文翻译": "full_translation.txt"
+        }
+        
+        # 如果任务类型不在映射中，使用小写加下划线的文件名
+        return task_file_map.get(task_type, task_type.lower().replace(" ", "_") + ".txt")
+    
     def _load_config(self) -> Dict[str, Any]:
         """加载配置文件"""
-        config = {}
+        from src.utils.config_loader import get_config
         
-        # 获取项目根目录路径
-        base_dir = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-        
-        # 加载主配置文件
-        config_path = os.path.join(base_dir, 'config.yaml')
-        if os.path.exists(config_path):
-            try:
-                with open(config_path, 'r', encoding='utf-8') as f:
-                    config = yaml.safe_load(f) or {}
-                logger.info(f"已加载主配置文件: {config_path}")
-            except Exception as e:
-                logger.error(f"加载主配置文件失败: {e}")
-        else:
-            logger.warning(f"主配置文件不存在: {config_path}")
-        
-        # 加载敏感配置文件
-        secret_config_path = os.path.join(base_dir, 'config.secret.yaml')
-        if os.path.exists(secret_config_path):
-            try:
-                with open(secret_config_path, 'r', encoding='utf-8') as f:
-                    secret_config = yaml.safe_load(f) or {}
-                
-                # 合并配置
-                config = self._merge_configs(config, secret_config)
-                logger.info(f"已加载敏感配置文件: {secret_config_path}")
-            except Exception as e:
-                logger.error(f"加载敏感配置文件失败: {e}")
-        else:
-            logger.warning(f"敏感配置文件不存在: {secret_config_path}")
+        # 使用通用配置加载器加载配置
+        config = get_config()
+        logger.info("使用通用配置加载器加载配置成功")
         
         return config
     
@@ -284,7 +334,21 @@ class AIAnalyzer:
                 self.max_tokens = config.get('max_tokens', 4000)
                 self.api_key = config.get('api_key', '')
                 self.api_base = config.get('api_base', '')
-                self.system_prompt = config.get('system_prompt', "你是一个专业的云计算技术分析师，擅长分析和解读各类云计算技术文档。")
+                
+                # 从文件加载系统提示词
+                system_prompt_from_file = ""
+                try:
+                    base_dir = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+                    prompt_path = os.path.join(base_dir, 'prompt', 'system_prompt.txt')
+                    if os.path.exists(prompt_path):
+                        with open(prompt_path, 'r', encoding='utf-8') as f:
+                            system_prompt_from_file = f.read()
+                            logger.debug(f"已从文件加载系统提示词，大小: {len(system_prompt_from_file)} 字符")
+                except Exception as e:
+                    logger.error(f"加载系统提示词文件时出错: {e}")
+                
+                # 优先使用文件中的系统提示词，如果文件不存在或为空，则使用配置中的
+                self.system_prompt = system_prompt_from_file if system_prompt_from_file else config.get('system_prompt', "你是一个专业的云计算技术分析师，擅长分析和解读各类云计算技术文档。")
                 
                 # 检查API密钥和基础URL是否存在
                 if not self.api_key or not self.api_base:
@@ -763,7 +827,9 @@ class AIAnalyzer:
                 # 依次执行所有分析任务，并立即写入文件
                 for i, task in enumerate(self.tasks):
                     task_type = task.get('type')
-                    prompt = task.get('prompt')
+                    # 优先从文件加载prompt，如果文件不存在，则使用配置中的prompt
+                    prompt_from_file = self._load_prompt_file(self._get_prompt_filename(task_type))
+                    prompt = prompt_from_file if prompt_from_file else task.get('prompt')
                     output = task.get('output', True)  # 默认显示
                     
                     if not task_type or not prompt:
@@ -771,6 +837,7 @@ class AIAnalyzer:
                         continue
                     
                     logger.info(f"执行任务 [{i+1}/{len(self.tasks)}]: {task_type}")
+                    logger.debug(f"使用prompt源: {'文件' if prompt_from_file else '配置'}")
                     
                     # 初始化任务状态
                     task_status = {
@@ -1058,12 +1125,6 @@ class AIAnalyzer:
         Returns:
             分析结果文本
         """
-        # 检查是否启用mock模式
-        mock_mode = self.ai_config.get('mock', False)
-        if mock_mode:
-            logger.info(f"[{time.strftime('%H:%M:%S')}] Mock模式已启用，将返回mock数据而非真实API调用")
-            return self._get_mock_result(task_type, prompt)
-        
         try:
             # 如果API密钥为空，抛出异常
             if not self.api_key or not self.api_base:
@@ -1229,137 +1290,6 @@ class AIAnalyzer:
             logger.error(f"[{time.strftime('%H:%M:%S')}] {error_msg}")
             logger.exception("详细错误信息:")
             return error_msg
-            
-    def _get_mock_result(self, task_type: str, prompt: str) -> str:
-        """
-        根据任务类型生成mock结果
-        
-        Args:
-            task_type: 任务类型
-            prompt: 提示词
-            
-        Returns:
-            mock结果文本
-        """
-        # 获取mock延迟时间，默认为2秒
-        mock_delay = self.ai_config.get('mock_delay', 2)
-        logger.info(f"[{time.strftime('%H:%M:%S')}] 生成{task_type}的mock数据，模拟延迟{mock_delay}秒")
-        
-        # 模拟AI分析的响应时间
-        time.sleep(mock_delay)
-        
-        # 从提示词中提取文章标题（如果存在）
-        title = ""
-        content_lines = prompt.split('\n')
-        for line in content_lines[:20]:  # 只检查前20行
-            if line.startswith('# '):
-                title = line[2:].strip()
-                break
-        
-        if not title:
-            title = "云计算网络技术文章"
-        
-        # 根据任务类型返回不同的mock数据
-        if task_type == "AI标题翻译":
-            # 判断标题是否包含特定关键词，以决定使用哪种前缀
-            if any(keyword in title.lower() for keyword in ["how to", "guide", "best practices", "tutorial", "implement"]):
-                return "[解决方案] " + title + "（中文翻译）"
-            else:
-                return "[新功能] " + title + "（中文翻译）"
-        
-        elif task_type == "AI竞争分析":
-            # 判断是解决方案还是产品功能
-            if any(keyword in title.lower() for keyword in ["how to", "guide", "best practices", "tutorial", "implement"]):
-                return """# 解决方案分析
-
-## 解决方案概述
-这是一个关于**云网络**技术的解决方案，旨在帮助用户解决网络连接、安全和性能问题。该方案利用了**软件定义网络(SDN)**和**网络功能虚拟化(NFV)**技术，为企业提供灵活、可扩展的网络架构。
-
-## 实施步骤
-1. 评估现有网络架构和需求，确定迁移策略
-2. 部署核心网络组件，包括虚拟路由器和负载均衡器
-3. 配置安全策略和访问控制列表
-4. 实施监控和日志系统，确保网络可见性
-5. 进行性能测试和优化
-
-## 方案客户价值
-- 提高网络灵活性，支持快速业务变化和扩展
-- 降低运维复杂度，实现 _管理效率提升40%_
-- 增强安全性，通过微分段和深度包检测防御威胁
-- 优化成本结构，相比传统网络解决方案 _节省约25%的总拥有成本_
-
-## 涉及的相关产品
-- 虚拟私有云(VPC)：提供隔离的网络环境
-- 负载均衡服务：确保应用高可用性和性能
-- 网络安全组：实现细粒度的访问控制
-- 流日志：提供网络流量分析能力
-
-## 技术评估
-该解决方案采用了业界领先的云原生网络技术，具有较高的技术成熟度和可靠性。方案的优势在于灵活性和自动化程度高，但对于特定的传统网络协议支持可能存在一定限制。实施过程中需要考虑与现有系统的兼容性和迁移策略。
-
-## 其他信息
-部署该解决方案需要具备基本的云计算和网络知识，建议由有经验的网络工程师主导实施。方案支持主流操作系统和应用环境，可与大多数企业IT系统无缝集成。"""
-            else:
-                return """# 产品功能分析
-
-## 新功能/新产品概述
-这是一项关于**云网络连接**的新功能，提供了增强的网络连接能力和性能优化。该功能基于**高级路由算法**和**智能流量管理**技术，旨在解决企业在多云环境下面临的网络连接挑战。产品定位于需要高性能、安全可靠网络连接的企业客户。
-
-## 关键客户价值
-- 提供统一的网络管理界面，简化多云环境下的网络配置和监控
-- 实现智能路由优化，相比传统方案 _降低网络延迟达30%_
-- 支持自动扩展和故障转移，确保业务连续性
-- 提供详细的网络分析和可视化，帮助客户优化网络架构
-
-## 关键技术洞察
-- 采用 _基于AI的流量预测_ 技术，动态调整网络资源分配
-- 实现了跨区域的低延迟连接，通过优化路由和缓存机制
-- 集成了高级安全功能，包括DDoS防护和加密传输
-- 支持多种网络协议和标准，确保与现有系统的兼容性
-
-## 市场影响评估
-该产品功能的推出将显著增强云服务提供商在网络连接领域的竞争力。目标客户主要是大中型企业和对网络性能有高要求的行业（如金融、医疗、在线游戏等）。该功能填补了市场上在多云网络管理方面的空白，预计将吸引更多企业客户迁移到云环境。
-
-## 其他信息
-该功能目前处于公开预览阶段，预计在下一季度正式发布。使用该功能需要企业账户权限，并且某些高级特性可能需要额外付费。"""
-        
-        elif task_type == "AI全文翻译":
-            # 生成一个简单的中文翻译mock
-            return f"""# {title}（中文翻译）
-
-这是一篇关于云计算网络技术的文章的中文翻译。原文讨论了云计算网络的最新发展和技术趋势。
-
-## 主要内容
-
-云计算网络技术正在快速发展，主要表现在以下几个方面：
-
-1. 软件定义网络(SDN)的广泛应用
-2. 网络功能虚拟化(NFV)技术的成熟
-3. 多云网络连接解决方案的创新
-4. 网络安全技术的增强
-
-## 技术详情
-
-云服务提供商不断推出新的网络产品和功能，以满足企业客户的需求。这些创新包括：
-
-- 高性能的虚拟私有网络
-- 智能负载均衡技术
-- 全球分布式内容分发
-- 自动化网络配置和管理工具
-
-## 结论
-
-随着云计算的普及，网络技术将继续演进，为企业提供更加灵活、安全、高效的连接方案。"""
-        
-        else:
-            # 对于未知的任务类型，返回通用mock数据
-            return f"""# Mock数据：{task_type}
-
-这是为任务类型 "{task_type}" 生成的mock数据。
-
-在实际的AI分析中，这里会包含针对原始内容的详细分析结果。
-
-当前处于mock模式，用于调试整体项目流程，无需进行真正的AI API调用。"""
     
     def run(self) -> List[Dict[str, Any]]:
         """

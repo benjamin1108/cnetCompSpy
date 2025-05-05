@@ -107,47 +107,98 @@ def load_yaml_file(file_path: str) -> Dict[str, Any]:
         logger.error(f"加载配置文件时出错: {e}")
         return {}
 
+def load_config_directory(config_dir: str) -> Dict[str, Any]:
+    """
+    加载配置目录中的所有配置文件
+    
+    Args:
+        config_dir: 配置文件目录路径
+        
+    Returns:
+        Dict: 合并后的配置字典
+    """
+    # 先查找main.yaml作为主配置文件
+    main_config_path = os.path.join(config_dir, 'main.yaml')
+    if not os.path.exists(main_config_path):
+        # 如果没有main.yaml，则按字母顺序加载所有yaml文件
+        print(f"警告: 在配置目录 {config_dir} 中未找到main.yaml，将按字母顺序加载所有yaml文件")
+        return load_all_yaml_files(config_dir)
+    
+    # 加载main.yaml
+    main_config = load_yaml_file(main_config_path)
+    
+    # 检查main.yaml中是否有imports字段
+    if 'imports' not in main_config:
+        print(f"警告: main.yaml中没有imports字段，将仅使用main.yaml中的配置")
+        return main_config
+    
+    # 创建最终合并的配置
+    final_config = {}
+    
+    # 按照imports列表顺序加载配置文件
+    for import_file in main_config.get('imports', []):
+        import_path = os.path.join(config_dir, import_file)
+        if os.path.exists(import_path):
+            config_data = load_yaml_file(import_path)
+            final_config = merge_configs(final_config, config_data)
+            print(f"信息: 已加载配置文件: {import_file}")
+        else:
+            print(f"警告: 导入的配置文件不存在: {import_path}")
+    
+    # 移除imports字段，避免干扰实际配置
+    if 'imports' in main_config:
+        del main_config['imports']
+    
+    # 将main.yaml中的其他配置合并到最终配置中
+    if main_config:
+        final_config = merge_configs(final_config, main_config)
+    
+    return final_config
+
+def load_all_yaml_files(config_dir: str) -> Dict[str, Any]:
+    """
+    按字母顺序加载目录中的所有yaml文件
+    
+    Args:
+        config_dir: 配置文件目录路径
+        
+    Returns:
+        Dict: 合并后的配置字典
+    """
+    merged_config = {}
+    
+    # 获取目录中所有的yaml文件，并按字母顺序排序
+    yaml_files = sorted([f for f in os.listdir(config_dir) 
+                          if f.endswith('.yaml') or f.endswith('.yml')])
+    
+    # 依次加载每个文件
+    for yaml_file in yaml_files:
+        file_path = os.path.join(config_dir, yaml_file)
+        try:
+            config_data = load_yaml_file(file_path)
+            merged_config = merge_configs(merged_config, config_data)
+            print(f"信息: 已加载配置文件: {yaml_file}")
+        except Exception as e:
+            print(f"警告: 加载配置文件 {yaml_file} 失败: {e}")
+    
+    return merged_config
+
 def get_config(args: argparse.Namespace) -> Dict[str, Any]:
     """
     Load config from yaml file and merge with command line arguments.
     """
-    config = DEFAULT_CONFIG.copy()
+    from src.utils.config_loader import get_config as load_config
     
     # 获取项目根目录路径
-    # 注意：这个 base_dir 计算方式假设 main.py 在 src 目录下
-    # 如果 main.py 移动到项目根目录，这个计算需要调整
     script_dir = os.path.dirname(os.path.abspath(__file__))
     base_dir = os.path.dirname(script_dir) # 项目根目录是 src 的父目录
     
-    # 确定主配置文件路径：优先使用命令行参数，其次是项目根目录下的 config.yaml
-    if args.config:
-        # 如果命令行指定了路径
-        config_path_yaml = args.config
-        # 如果是相对路径，则相对于当前工作目录解析
-        if not os.path.isabs(config_path_yaml):
-            config_path_yaml = os.path.abspath(config_path_yaml)
-        print(f"信息: 使用命令行指定的配置文件: {config_path_yaml}") # 在日志系统前打印
-    else:
-        # 否则使用项目根目录下的 config.yaml
-        config_path_yaml = os.path.join(base_dir, 'config.yaml')
-        print(f"信息: 未指定配置文件，尝试加载默认路径: {config_path_yaml}") # 在日志系统前打印
-
-    # 加载主配置文件
-    if os.path.exists(config_path_yaml):
-        config_data = load_yaml_file(config_path_yaml)
-        config = merge_configs(config, config_data)
-        # 不再在这里记录日志，因为日志系统尚未配置
-    else:
-        print(f"警告: 配置文件不存在: {config_path_yaml}") # 在日志系统前打印
-    
-    # 加载敏感配置文件 (路径通常相对于项目根目录)
-    secret_config_path = os.path.join(base_dir, 'config.secret.yaml')
-    if os.path.exists(secret_config_path):
-        secret_config_data = load_yaml_file(secret_config_path)
-        config = merge_configs(config, secret_config_data)
-        # 不再在这里记录日志
-    # else:
-        # print(f"警告: 敏感配置文件不存在: {secret_config_path}") # 可选，根据需要取消注释
+    # 使用通用配置加载器加载配置
+    config = load_config(
+        base_dir=base_dir,
+        config_path=args.config,
+        default_config=DEFAULT_CONFIG
+    )
     
     return config
 

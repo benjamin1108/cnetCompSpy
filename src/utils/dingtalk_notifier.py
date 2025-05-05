@@ -142,7 +142,7 @@ class DingTalkNotifier:
     
     def _load_config(self, config_path: Optional[str] = None) -> None:
         """
-        加载配置文件
+        加载配置
         
         Args:
             config_path: 配置文件路径
@@ -154,56 +154,35 @@ class DingTalkNotifier:
             "robots": []
         }
         
-        # 基础配置文件路径
-        base_config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "config.yaml")
-        
-        # 敏感配置文件路径
-        secret_config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "config.secret.yaml")
-        
-        # 加载基础配置
-        if os.path.exists(base_config_path):
-            try:
-                with open(base_config_path, 'r', encoding='utf-8') as f:
-                    base_config = yaml.safe_load(f)
-                    if base_config and "dingtalk" in base_config:
-                        # 更新非敏感配置
-                        for key in ["enabled", "keyword"]:
-                            if key in base_config["dingtalk"]:
-                                self.config[key] = base_config["dingtalk"][key]
-            except Exception as e:
-                self.logger.error(f"加载基础配置文件失败: {e}")
-        
-        # 加载敏感配置
-        if os.path.exists(secret_config_path):
-            try:
-                with open(secret_config_path, 'r', encoding='utf-8') as f:
-                    secret_config = yaml.safe_load(f)
-                    if secret_config and "dingtalk" in secret_config:
-                        # 检查是否有机器人配置
-                        if "robots" in secret_config["dingtalk"]:
-                            self.config["robots"] = secret_config["dingtalk"]["robots"]
-                        # 处理旧版配置格式向后兼容
-                        elif "webhook_url" in secret_config["dingtalk"]:
-                            self.logger.warning("检测到旧版配置格式，建议更新为新的robots列表格式")
-                            self.config["robots"] = [{
-                                "name": "默认机器人",
-                                "webhook_url": secret_config["dingtalk"].get("webhook_url", ""),
-                                "secret": secret_config["dingtalk"].get("secret", "")
-                            }]
-            except Exception as e:
-                self.logger.error(f"加载敏感配置文件失败: {e}")
-        
-        # 如果指定了配置文件，使用指定的配置文件覆盖默认配置
-        if config_path and os.path.exists(config_path):
-            try:
-                with open(config_path, 'r', encoding='utf-8') as f:
-                    custom_config = yaml.safe_load(f)
-                    if custom_config and "dingtalk" in custom_config:
-                        # 更新全部配置
-                        for key in custom_config["dingtalk"]:
-                            self.config[key] = custom_config["dingtalk"][key]
-            except Exception as e:
-                self.logger.error(f"加载自定义配置文件失败: {e}")
+        try:
+            # 使用通用配置加载器
+            from src.utils.config_loader import get_config
+            
+            # 加载配置
+            loaded_config = get_config(config_path=config_path)
+            
+            # 提取钉钉配置
+            if loaded_config and "dingtalk" in loaded_config:
+                dingtalk_config = loaded_config["dingtalk"]
+                
+                # 更新非敏感配置
+                for key in ["enabled", "keyword"]:
+                    if key in dingtalk_config:
+                        self.config[key] = dingtalk_config[key]
+                
+                # 检查是否有机器人配置
+                if "robots" in dingtalk_config:
+                    self.config["robots"] = dingtalk_config["robots"]
+                # 处理旧版配置格式向后兼容
+                elif "webhook_url" in dingtalk_config:
+                    self.logger.warning("检测到旧版配置格式，建议更新为新的robots列表格式")
+                    self.config["robots"] = [{
+                        "name": "默认机器人",
+                        "webhook_url": dingtalk_config.get("webhook_url", ""),
+                        "secret": dingtalk_config.get("secret", "")
+                    }]
+        except Exception as e:
+            self.logger.error(f"加载配置失败: {e}")
         
         # 初始化机器人
         self._init_robots()

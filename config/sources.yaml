@@ -1,0 +1,60 @@
+# 数据源配置
+sources:
+  aws:
+    blog:
+      url: "https://aws.amazon.com/blogs/networking-and-content-delivery/"
+      type: "blog"
+      test_mode: false # 测试模式开关，true时只爬取1篇文章
+    whatsnew:
+      url: "https://aws.amazon.com/about-aws/whats-new/networking_and_content_delivery"
+      type: "what's new"
+      max_pages: 40  # 最大爬取页数
+  azure:
+    blog:
+      url: "https://azure.microsoft.com/en-us/blog/category/networking/"
+      type: "blog"
+      test_mode: false
+    tech-blog:
+      url: "https://techcommunity.microsoft.com/category/azure/blog/azurenetworkingblog"
+      type: "tech-blog"
+      test_mode: false
+    
+    updates:
+      type: "updates"
+      test_mode: false
+    
+    docs:
+      url: "https://learn.microsoft.com/en-us/azure/"
+      type: "documentation"
+  gcp:
+    blog:
+      url: "https://cloud.google.com/blog/products/networking"
+      type: "blog"
+      test_mode: false
+    docs:
+      url: "https://cloud.google.com/docs/"
+      type: "documentation"
+  tencent:
+    blog:
+      url: "https://www.tencentcloud.com/document/product"
+      type: "blog"
+      test_mode: false
+    docs:
+      url: "https://www.tencentcloud.com/document/product"
+      type: "documentation"
+  huawei:
+    blog:
+      url: "https://www.huaweicloud.com/intl/en-us/news/"
+      type: "blog"
+      test_mode: false
+    docs:
+      url: "https://support.huaweicloud.com/intl/en-us/index.html"
+      type: "documentation"
+  volcano:
+    blog:
+      url: "https://volcano.sh/en/blog/"
+      type: "blog"
+      test_mode: false
+    docs:
+      url: "https://volcano.sh/en/docs/"
+      type: "documentation" 

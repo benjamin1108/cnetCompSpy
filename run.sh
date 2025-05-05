@@ -20,7 +20,7 @@ show_help() {
     echo -e "${YELLOW}用法:${NC}"
     echo -e "  $0 [命令] [选项]"
     echo ""
-    echo -e "${YELLOW}命令:${NC}"
+    echo -e "${YELLOW}可用命令:${NC}"
     echo -e "  ${GREEN}crawl${NC}    - 爬取数据"
     echo -e "  ${GREEN}analyze${NC}  - 分析数据"
     echo -e "  ${GREEN}server${NC}   - 启动Web服务器"
@@ -31,70 +31,91 @@ show_help() {
     echo -e "  ${GREEN}clean${NC}    - 清理中间文件和临时文件"
     echo -e "  ${GREEN}daily${NC}    - 执行每日爬取与分析任务"
     echo -e "  ${GREEN}rebuild-md${NC} - 重建元数据，从本地MD文件更新元数据"
-    echo -e "  ${GREEN}dingtalk${NC} - 通过钉钉机器人推送weekly-updates到钉钉群"
-    echo -e "  ${GREEN}dingpush${NC} - 使用钉钉推送，支持weekly、daily和recent子命令"
+    echo -e "  ${GREEN}dingpush${NC} - 使用钉钉推送系统通知和更新，支持多种推送模式"
     echo -e "  ${GREEN}help${NC}     - 显示此帮助信息"
     echo ""
-    echo -e "${YELLOW}选项:${NC}"
-    echo -e "  ${GREEN}--vendor${NC} [aws|azure|gcp|tencent|huawei|volcano]  - 指定厂商（用于crawl和analyze命令）"
-    echo -e "  ${GREEN}--file${NC} [文件路径]              - 指定要分析的文件路径（仅用于analyze命令）"
-    echo -e "  ${GREEN}--limit${NC} [数字]                - 限制爬取/分析的文章数量"
+    
+    echo -e "${YELLOW}全局选项:${NC}"
+    echo -e "  ${GREEN}--debug${NC}                      - 启用调试模式（适用于所有命令）"
     echo -e "  ${GREEN}--config${NC} [配置文件]           - 指定配置文件路径"
-    echo -e "  ${GREEN}--host${NC} [主机地址]             - 指定服务器主机地址（仅用于server命令）"
-    echo -e "  ${GREEN}--port${NC} [端口号]               - 指定服务器端口（仅用于server命令）"
-    echo -e "  ${GREEN}--debug${NC}                      - 启用调试模式"
-    echo -e "  ${GREEN}--clean${NC}                      - 清理数据目录（仅用于crawl和analyze命令）"
-    echo -e "  ${GREEN}--force${NC}                      - 强制执行，忽略本地metadata或文件是否已存在"
-    echo -e "  ${GREEN}--all${NC}                        - 清理所有中间文件（仅用于clean命令）"
-    echo -e "  ${GREEN}--pyc${NC}                        - 清理Python字节码文件（仅用于clean命令）"
-    echo -e "  ${GREEN}--logs${NC}                       - 清理日志文件（仅用于clean命令）"
-    echo -e "  ${GREEN}--temp${NC}                       - 清理临时文件（仅用于clean命令）"
-    echo -e "  ${GREEN}--data${NC}                       - 清理data目录（仅用于clean命令）"
-    echo -e "  ${GREEN}--detailed${NC}                   - 显示详细信息（仅用于stats命令）"
-    echo -e "  ${GREEN}--tasks-only${NC}                 - 只显示任务信息（仅用于check-tasks命令）"
-    echo -e "  ${GREEN}--type${NC} [crawler|analysis]     - 指定元数据类型（crawler 或 analysis，仅用于rebuild-md命令）"
-    echo -e "  ${GREEN}--force_clear${NC}                 - 强制清空原有元数据（仅用于rebuild-md命令）"
-    echo -e "  ${GREEN}--force${NC}                       - 强制重建元数据，即使元数据已存在（仅用于rebuild-md命令）"
-    echo -e "  ${GREEN}--no-email${NC}                    - 禁用电子邮件通知（仅用于daily命令）"
-    echo -e "  ${GREEN}--no-stats${NC}                    - 禁用统计任务（仅用于daily命令）"
-    echo -e "  ${GREEN}--no-crawl${NC}                    - 禁用爬取任务（仅用于daily命令）"
-    echo -e "  ${GREEN}--no-analyze${NC}                  - 禁用分析任务（仅用于daily命令）"
-    echo -e "  ${GREEN}--no-dingtalk${NC}                 - 禁用钉钉推送（仅用于daily命令）"
-    echo -e "  ${GREEN}--robot${NC}                        - 使用指定的钉钉机器人推送"
     echo ""
-    echo -e "${YELLOW}示例:${NC}"
-    echo -e "  $0 crawl                     # 爬取所有厂商的数据"
-    echo -e "  $0 crawl --vendor aws        # 仅爬取AWS的数据"
-    echo -e "  $0 crawl --limit 10          # 每个来源最多爬取10篇文章"
-    echo -e "  $0 crawl --force             # 强制爬取所有数据，忽略本地metadata"
-    echo -e "  $0 crawl --config custom.yaml # 使用自定义配置文件爬取数据"
-    echo -e "  $0 analyze                   # 分析所有爬取的数据"
-    echo -e "  $0 analyze --vendor aws      # 仅分析AWS的数据"
-    echo -e "  $0 analyze --file data/raw/aws/blog/文件名.md  # 分析特定文件"
-    echo -e "  $0 analyze --force           # 强制分析所有数据，忽略文件是否已存在"
-    echo -e "  $0 analyze --config prod.yaml # 使用自定义配置文件分析数据"
-    echo -e "  $0 server                    # 启动Web服务器（默认127.0.0.1:5000）"
-    echo -e "  $0 server --host 0.0.0.0 --port 8080  # 指定主机和端口启动服务器"
-    echo -e "  $0 setup                     # 设置环境"
-    echo -e "  $0 driver                    # 下载最新的WebDriver"
-    echo -e "  $0 stats                     # 比较元数据和实际文件统计"
-    echo -e "  $0 stats --detailed          # 显示详细的文件对比信息"
-    echo -e "  $0 clean                     # 清理所有中间文件和临时文件"
-    echo -e "  $0 clean --pyc               # 只清理Python字节码文件"
-    echo -e "  $0 clean --logs              # 只清理日志文件"
-    echo -e "  $0 clean --data              # 只清理data目录"
-    echo -e "  $0 daily                     # 执行每日爬取与分析任务"
-    echo -e "  $0 daily --no-email          # 执行每日任务但不发送邮件"
-    echo -e "  $0 daily --no-dingtalk       # 执行每日任务但不推送到钉钉"
-    echo -e "  $0 rebuild-md                # 重建元数据，从本地MD文件更新元数据"
-    echo -e "  $0 rebuild-md --force        # 强制重建元数据，即使元数据已存在"
-    echo -e "  $0 dingtalk                  # 通过钉钉机器人推送weekly-updates"
-    echo -e "  $0 dingtalk --debug          # 以调试模式推送weekly-updates"
-    echo -e "  $0 dingtalk --config custom.yaml  # 使用自定义配置文件推送"
-    echo -e "  $0 dingtalk --robot 机器人1 --robot 机器人2  # 使用指定的钉钉机器人推送"
-    echo -e "  $0 dingpush weekly           # 通过钉钉机器人推送本周更新"
-    echo -e "  $0 dingpush daily            # 通过钉钉机器人推送今日更新"
-    echo -e "  $0 dingpush recent 7         # 通过钉钉机器人推送最近7天更新"
+    
+    echo -e "${YELLOW}命令特定选项:${NC}"
+    echo -e "${BLUE}crawl 命令选项:${NC}"
+    echo -e "  ${GREEN}--vendor${NC} [aws|azure|gcp]     - 指定要处理的云服务提供商"
+    echo -e "  ${GREEN}--source${NC} [类型]               - 指定要处理的数据来源"
+    echo -e "  ${GREEN}--limit${NC} [数字]                - 限制爬取的文章数量"
+    echo -e "  ${GREEN}--clean${NC}                      - 清理数据目录"
+    echo -e "  ${GREEN}--force${NC}                      - 强制执行，忽略本地metadata是否已存在"
+    echo ""
+    
+    echo -e "${BLUE}analyze 命令选项:${NC}"
+    echo -e "  ${GREEN}--vendor${NC} [aws|azure|gcp|tencent|huawei|volcano]  - 指定要处理的云服务提供商"
+    echo -e "  ${GREEN}--file${NC} [文件路径]              - 指定要分析的文件路径"
+    echo -e "  ${GREEN}--limit${NC} [数字]                - 限制分析的文章数量"
+    echo -e "  ${GREEN}--clean${NC}                      - 清理数据目录"
+    echo -e "  ${GREEN}--force${NC}                      - 强制执行，忽略文件是否已存在"
+    echo ""
+    
+    echo -e "${BLUE}server 命令选项:${NC}"
+    echo -e "  ${GREEN}--host${NC} [主机地址]             - 指定服务器主机地址"
+    echo -e "  ${GREEN}--port${NC} [端口号]               - 指定服务器端口"
+    echo ""
+    
+    echo -e "${BLUE}stats 命令选项:${NC}"
+    echo -e "  ${GREEN}--detailed${NC}                   - 显示详细信息"
+    echo ""
+    
+    echo -e "${BLUE}check-tasks 命令选项:${NC}"
+    echo -e "  ${GREEN}--tasks-only${NC}                 - 只显示任务信息"
+    echo ""
+    
+    echo -e "${BLUE}clean 命令选项:${NC}"
+    echo -e "  ${GREEN}--all${NC}                        - 清理所有中间文件"
+    echo -e "  ${GREEN}--pyc${NC}                        - 清理Python字节码文件"
+    echo -e "  ${GREEN}--logs${NC}                       - 清理日志文件"
+    echo -e "  ${GREEN}--temp${NC}                       - 清理临时文件"
+    echo -e "  ${GREEN}--data${NC}                       - 清理data目录"
+    echo ""
+    
+    echo -e "${BLUE}daily 命令选项:${NC}"
+    echo -e "  ${GREEN}--no-email${NC}                    - 禁用电子邮件通知"
+    echo -e "  ${GREEN}--no-stats${NC}                    - 禁用统计任务"
+    echo -e "  ${GREEN}--no-crawl${NC}                    - 禁用爬取任务"
+    echo -e "  ${GREEN}--no-analyze${NC}                  - 禁用分析任务"
+    echo -e "  ${GREEN}--no-dingtalk${NC}                 - 禁用钉钉推送"
+    echo -e "  ${GREEN}--vendor${NC} [aws|azure|gcp|all]  - 指定要处理的云服务提供商"
+    echo -e "  ${GREEN}--limit${NC} [数字]                 - 限制处理的文章数量"
+    echo ""
+    
+    echo -e "${BLUE}rebuild-md 命令选项:${NC}"
+    echo -e "  ${GREEN}--type${NC} [crawler|analysis|all] - 指定元数据类型"
+    echo -e "  ${GREEN}--force${NC}                       - 强制重建元数据，即使元数据已存在"
+    echo -e "  ${GREEN}--force_clear${NC}                 - 强制清空原有元数据"
+    echo -e "  ${GREEN}--deep-check${NC}                  - 进行深度检查，检测内容问题"
+    echo -e "  ${GREEN}--delete${NC}                      - 与--deep-check一起使用，删除有问题的文件"
+    echo ""
+    
+    echo -e "${BLUE}dingpush 命令:${NC}"
+    echo -e "  子命令:"
+    echo -e "  ${GREEN}weekly${NC}                       - 推送本周更新"
+    echo -e "  ${GREEN}daily${NC}                        - 推送今日更新"
+    echo -e "  ${GREEN}recent${NC} [天数]                - 推送最近几天更新"
+    echo -e ""
+    echo -e "  选项:"
+    echo -e "  ${GREEN}--robot${NC} [机器人名称]           - 使用指定的钉钉机器人推送（可指定多个）"
+    echo -e "  ${GREEN}--config${NC} [配置文件]           - 指定配置文件路径"
+    echo ""
+    
+    echo -e "${YELLOW}示例用法:${NC}"
+    echo -e "  $0 crawl --vendor aws --limit 10         # 爬取AWS的数据，限制10篇文章"
+    echo -e "  $0 analyze --file data/raw/aws/blog/某文件.md  # 分析特定文件"
+    echo -e "  $0 server --host 0.0.0.0 --port 8080     # 指定主机和端口启动服务器"
+    echo -e "  $0 daily --no-email                      # 执行每日任务但不发送邮件"
+    echo -e "  $0 rebuild-md --type analysis --force    # 强制重建分析元数据"
+    echo -e "  $0 dingpush weekly --robot 机器人1 --robot 机器人2  # 使用指定机器人推送本周更新"
+    echo -e "  $0 dingpush recent 7                     # 推送最近7天的更新"
+    echo -e "  $0 --debug crawl --vendor aws            # 以调试模式爬取AWS数据"
 }
 
 # 显示错误信息
@@ -556,50 +577,6 @@ validate_args() {
             fi
             ;;
             
-        dingtalk)
-            # dingtalk命令有效参数
-            local valid_opts=("--debug" "--config" "--robot")
-            local requires_value=("--config" "--robot")
-            
-            # 验证参数
-            while [[ $# -gt 0 ]]; do
-                local current="$1"
-                local is_valid=false
-                
-                # 检查参数是否有效
-                for opt in "${valid_opts[@]}"; do
-                    if [[ "$current" == "$opt" ]]; then
-                        is_valid=true
-                        break
-                    fi
-                done
-                
-                # 检查需要值的参数
-                for req in "${requires_value[@]}"; do
-                    if [[ "$current" == "$req" ]]; then
-                        if [[ -z "$2" || "$2" == --* ]]; then
-                            show_error "参数 $current 需要一个值"
-                        fi
-                        
-                        # 检查特定参数的值约束
-                        if [[ "$current" == "--config" ]]; then
-                            check_config_exists "$2"
-                        fi
-                        
-                        shift
-                        break
-                    fi
-                done
-                
-                # 如果无效，添加到无效参数列表
-                if ! $is_valid; then
-                    invalid_args+=("$current")
-                fi
-                
-                shift
-            done
-            ;;
-            
         dingpush)
             # dingpush命令有效参数
             local valid_opts=("weekly" "daily" "recent")
@@ -643,7 +620,7 @@ validate_args() {
             fi
             
             # 检查剩余参数
-            local valid_extra_opts=("--debug" "--config" "--robot")
+            local valid_extra_opts=("--config" "--robot")
             local requires_value=("--config" "--robot")
             
             while [[ $# -gt 0 ]]; do
@@ -663,6 +640,7 @@ validate_args() {
                     if [[ "$current" == "$req" ]]; then
                         if [[ -z "$2" || "$2" == --* ]]; then
                             show_error "参数 $current 需要一个值"
+                            return 1
                         fi
                         
                         # 检查特定参数的值约束
@@ -716,6 +694,10 @@ validate_args() {
                 ;;
             setup|driver|help)
                 echo -e "${GREEN}[无参数]${NC}"
+                ;;
+            dingpush)
+                echo -e "${GREEN}子命令: weekly, daily, recent [天数]${NC}"
+                echo -e "${GREEN}选项: --config [配置文件], --robot [机器人名称]${NC}"
                 ;;
         esac
         
@@ -875,7 +857,7 @@ crawl_data() {
     activate_venv
     
     # 调用Python模块，明确指定配置文件路径
-    python -m src.main --mode crawl --config "$SCRIPT_DIR/config.yaml" "$@"
+    python -m src.main --mode crawl --config "$SCRIPT_DIR/config" "$@"
 }
 
 # 分析数据
@@ -903,8 +885,8 @@ analyze_data() {
     fi
     
     # 检查是否存在配置文件
-    if [ ! -f "$SCRIPT_DIR/config.yaml" ]; then
-        show_error "未找到配置文件: config.yaml，请确保该文件存在"
+    if [ ! -d "$SCRIPT_DIR/config" ]; then
+        show_error "未找到配置目录: config，请确保该目录存在"
     fi
     
     # 检查是否存在敏感配置文件
@@ -916,7 +898,7 @@ analyze_data() {
     activate_venv
     
     # 调用Python模块，明确指定配置文件路径
-    python -m src.main --mode analyze --config "$SCRIPT_DIR/config.yaml" "$@"
+    python -m src.main --mode analyze --config "$SCRIPT_DIR/config" "$@"
 }
 
 # 比较元数据和实际文件统计
@@ -1153,55 +1135,7 @@ run_rebuild_metadata() {
     return $RESULT
 }
 
-# 执行钉钉推送
-run_dingtalk_push() {
-    echo -e "${BLUE}开始推送weekly-updates到钉钉群...${NC}"
-    
-    # 验证参数
-    validate_args "dingtalk" "$@" || return 1
-    
-    # 激活虚拟环境
-    activate_venv
-    
-    # 默认参数
-    DEBUG=""
-    CONFIG=""
-    ROBOT=""
-    
-    # 解析参数
-    while [[ $# -gt 0 ]]; do
-        case "$1" in
-            --debug)
-                DEBUG="--debug"
-                shift
-                ;;
-            --config)
-                CONFIG="--config $2"
-                shift 2
-                ;;
-            --robot)
-                ROBOT="$ROBOT --robot $2"
-                shift 2
-                ;;
-            *)
-                shift
-                ;;
-        esac
-    done
-    
-    # 执行推送命令
-    echo -e "${YELLOW}正在执行钉钉推送...${NC}"
-    python -m src.dingtalk_pusher $DEBUG $CONFIG $ROBOT
-    
-    if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✓ 钉钉推送成功${NC}"
-    else
-        echo -e "${RED}✗ 钉钉推送失败${NC}"
-        return 1
-    fi
-}
-
-# 执行钉钉推送(支持子命令)
+# 执行钉钉推送(支持多种推送模式和机器人选项)
 run_dingpush() {
     echo -e "${BLUE}开始执行钉钉推送...${NC}"
     
@@ -1214,6 +1148,19 @@ run_dingpush() {
     ROBOT=""
     COMMAND=""
     DAYS=""
+    
+    # 从参数中移除--debug（已由主函数处理）
+    local new_args=()
+    for arg in "$@"; do
+        if [[ "$arg" != "--debug" ]]; then
+            new_args+=("$arg")
+        else
+            DEBUG="--debug"
+        fi
+    done
+    
+    # 重新设置参数数组
+    set -- "${new_args[@]}"
     
     # 检查是否有子命令
     if [ $# -eq 0 ]; then
@@ -1250,11 +1197,6 @@ run_dingpush() {
     # 解析其他参数
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --debug)
-                DEBUG="--debug"
-                echo -e "${YELLOW}启用调试模式${NC}"
-                shift
-                ;;
             --config)
                 CONFIG="--config $2"
                 echo -e "${YELLOW}使用配置文件: $2${NC}"
@@ -1271,6 +1213,11 @@ run_dingpush() {
                 ;;
         esac
     done
+    
+    # 如果启用了调试模式，输出提示
+    if [ -n "$DEBUG" ]; then
+        echo -e "${YELLOW}调试模式已启用${NC}"
+    fi
     
     # 执行推送命令
     echo -e "${YELLOW}正在执行钉钉推送 (${COMMAND})...${NC}"
@@ -1299,89 +1246,177 @@ main() {
         exit 0
     fi
     
+    # 全局DEBUG变量，默认为空
+    GLOBAL_DEBUG=""
+    
+    # 检查第一个参数是否为--debug
+    if [ "$1" == "--debug" ]; then
+        GLOBAL_DEBUG="--debug"
+        show_info "已启用全局调试模式"
+        shift
+        
+        # 如果--debug后没有参数，显示帮助
+        if [ $# -eq 0 ]; then
+            show_error "启用调试模式后，需要指定要执行的命令"
+            exit 1
+        fi
+    fi
+    
     # 解析命令
     COMMAND="$1"
     shift
     
+    # 检查其余参数中是否有--debug（用于向后兼容）
+    ARGS=("$@")
+    FILTERED_ARGS=()
+    
+    for arg in "${ARGS[@]}"; do
+        if [[ "$arg" == "--debug" ]]; then
+            # 如果全局DEBUG已经设置，忽略重复的--debug
+            if [ -z "$GLOBAL_DEBUG" ]; then
+                GLOBAL_DEBUG="--debug"
+                show_info "已启用全局调试模式"
+            else
+                show_warning "检测到重复的--debug参数，将被忽略"
+            fi
+        else
+            FILTERED_ARGS+=("$arg")
+        fi
+    done
+    
     # 验证命令是否有效
     case "$COMMAND" in
-        crawl|analyze|server|setup|driver|stats|check-tasks|clean|daily|rebuild-md|help|dingtalk|dingpush)
+        crawl|analyze|server|setup|driver|stats|check-tasks|clean|daily|rebuild-md|help|dingpush)
             # 有效命令
             ;;
+        dingtalk)
+            # 向后兼容：将dingtalk命令重定向到dingpush weekly
+            show_warning "dingtalk命令已弃用，将自动转换为dingpush weekly命令"
+            COMMAND="dingpush"
+            set -- "weekly" "${FILTERED_ARGS[@]}"
+            FILTERED_ARGS=("weekly" "${FILTERED_ARGS[@]}")
+            ;;
         *)
-            show_error "未知命令: $COMMAND。有效命令: crawl, analyze, server, setup, driver, stats, check-tasks, clean, daily, rebuild-md, help, dingtalk, dingpush"
+            show_error "未知命令: $COMMAND。有效命令: crawl, analyze, server, setup, driver, stats, check-tasks, clean, daily, rebuild-md, help, dingpush"
+            exit 1
             ;;
     esac
     
     # 执行命令
     case "$COMMAND" in
         crawl)
-            crawl_data "$@"
+            if [ -n "$GLOBAL_DEBUG" ]; then
+                crawl_data "${FILTERED_ARGS[@]}" --debug
+            else
+                crawl_data "${FILTERED_ARGS[@]}"
+            fi
+            
             RESULT=$?
             if [ $RESULT -eq 0 ]; then
                 echo -e "${BLUE}==================================================${NC}"
                 echo -e "${BLUE}爬取完成，正在重建元数据...${NC}"
                 echo -e "${YELLOW}注意: 使用深度检查模式，但不会删除任何文件${NC}"
                 echo -e "${BLUE}==================================================${NC}"
-                run_rebuild_metadata --type crawler --deep-check
+                
+                if [ -n "$GLOBAL_DEBUG" ]; then
+                    run_rebuild_metadata --type crawler --deep-check --debug
+                else
+                    run_rebuild_metadata --type crawler --deep-check
+                fi
+                
                 echo -e "${BLUE}==================================================${NC}"
                 echo -e "${GREEN}爬取及元数据更新流程已完成!${NC}"
             fi
             ;;
         analyze)
-            analyze_data "$@"
+            if [ -n "$GLOBAL_DEBUG" ]; then
+                analyze_data "${FILTERED_ARGS[@]}" --debug
+            else
+                analyze_data "${FILTERED_ARGS[@]}"
+            fi
+            
             RESULT=$?
             if [ $RESULT -eq 0 ]; then
                 echo -e "${BLUE}==================================================${NC}"
                 echo -e "${BLUE}分析完成，正在重建元数据...${NC}"
                 echo -e "${YELLOW}注意: 使用深度检查模式，但不会删除任何文件${NC}"
                 echo -e "${BLUE}==================================================${NC}"
-                run_rebuild_metadata --type analysis --deep-check
+                
+                if [ -n "$GLOBAL_DEBUG" ]; then
+                    run_rebuild_metadata --type analysis --deep-check --debug
+                else
+                    run_rebuild_metadata --type analysis --deep-check
+                fi
+                
                 echo -e "${BLUE}==================================================${NC}"
                 echo -e "${GREEN}分析及元数据更新流程已完成!${NC}"
             fi
             ;;
         server)
-            run_server "$@"
+            if [ -n "$GLOBAL_DEBUG" ]; then
+                run_server "${FILTERED_ARGS[@]}" --debug
+            else
+                run_server "${FILTERED_ARGS[@]}"
+            fi
             ;;
         setup)
             # 验证参数
-            validate_args "setup" "$@" || exit 1
+            validate_args "setup" "${FILTERED_ARGS[@]}" || exit 1
             setup_environment
             ;;
         driver)
             # 验证参数
-            validate_args "driver" "$@" || exit 1
+            validate_args "driver" "${FILTERED_ARGS[@]}" || exit 1
             download_driver
             ;;
         stats)
-            compare_stats "$@"
+            if [ -n "$GLOBAL_DEBUG" ]; then
+                compare_stats "${FILTERED_ARGS[@]}" --debug
+            else
+                compare_stats "${FILTERED_ARGS[@]}"
+            fi
             ;;
         check-tasks)
-            check_tasks "$@"
+            if [ -n "$GLOBAL_DEBUG" ]; then
+                check_tasks "${FILTERED_ARGS[@]}" --debug
+            else
+                check_tasks "${FILTERED_ARGS[@]}"
+            fi
             ;;
         clean)
-            clean_files "$@"
+            if [ -n "$GLOBAL_DEBUG" ]; then
+                clean_files "${FILTERED_ARGS[@]}" --debug
+            else
+                clean_files "${FILTERED_ARGS[@]}"
+            fi
             ;;
         daily)
-            run_daily "$@"
+            if [ -n "$GLOBAL_DEBUG" ]; then
+                run_daily "${FILTERED_ARGS[@]}" --debug
+            else
+                run_daily "${FILTERED_ARGS[@]}"
+            fi
             ;;
         rebuild-md)
-            run_rebuild_metadata "$@"
-            ;;
-        dingtalk)
-            # 验证参数
-            validate_args "dingtalk" "$@" || exit 1
-            run_dingtalk_push "$@"
+            if [ -n "$GLOBAL_DEBUG" ]; then
+                run_rebuild_metadata "${FILTERED_ARGS[@]}" --debug
+            else
+                run_rebuild_metadata "${FILTERED_ARGS[@]}"
+            fi
             ;;
         dingpush)
             # 验证参数
-            validate_args "dingpush" "$@" || exit 1
-            run_dingpush "$@"
+            validate_args "dingpush" "${FILTERED_ARGS[@]}" || exit 1
+            
+            if [ -n "$GLOBAL_DEBUG" ]; then
+                run_dingpush "${FILTERED_ARGS[@]}" --debug
+            else
+                run_dingpush "${FILTERED_ARGS[@]}"
+            fi
             ;;
         help)
             # 验证参数
-            validate_args "help" "$@" || exit 1
+            validate_args "help" "${FILTERED_ARGS[@]}" || exit 1
             show_help
             ;;
         *)

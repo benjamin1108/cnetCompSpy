@@ -11,10 +11,10 @@ setup_colored_logging(level=logging.INFO)
 logger = logging.getLogger('Scheduler')
 
 class Scheduler:
-    def __init__(self, config_path='config.yaml'):
-        # 确保配置文件路径基于项目根目录
-        root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        self.config_path = os.path.join(root_dir, 'config.yaml') if not os.path.isabs(config_path) else config_path
+    def __init__(self, config_path=None):
+        # 记录配置路径
+        self.config_path = config_path
+        # 初始化状态变量
         self.last_run_date = None
         self.last_dingtalk_push_date = None
         self.running = False
@@ -27,46 +27,50 @@ class Scheduler:
     def load_config(self):
         """加载配置文件"""
         try:
-            with open(self.config_path, 'r') as file:
-                config = yaml.safe_load(file)
-                new_daily_task_time = config.get('scheduler', {}).get('daily_task_time', '02:00')
-                new_check_interval = config.get('scheduler', {}).get('check_interval', 10)
-                new_dingtalk_push_time = config.get('dingtalk', {}).get('weekly_push_time', '12:00')
-                new_dingtalk_push_day = config.get('dingtalk', {}).get('weekly_push_day', 5)  # 默认周五
+            # 使用通用配置加载器
+            from src.utils.config_loader import get_config
+            
+            # 加载配置
+            config = get_config(config_path=self.config_path)
+            
+            new_daily_task_time = config.get('scheduler', {}).get('daily_task_time', '02:00')
+            new_check_interval = config.get('scheduler', {}).get('check_interval', 10)
+            new_dingtalk_push_time = config.get('dingtalk', {}).get('weekly_push_time', '12:00')
+            new_dingtalk_push_day = config.get('dingtalk', {}).get('weekly_push_day', 5)  # 默认周五
+            
+            # 确保星期几的值在1-7之间
+            if not (1 <= new_dingtalk_push_day <= 7):
+                logger.warning(f"钉钉推送星期几配置无效: {new_dingtalk_push_day}，应为1-7，已设为默认值5(周五)")
+                new_dingtalk_push_day = 5
+            
+            # 只有在配置发生变化时才输出日志
+            config_changed = False
+            
+            if new_daily_task_time != self.current_daily_task_time:
+                self.current_daily_task_time = new_daily_task_time
+                config_changed = True
                 
-                # 确保星期几的值在1-7之间
-                if not (1 <= new_dingtalk_push_day <= 7):
-                    logger.warning(f"钉钉推送星期几配置无效: {new_dingtalk_push_day}，应为1-7，已设为默认值5(周五)")
-                    new_dingtalk_push_day = 5
+            if new_check_interval != self.current_check_interval:
+                self.current_check_interval = new_check_interval
+                config_changed = True
                 
-                # 只有在配置发生变化时才输出日志
-                config_changed = False
-                
-                if new_daily_task_time != self.current_daily_task_time:
-                    self.current_daily_task_time = new_daily_task_time
-                    config_changed = True
-                    
-                if new_check_interval != self.current_check_interval:
-                    self.current_check_interval = new_check_interval
-                    config_changed = True
-                    
-                if new_dingtalk_push_time != self.current_dingtalk_push_time:
-                    self.current_dingtalk_push_time = new_dingtalk_push_time
-                    config_changed = True
-                
-                if new_dingtalk_push_day != self.current_dingtalk_push_day:
-                    self.current_dingtalk_push_day = new_dingtalk_push_day
-                    config_changed = True
-                
-                if config_changed:
-                    weekday_names = {1: "周一", 2: "周二", 3: "周三", 4: "周四", 5: "周五", 6: "周六", 7: "周日"}
-                    weekday_name = weekday_names.get(new_dingtalk_push_day, "未知")
-                    logger.info(f"定时任务配置已加载：每日任务时间={new_daily_task_time}, 钉钉推送时间={weekday_name} {new_dingtalk_push_time}, 检查间隔={new_check_interval}秒")
-                
-                self.daily_task_time = new_daily_task_time
-                self.check_interval = new_check_interval
-                self.dingtalk_push_time = new_dingtalk_push_time
-                self.dingtalk_push_day = new_dingtalk_push_day
+            if new_dingtalk_push_time != self.current_dingtalk_push_time:
+                self.current_dingtalk_push_time = new_dingtalk_push_time
+                config_changed = True
+            
+            if new_dingtalk_push_day != self.current_dingtalk_push_day:
+                self.current_dingtalk_push_day = new_dingtalk_push_day
+                config_changed = True
+            
+            if config_changed:
+                weekday_names = {1: "周一", 2: "周二", 3: "周三", 4: "周四", 5: "周五", 6: "周六", 7: "周日"}
+                weekday_name = weekday_names.get(new_dingtalk_push_day, "未知")
+                logger.info(f"定时任务配置已加载：每日任务时间={new_daily_task_time}, 钉钉推送时间={weekday_name} {new_dingtalk_push_time}, 检查间隔={new_check_interval}秒")
+            
+            self.daily_task_time = new_daily_task_time
+            self.check_interval = new_check_interval
+            self.dingtalk_push_time = new_dingtalk_push_time
+            self.dingtalk_push_day = new_dingtalk_push_day
         except Exception as e:
             logger.error(f"加载配置文件出错：{e}")
             self.daily_task_time = '02:00'

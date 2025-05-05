@@ -485,3 +485,28 @@ Web界面提供以下功能：
 
 ## 许可证
 MIT
+
+# 配置系统
+
+项目配置已经被拆分为多个文件，存放在 `config/` 目录下：
+
+- `main.yaml` - 主配置文件，用于导入其他配置文件
+- `notification.yaml` - 邮件和钉钉通知配置
+- `crawler.yaml` - 爬虫基础配置
+- `sources.yaml` - 数据源配置
+- `ai_analyzer.yaml` - AI分析配置
+- `scheduler.yaml` - 定时任务配置
+- `webserver.yaml` - Web服务器配置
+- `logging.yaml` - 日志配置
+
+系统支持两种配置方式：
+1. 将所有配置放在一个 `config.yaml` 文件中（旧方式，仍然支持）
+2. 将配置拆分为多个文件放在 `config/` 目录下（推荐方式）
+
+配置加载优先级：
+1. 命令行参数指定的配置文件或目录
+2. 项目根目录下的 `config/` 目录
+3. 项目根目录下的 `config.yaml` 文件
+4. 默认配置
+
+敏感信息（如API密钥）应放在 `config.secret.yaml` 文件中，该文件不应提交到版本控制系统。

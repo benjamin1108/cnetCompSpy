@@ -1,0 +1,3 @@
+# WebServer配置
+webserver:
+  show_raw_data: true  # 是否展示原始资料，设置为false时页面只展示AI分析内容 

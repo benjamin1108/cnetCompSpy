@@ -33,15 +33,20 @@ class StatsAnalyzer:
     
     def _load_tasks(self):
         """加载配置文件中的任务列表"""
-        config_path = os.path.join(self.base_dir, 'config.yaml')
-        if os.path.exists(config_path):
-            try:
-                import yaml
-                with open(config_path, 'r', encoding='utf-8') as f:
-                    config = json.load(f) if config_path.endswith('.json') else yaml.safe_load(f)
-                    self.tasks = [task.get('type') for task in config.get('ai_analyzer', {}).get('tasks', []) if task.get('type')]
-            except Exception as e:
-                print(f"加载配置文件失败: {e}")
+        try:
+            # 使用通用配置加载器
+            from src.utils.config_loader import get_config
+            
+            # 加载配置
+            config = get_config()
+            
+            # 从配置中提取任务列表
+            self.tasks = [task.get('type') for task in config.get('ai_analyzer', {}).get('tasks', []) if task.get('type')]
+            
+        except Exception as e:
+            print(f"加载配置任务失败: {e}")
+            # 设置默认任务列表
+            self.tasks = ["AI标题翻译", "AI竞争分析", "AI全文翻译"]
     
     def load_metadata_files(self, verbose=True):
         """加载所有metadata文件"""
