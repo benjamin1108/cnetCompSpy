@@ -4,10 +4,19 @@
 import os
 import yaml
 import logging
-from typing import Dict, Any, List, Optional
+import hashlib
+from typing import Dict, Any, List, Optional, Tuple
 from copy import deepcopy
+from functools import lru_cache
 
 logger = logging.getLogger(__name__)
+
+# 全局缓存，保存文件路径和最后修改时间的映射
+_file_mtimes = {}
+# 全局缓存，保存文件路径和内容哈希的映射
+_file_hashes = {}
+# 全局标志，表示是否是第一次加载配置
+_first_load = True
 
 def merge_configs(base_config: Dict[str, Any], override_config: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -32,6 +41,56 @@ def merge_configs(base_config: Dict[str, Any], override_config: Dict[str, Any]) 
             
     return result
 
+def file_has_changed(file_path: str) -> bool:
+    """
+    检查文件是否已更改（通过比较修改时间和内容哈希）
+    
+    Args:
+        file_path: 文件路径
+        
+    Returns:
+        bool: 如果文件已更改或是第一次加载，则返回True，否则返回False
+    """
+    global _first_load
+    
+    # 文件不存在
+    if not os.path.exists(file_path):
+        return False
+    
+    current_mtime = os.path.getmtime(file_path)
+    previous_mtime = _file_mtimes.get(file_path)
+    
+    # 如果是第一次加载，则记录并返回True
+    if _first_load or previous_mtime is None:
+        _file_mtimes[file_path] = current_mtime
+        return True
+    
+    # 如果修改时间未变，直接返回False
+    if current_mtime == previous_mtime:
+        return False
+    
+    # 修改时间变了，检查内容哈希
+    try:
+        with open(file_path, 'rb') as file:
+            content = file.read()
+            current_hash = hashlib.md5(content).hexdigest()
+            
+        previous_hash = _file_hashes.get(file_path)
+        
+        # 更新修改时间
+        _file_mtimes[file_path] = current_mtime
+        
+        # 内容也变了
+        if previous_hash is None or current_hash != previous_hash:
+            _file_hashes[file_path] = current_hash
+            return True
+    except Exception:
+        # 如果出错，保守地认为文件已更改
+        return True
+        
+    # 内容未变
+    return False
+
 def load_yaml_file(file_path: str) -> Dict[str, Any]:
     """
     加载YAML文件
@@ -43,8 +102,18 @@ def load_yaml_file(file_path: str) -> Dict[str, Any]:
         Dict: YAML文件内容
     """
     try:
+        file_changed = file_has_changed(file_path)
+        
         with open(file_path, 'r', encoding='utf-8') as file:
-            return yaml.safe_load(file) or {}
+            content = file.read()
+            yaml_content = yaml.safe_load(content) or {}
+            
+            if file_changed:
+                # 更新文件哈希
+                _file_hashes[file_path] = hashlib.md5(content.encode('utf-8')).hexdigest()
+                logger.info(f"配置文件已加载: {file_path}")
+                
+            return yaml_content
     except FileNotFoundError:
         logger.warning(f"配置文件不存在: {file_path}")
         return {}
@@ -74,7 +143,7 @@ def load_config_directory(config_dir: str) -> Dict[str, Any]:
     
     # 检查main.yaml中是否有imports字段
     if 'imports' not in main_config:
-        logger.warning(f"main.yaml中没有imports字段，将仅使用main.yaml中的配置")
+        logger.debug(f"main.yaml中没有imports字段，将仅使用main.yaml中的配置")
         return main_config
     
     # 创建最终合并的配置
@@ -86,7 +155,7 @@ def load_config_directory(config_dir: str) -> Dict[str, Any]:
         if os.path.exists(import_path):
             config_data = load_yaml_file(import_path)
             final_config = merge_configs(final_config, config_data)
-            logger.info(f"已加载配置文件: {import_file}")
+            # 日志已在load_yaml_file中处理
         else:
             logger.warning(f"导入的配置文件不存在: {import_path}")
     
@@ -122,7 +191,7 @@ def load_all_yaml_files(config_dir: str) -> Dict[str, Any]:
         try:
             config_data = load_yaml_file(file_path)
             merged_config = merge_configs(merged_config, config_data)
-            logger.info(f"已加载配置文件: {yaml_file}")
+            # 日志已在load_yaml_file中处理
         except Exception as e:
             logger.warning(f"加载配置文件 {yaml_file} 失败: {e}")
     
@@ -144,6 +213,8 @@ def get_config(base_dir: Optional[str] = None, config_path: Optional[str] = None
     Returns:
         Dict: 加载的配置字典
     """
+    global _first_load
+    
     # 如果没有提供默认配置，使用空字典
     if default_config is None:
         default_config = {}
@@ -163,10 +234,18 @@ def get_config(base_dir: Optional[str] = None, config_path: Optional[str] = None
         
         # 判断是文件还是目录
         if os.path.isdir(config_path):
-            logger.info(f"从指定的配置目录加载: {config_path}")
+            config_dir_changed = any(file_has_changed(os.path.join(config_path, f)) 
+                                for f in os.listdir(config_path) 
+                                if f.endswith('.yaml') or f.endswith('.yml'))
+            
+            if _first_load or config_dir_changed:
+                logger.info(f"从指定的配置目录加载: {config_path}")
+            
             config_data = load_config_directory(config_path)
         else:
-            logger.info(f"从指定的配置文件加载: {config_path}")
+            if _first_load or file_has_changed(config_path):
+                logger.info(f"从指定的配置文件加载: {config_path}")
+            
             config_data = load_yaml_file(config_path)
         
         # 合并配置
@@ -175,24 +254,38 @@ def get_config(base_dir: Optional[str] = None, config_path: Optional[str] = None
         # 尝试从config目录加载
         config_dir = os.path.join(base_dir, 'config')
         if os.path.exists(config_dir) and os.path.isdir(config_dir):
-            logger.info(f"从配置目录加载: {config_dir}")
+            config_dir_changed = any(file_has_changed(os.path.join(config_dir, f)) 
+                                for f in os.listdir(config_dir) 
+                                if f.endswith('.yaml') or f.endswith('.yml'))
+            
+            if _first_load or config_dir_changed:
+                logger.info(f"从配置目录加载: {config_dir}")
+            
             config_data = load_config_directory(config_dir)
             config = merge_configs(config, config_data)
         else:
             # 回退到从单一配置文件加载
             config_file = os.path.join(base_dir, 'config.yaml')
             if os.path.exists(config_file):
-                logger.info(f"从配置文件加载: {config_file}")
+                if _first_load or file_has_changed(config_file):
+                    logger.info(f"从配置文件加载: {config_file}")
+                
                 config_data = load_yaml_file(config_file)
                 config = merge_configs(config, config_data)
             else:
-                logger.warning(f"未找到配置文件或目录，使用默认配置")
+                if _first_load:
+                    logger.warning(f"未找到配置文件或目录，使用默认配置")
     
     # 加载敏感配置文件
     secret_config_path = os.path.join(base_dir, 'config.secret.yaml')
     if os.path.exists(secret_config_path):
-        logger.info(f"加载敏感配置文件: {secret_config_path}")
+        if _first_load or file_has_changed(secret_config_path):
+            logger.info(f"加载敏感配置文件: {secret_config_path}")
+        
         secret_config_data = load_yaml_file(secret_config_path)
         config = merge_configs(config, secret_config_data)
+    
+    # 更新首次加载标志
+    _first_load = False
     
     return config 
