@@ -264,33 +264,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 搜索功能
     function setupSearch() {
-        // 存储每个docType的分页控制器
-        const paginationControllers = {};
-        
-        // 使用新的class选择器
-        const searchInputs = document.querySelectorAll('.document-search');
-        
-        searchInputs.forEach(searchInput => {
-            // 获取当前标签页的内容
-            const tabContent = searchInput.closest('.tab-content');
-            if (!tabContent) return;
-            
-            const docType = tabContent.getAttribute('data-doc-type');
-            
-            // 监听搜索输入
-            searchInput.addEventListener('input', function() {
-                const searchTerm = this.value.toLowerCase();
-                console.log(`Searching in ${docType} for: ${searchTerm}`); // 调试日志
-                
-                // 使用对应文档类型的过滤器
-                if (paginationControllers[docType]) {
-                    paginationControllers[docType].filterCards(searchTerm);
-                }
-            });
-        });
-        
-        // 返回分页控制器集合，供后续使用
-        return paginationControllers;
+        // 不再需要实现搜索功能，由全局搜索替代
+        console.log('局部搜索功能已禁用，请使用全局搜索');
     }
 
     // 初始化标签页
@@ -303,6 +278,6 @@ document.addEventListener('DOMContentLoaded', function() {
         paginationControllers[docType] = setupPagination(docType);
     });
 
-    // 初始化搜索功能，并传入分页控制器
-    setupSearch(paginationControllers);
+    // 初始化搜索功能
+    setupSearch();
 });

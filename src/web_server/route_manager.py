@@ -13,6 +13,7 @@ from flask import Flask, render_template, abort, request, jsonify
 from flask import redirect, url_for, session, flash
 from datetime import datetime, timedelta
 import json
+import os
 
 class RouteManager:
     """路由管理器类"""
@@ -56,23 +57,100 @@ class RouteManager:
         def index():
             vendors = self.vendor_manager.get_vendors()
             
-            # 获取最近7天的更新数据用于时间轴展示
-            recent_updates = self.vendor_manager.get_recently_updates(days=7)
+            # 获取所有厂商的所有更新数据
+            all_updates = {}
+            if os.path.exists(self.vendor_manager.raw_dir):
+                for vendor in os.listdir(self.vendor_manager.raw_dir):
+                    vendor_dir = os.path.join(self.vendor_manager.raw_dir, vendor)
+                    
+                    if os.path.isdir(vendor_dir):
+                        vendor_updates = []
+                        
+                        # 遍历厂商的所有文档类型
+                        for doc_type in os.listdir(vendor_dir):
+                            type_dir = os.path.join(vendor_dir, doc_type)
+                            
+                            if os.path.isdir(type_dir):
+                                # 遍历此类型下的所有文件
+                                for filename in os.listdir(type_dir):
+                                    file_path = os.path.join(type_dir, filename)
+                                    
+                                    if os.path.isfile(file_path) and filename.endswith('.md'):
+                                        # 检查是否有AI分析版本
+                                        analysis_path = os.path.join(self.vendor_manager.analyzed_dir, vendor, doc_type, filename)
+                                        if not os.path.isfile(analysis_path):
+                                            continue  # 如果没有分析版本，跳过此文件
+                                        
+                                        # 提取文档信息
+                                        meta = self.document_manager._extract_document_meta(file_path)
+                                        date_str = meta.get('date', '')
+                                        
+                                        # 只获取有日期的文档
+                                        if date_str:
+                                            try:
+                                                # 处理不同的日期格式
+                                                import re
+                                                from datetime import datetime
+                                                
+                                                if re.match(r'\d{4}-\d{1,2}-\d{1,2}', date_str):
+                                                    doc_date = datetime.strptime(date_str, '%Y-%m-%d')
+                                                elif re.match(r'\d{4}_\d{1,2}_\d{1,2}', date_str):
+                                                    doc_date = datetime.strptime(date_str, '%Y_%m_%d')
+                                                else:
+                                                    continue
+                                                
+                                                # 获取分析文档的翻译标题
+                                                translated_title = self.document_manager._extract_translated_title(analysis_path)
+                                                original_title = meta.get('title', filename.replace('.md', ''))
+                                                
+                                                vendor_updates.append({
+                                                    'filename': filename,
+                                                    'path': f"{vendor}/{doc_type}/{filename}",
+                                                    'title': translated_title if translated_title else original_title,
+                                                    'original_title': original_title,
+                                                    'translated_title': translated_title,
+                                                    'date': date_str,
+                                                    'doc_type': doc_type,
+                                                    'vendor': vendor,
+                                                    'size': os.path.getsize(file_path)
+                                                })
+                                            except (ValueError, TypeError) as e:
+                                                self.logger.debug(f"解析日期出错: {date_str}, {e}")
+                        
+                        # 如果有更新，按日期排序并添加到结果中
+                        if vendor_updates:
+                            vendor_updates.sort(key=lambda x: x.get('date', ''), reverse=True)
+                            all_updates[vendor] = vendor_updates
             
             # 将所有厂商的更新整合成一个按日期排序的列表
             timeline_updates = []
-            for vendor, updates in recent_updates.items():
+            for vendor, updates in all_updates.items():
                 for update in updates:
                     timeline_updates.append(update)
             
             # 按日期降序排序
             timeline_updates.sort(key=lambda x: x.get('date', ''), reverse=True)
             
+            # 获取最近7个有更新的日期节点
+            unique_dates = set()
+            filtered_updates = []
+            
+            for update in timeline_updates:
+                date_str = update.get('date', '')
+                if date_str and date_str not in unique_dates:
+                    unique_dates.add(date_str)
+                    # 找出这个日期的所有更新
+                    date_updates = [u for u in timeline_updates if u.get('date', '') == date_str]
+                    filtered_updates.extend(date_updates)
+                    # 如果已经有7个不同的日期，就停止
+                    if len(unique_dates) >= 7:
+                        break
+            
             return render_template(
                 'index.html',
                 title='云服务厂商竞争分析',
                 vendors=vendors,
-                timeline_updates=timeline_updates
+                timeline_updates=filtered_updates
             )
         
         # 本周更新页面 - 显示所有厂商本周的更新
@@ -474,6 +552,73 @@ class RouteManager:
                 self.logger.error(f"获取访问统计图表数据失败: {e}")
                 return jsonify({'error': f'获取统计数据失败: {e}'}), 500
         # --- 结束新增 API --- 
+        
+        # API: 搜索文档
+        @self.app.route('/api/search')
+        def api_search():
+            keyword = request.args.get('keyword', '').strip()
+            vendor_filter = request.args.get('vendor', '').strip()
+            
+            if not keyword:
+                return jsonify([])
+            
+            try:
+                # 从所有厂商的所有文档中搜索
+                search_results = []
+                if os.path.exists(self.vendor_manager.raw_dir):
+                    for vendor in os.listdir(self.vendor_manager.raw_dir):
+                        # 如果指定了厂商过滤，则只搜索指定厂商
+                        if vendor_filter and vendor != vendor_filter:
+                            continue
+                            
+                        vendor_dir = os.path.join(self.vendor_manager.raw_dir, vendor)
+                        
+                        if os.path.isdir(vendor_dir):
+                            # 遍历厂商的所有文档类型
+                            for doc_type in os.listdir(vendor_dir):
+                                type_dir = os.path.join(vendor_dir, doc_type)
+                                
+                                if os.path.isdir(type_dir):
+                                    # 遍历此类型下的所有文件
+                                    for filename in os.listdir(type_dir):
+                                        file_path = os.path.join(type_dir, filename)
+                                        
+                                        if os.path.isfile(file_path) and filename.endswith('.md'):
+                                            # 检查是否有AI分析版本
+                                            analysis_path = os.path.join(self.vendor_manager.analyzed_dir, vendor, doc_type, filename)
+                                            
+                                            # 提取文档信息
+                                            meta = self.document_manager._extract_document_meta(file_path)
+                                            title = meta.get('title', filename.replace('.md', ''))
+                                            date_str = meta.get('date', '')
+                                            
+                                            # 获取分析文档的翻译标题
+                                            translated_title = ""
+                                            if os.path.isfile(analysis_path):
+                                                translated_title = self.document_manager._extract_translated_title(analysis_path)
+                                            
+                                            # 进行关键词匹配 - 同时匹配原始标题和翻译标题
+                                            keyword_lower = keyword.lower()
+                                            title_match = keyword_lower in title.lower()
+                                            translated_title_match = translated_title and keyword_lower in translated_title.lower()
+                                            
+                                            if title_match or translated_title_match:
+                                                search_results.append({
+                                                    'filename': filename,
+                                                    'path': f"{vendor}/{doc_type}/{filename}",
+                                                    'title': title,
+                                                    'translated_title': translated_title,
+                                                    'vendor': vendor,
+                                                    'doc_type': doc_type,
+                                                    'date': date_str,
+                                                    'has_analysis': os.path.isfile(analysis_path)
+                                                })
+                
+                # 最多返回50个结果
+                return jsonify(search_results[:50])
+            except Exception as e:
+                self.logger.error(f"搜索失败: {e}")
+                return jsonify({'error': str(e)}), 500
     
     def _register_error_handlers(self):
         """注册错误处理器"""
