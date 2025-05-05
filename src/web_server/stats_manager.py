@@ -33,8 +33,12 @@ class StatsManager:
         self.data_dir = data_dir
         self.access_log_file = os.path.join(data_dir, 'access_log.json')
         
-        # 新增: 创建log目录下的完整访问日志文件
-        self.log_dir = os.path.join(os.path.dirname(os.path.dirname(data_dir)), 'logs')
+        # 修改: 使用项目根目录下的logs文件夹，而不是相对路径
+        # 获取当前脚本的目录
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        # 项目根目录是web_server的父目录的父目录
+        project_root = os.path.dirname(os.path.dirname(current_dir))
+        self.log_dir = os.path.join(project_root, 'logs')
         self.all_access_log_file = os.path.join(self.log_dir, 'all_access_log.json')
         
         # 确保访问日志文件存在
@@ -45,6 +49,9 @@ class StatsManager:
         self.server_start_time = datetime.now()
         
         self.logger.info("统计管理器初始化完成")
+        self.logger.info(f"日志目录: {self.log_dir}")
+        self.logger.info(f"访问日志文件: {self.access_log_file}")
+        self.logger.info(f"完整访问日志文件: {self.all_access_log_file}")
     
     def _ensure_access_log_file(self):
         """确保访问日志文件存在"""
