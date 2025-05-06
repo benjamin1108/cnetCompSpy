@@ -7,19 +7,8 @@
 图表格式：保留原文格式，如 “Figure 1: ” 翻译为 “图 1: ”，“Table 1: ” 翻译为 “表 1: ”。
 标点：全角括号替换为半角括号，左括号前和右括号后加半角空格（如 “云计算 (Cloud Computing)”）。
 术语处理：首次出现的云计算或 AI 相关术语在括号中附上英文原文（如 “生成式 AI (Generative AI)”），后续直接使用中文。
-常见术语对照表：
-Transformer -> Transformer
-Token -> Token
-LLM/Large Language Model -> 大语言模型
-Zero-shot -> 零样本
-Few-shot -> 少样本
-AI Agent -> AI 智能体
-AGI -> 通用人工智能
-Cloud Computing -> 云计算
-Virtual Private Cloud (VPC) -> 虚拟私有云
-Container -> 容器
-Serverless -> 无服务器
 格式：输入为 Markdown 格式，输出必须保留 Markdown 格式。
 风格：语言简洁、通俗，符合中文云计算技术科普读物的风格，避免过于学术化的表达，突出云计算应用场景的实用性。
 任务：
 请将以下英文段落翻译成中文，翻译结果需满足上述规则，风格贴近云计算技术博客或科普文章，确保云计算从业者易于理解。
+请确保保留原文的所有细节、句子和段落，不得省略任何内容。输出应与原文长度相当。

@@ -143,26 +143,25 @@ class AIAnalyzer:
             config = self._load_config()
         
         self.config = config
-        self.ai_config = config.get('ai_analyzer', {})
-        self.model_name = self.ai_config.get('model', 'gpt-4')
-        self.max_tokens = self.ai_config.get('max_tokens', 4000)
-        self.temperature = self.ai_config.get('temperature', 0.3)
+        self.ai_config = config.get('ai_analyzer')
+        self.model_name = self.ai_config.get('model')
+        self.max_tokens = self.ai_config.get('max_tokens')
+        self.temperature = self.ai_config.get('temperature')
         
         # 尝试从两个可能的位置获取API密钥
-        self.api_key = self.ai_config.get('api_key', '')
+        self.api_key = self.ai_config.get('api_key')
         # 如果ai_config中没有api_key，尝试从config.ai_analyzer.api_key获取
         if not self.api_key and 'ai_analyzer' in config and 'api_key' in config['ai_analyzer']:
             self.api_key = config['ai_analyzer']['api_key']
             
-        self.api_base = self.ai_config.get('api_base', '')
+        self.api_base = self.ai_config.get('api_base')
         
         # 加载系统提示词（从prompt目录中的system_prompt.txt文件）
         self.system_prompt = self._load_prompt_file('system_prompt.txt')
-        if not self.system_prompt:
-            self.system_prompt = self.ai_config.get('system_prompt', "你是一个专业的云计算技术分析师，擅长分析和解读各类云计算技术文档。")
+       
         
         # 加载任务（保留任务配置，但prompt将从文件加载）
-        self.tasks = self.ai_config.get('tasks', [])
+        self.tasks = self.ai_config.get('tasks')
         
         # 校验每个任务是否有对应的prompt文件
         self._validate_task_prompts()
@@ -329,11 +328,11 @@ class AIAnalyzer:
         """返回OpenAI兼容的API调用实现"""
         class OpenAICompatibleAI:
             def __init__(self, config):
-                self.model_name = config.get('model', 'qwen-max')
-                self.temperature = config.get('temperature', 0.3)
-                self.max_tokens = config.get('max_tokens', 4000)
-                self.api_key = config.get('api_key', '')
-                self.api_base = config.get('api_base', '')
+                self.model_name = config.get('model')
+                self.temperature = config.get('temperature')
+                self.max_tokens = config.get('max_tokens')
+                self.api_key = config.get('api_key')
+                self.api_base = config.get('api_base')
                 
                 # 从文件加载系统提示词
                 system_prompt_from_file = ""
@@ -486,24 +485,24 @@ class AIAnalyzer:
                     {"role": "user", "content": prompt}
                 ]
                 
-                # Grok-3 API的特殊处理
-                if self.provider == "xai_grok":
-                    url = "https://api.x.ai/v1/chat/completions"
-                    headers["Authorization"] = f"Bearer {self.api_key}"
+                # # Grok-3 API的特殊处理
+                # if self.provider == "xai_grok":
+                #     url = "https://api.x.ai/v1/chat/completions"
+                #     headers["Authorization"] = f"Bearer {self.api_key}"
                     
-                    payload = {
-                        "model": "grok-3-latest",  # 固定使用grok-3-latest
-                        "messages": messages,
-                        "temperature": self.temperature,
-                        "max_tokens": self.max_tokens,
-                        "stream": False
-                    }
+                #     payload = {
+                #         "model": "grok-3-latest",  # 固定使用grok-3-latest
+                #         "messages": messages,
+                #         "temperature": self.temperature,
+                #         "max_tokens": self.max_tokens,
+                #         "stream": False
+                #     }
                     
-                    return {
-                        "url": url,
-                        "headers": headers,
-                        "payload": payload
-                    }
+                #     return {
+                #         "url": url,
+                #         "headers": headers,
+                #         "payload": payload
+                #     }
                 
                 # 直接使用用户配置的URL
                 if "compatible-mode" in self.api_base.lower() and self.api_base.endswith("chat/completions"):
@@ -537,35 +536,120 @@ class AIAnalyzer:
             def _parse_response(self, response_json):
                 """解析不同提供商的响应格式"""
                 try:
+                    # 首先检查response_json是否为None或空
+                    if not response_json:
+                        logger.error("API响应为空")
+                        return "API响应为空"
+
+                    # 记录原始响应用于调试
+                    logger.debug(f"原始响应: {str(response_json)[:200]}...")
+
                     if self.provider == "aliyun_compatible_full" or self.provider == "aliyun_compatible":
                         # 阿里云通义千问兼容模式（OpenAI兼容格式）
-                        return response_json.get('choices', [{}])[0].get('message', {}).get('content', '')
+                        try:
+                            choices = response_json.get('choices', [])
+                            if not choices:
+                                logger.error("API响应中没有choices字段")
+                                return "API响应格式错误：缺少choices字段"
+                            message = choices[0].get('message', {})
+                            if not message:
+                                logger.error("API响应中没有message字段")
+                                return "API响应格式错误：缺少message字段"
+                            content = message.get('content', '')
+                            if not content:
+                                logger.error("API响应中没有content字段")
+                                return "API响应格式错误：缺少content字段"
+                            return content
+                        except (KeyError, IndexError, AttributeError) as e:
+                            logger.error(f"解析阿里云响应时出错: {str(e)}")
+                            return f"解析阿里云响应失败: {str(e)}"
                     
                     elif self.provider == "aliyun":
                         # 阿里云通义千问
-                        return response_json.get('output', {}).get('choices', [{}])[0].get('message', {}).get('content', '')
+                        try:
+                            output = response_json.get('output', {})
+                            choices = output.get('choices', [])
+                            if not choices:
+                                logger.error("阿里云API响应中没有choices字段")
+                                return "阿里云API响应格式错误：缺少choices字段"
+                            message = choices[0].get('message', {})
+                            content = message.get('content', '')
+                            if not content:
+                                logger.error("阿里云API响应中没有content字段")
+                                return "阿里云API响应格式错误：缺少content字段"
+                            return content
+                        except (KeyError, IndexError, AttributeError) as e:
+                            logger.error(f"解析阿里云原生响应时出错: {str(e)}")
+                            return f"解析阿里云原生响应失败: {str(e)}"
                     
                     elif self.provider == "baidu":
                         # 百度文心一言
-                        return response_json.get('result', '')
+                        try:
+                            result = response_json.get('result', '')
+                            if not result:
+                                logger.error("百度API响应中没有result字段")
+                                return "百度API响应格式错误：缺少result字段"
+                            return result
+                        except (KeyError, AttributeError) as e:
+                            logger.error(f"解析百度响应时出错: {str(e)}")
+                            return f"解析百度响应失败: {str(e)}"
                     
                     elif self.provider == "xfyun":
                         # 讯飞星火
-                        return response_json.get('payload', {}).get('choices', [{}])[0].get('text', '')
+                        try:
+                            payload = response_json.get('payload', {})
+                            choices = payload.get('choices', [])
+                            if not choices:
+                                logger.error("讯飞API响应中没有choices字段")
+                                return "讯飞API响应格式错误：缺少choices字段"
+                            text = choices[0].get('text', '')
+                            if not text:
+                                logger.error("讯飞API响应中没有text字段")
+                                return "讯飞API响应格式错误：缺少text字段"
+                            return text
+                        except (KeyError, IndexError, AttributeError) as e:
+                            logger.error(f"解析讯飞响应时出错: {str(e)}")
+                            return f"解析讯飞响应失败: {str(e)}"
                     
                     elif self.provider == "xai_grok":
                         # Grok-3 API (X.AI)
-                        return response_json.get('choices', [{}])[0].get('message', {}).get('content', '')
+                        try:
+                            choices = response_json.get('choices', [])
+                            if not choices:
+                                logger.error("Grok API响应中没有choices字段")
+                                return "Grok API响应格式错误：缺少choices字段"
+                            message = choices[0].get('message', {})
+                            content = message.get('content', '')
+                            if not content:
+                                logger.error("Grok API响应中没有content字段")
+                                return "Grok API响应格式错误：缺少content字段"
+                            return content
+                        except (KeyError, IndexError, AttributeError) as e:
+                            logger.error(f"解析Grok响应时出错: {str(e)}")
+                            return f"解析Grok响应失败: {str(e)}"
                     
                     else:
                         # OpenAI兼容格式
-                        return response_json.get('choices', [{}])[0].get('message', {}).get('content', '')
+                        try:
+                            choices = response_json.get('choices', [])
+                            if not choices:
+                                logger.error("OpenAI兼容格式响应中没有choices字段")
+                                return "OpenAI兼容格式响应错误：缺少choices字段"
+                            message = choices[0].get('message', {})
+                            content = message.get('content', '')
+                            if not content:
+                                logger.error("OpenAI兼容格式响应中没有content字段")
+                                return "OpenAI兼容格式响应错误：缺少content字段"
+                            return content
+                        except (KeyError, IndexError, AttributeError) as e:
+                            logger.error(f"解析OpenAI兼容格式响应时出错: {str(e)}")
+                            return f"解析OpenAI兼容格式响应失败: {str(e)}"
                 
                 except Exception as e:
                     logger.error(f"解析响应失败: {str(e)}")
                     # 将原始响应日志从INFO级别降为DEBUG级别，仅在调试时可见
                     logger.debug(f"原始响应: {response_json}")
-                    return "解析模型响应失败"
+                    return f"解析模型响应失败: {str(e)}"
         
         return OpenAICompatibleAI(self.ai_config)
     
@@ -850,6 +934,7 @@ class AIAnalyzer:
                         # 构建完整提示
                         full_prompt = f"{prompt}\n\n{content}"
                         logger.debug(f"完整提示词长度: {len(full_prompt)} 字符")
+                        logger.debug(f"完整提示词: " + full_prompt)
                         
                         # 调用AI模型获取结果
                         logger.info(f"开始调用AI模型进行 {task_type} 分析...")
@@ -1241,25 +1326,51 @@ class AIAnalyzer:
             try:
                 response = retry_strategy.execute(send_api_request)
                 request_time = time.time() - request_start
-                
+                logger.debug(f"API响应: {response.text}")
                 # 记录响应信息
                 logger.info(f"[{time.strftime('%H:%M:%S')}] 收到API响应，耗时: {request_time:.2f}秒")
                 logger.info(f"[{time.strftime('%H:%M:%S')}] 响应状态码: {response.status_code}")
                 
-                # 如果到这里，说明请求成功
-                logger.info(f"[{time.strftime('%H:%M:%S')}] API调用成功: 状态码 {response.status_code}")
-                logger.info(f"[{time.strftime('%H:%M:%S')}] 响应大小: {len(response.text)} 字节")
+                # 检查响应状态码
+                if response.status_code != 200:
+                    error_msg = f"API返回非200状态码: {response.status_code}"
+                    logger.error(error_msg)
+                    return f"API调用失败: {error_msg}"
+
+                # 检查响应内容
+                if not response.text:
+                    error_msg = "API返回空响应"
+                    logger.error(error_msg)
+                    return f"API调用失败: {error_msg}"
+
+                # 记录响应内容预览（用于调试）
+                content_preview = response.text[:200] + "..." if len(response.text) > 200 else response.text
+                logger.debug(f"API响应内容预览: {content_preview}")
+
+                # 尝试解析JSON
+                try:
+                    response_json = response.json()
+                except requests.exceptions.JSONDecodeError as e:
+                    error_msg = f"API返回非JSON响应: {str(e)}"
+                    logger.error(error_msg)
+                    logger.error(f"响应内容: {content_preview}")
+                    return f"API调用失败: {error_msg}"
                 
-                # 仅记录响应内容的前50个字符作为预览，减少输出量
-                response_preview = response.text[:50] + "..." if len(response.text) > 50 else response.text
-                logger.info(f"[{time.strftime('%H:%M:%S')}] 响应预览: {response_preview}")
-                
-                logger.debug(f"[{time.strftime('%H:%M:%S')}] 开始解析响应...")
-                
+                # 检查JSON响应是否为空
+                if not response_json:
+                    error_msg = "API返回空JSON响应"
+                    logger.error(error_msg)
+                    return f"API调用失败: {error_msg}"
+
                 # 解析响应
                 parse_start = time.time()
-                result = api._parse_response(response.json())
+                result = api._parse_response(response_json)
                 parse_time = time.time() - parse_start
+                
+                # 检查解析结果
+                if not result or result.startswith("API调用失败") or result.startswith("解析失败"):
+                    logger.error(f"解析响应失败: {result}")
+                    return result
                 
                 # 记录解析结果信息
                 logger.info(f"[{time.strftime('%H:%M:%S')}] 响应解析完成，耗时: {parse_time:.2f}秒")
@@ -1277,13 +1388,13 @@ class AIAnalyzer:
                         pass
                 
                 # 返回原始结果，不进行任何格式化
-                logger.info(f"[{time.strftime('%H:%M:%S')}] {task_type} 响应接收完成，总长度: {len(result)} 字符")
+                logger.debug(f"[{time.strftime('%H:%M:%S')}] {task_type} 响应接收完成，总长度: {len(result)} 字符")
                 return result
             except Exception as e:
                 error_msg = f"API调用失败: {str(e)}"
                 logger.error(f"[{time.strftime('%H:%M:%S')}] {error_msg}")
                 logger.exception("详细错误信息:")
-                return f"API调用失败: {str(e)}"
+                return error_msg
             
         except Exception as e:
             error_msg = f"API调用异常: {str(e)}"
