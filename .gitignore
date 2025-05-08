@@ -30,9 +30,9 @@ wheels/
 *.egg
 
 # 数据目录 - 避免提交爬取的数据和分析结果
-data/
-raw/
-analysis/
+
+#data/
+access_log.json
 
 # 驱动程序 - 每个平台应该自己下载适合自己的驱动
 drivers/

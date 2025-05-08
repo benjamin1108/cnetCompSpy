@@ -1,0 +1,4468 @@
+{
+  "data/raw/aws/blog/2025_04_08_17de8dd6.md": {
+    "file": "data/raw/aws/blog/2025_04_08_17de8dd6.md",
+    "last_analyzed": "2025-05-09 00:52:25",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Securing your web applications and optimizing their performance with AWS Application Load Balancer",
+      "original_url": "https://aws.amazon.com/blogs/networking-and-content-delivery/securing-your-web-applications-and-optimizing-their-performance-with-aws-application-load-balancer/",
+      "crawl_time": "2025-04-08",
+      "vendor": "AWS",
+      "type": "BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/aws/blog/2025_05_02_75f6bec8.md": {
+    "file": "data/raw/aws/blog/2025_05_02_75f6bec8.md",
+    "last_analyzed": "2025-05-09 00:52:43",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "An overview of internet routing and BGP",
+      "original_url": "https://aws.amazon.com/blogs/networking-and-content-delivery/aws-secures-internet-routing-with-rpki-plus-security-checks/",
+      "crawl_time": "2025-05-02",
+      "vendor": "AWS",
+      "type": "BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/aws/blog/2025_04_08_af122aaf.md": {
+    "file": "data/raw/aws/blog/2025_04_08_af122aaf.md",
+    "last_analyzed": "2025-05-09 00:52:44",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Exploring Data Transfer Costs for AWS Network Load Balancers",
+      "original_url": "https://aws.amazon.com/blogs/networking-and-content-delivery/exploring-data-transfer-costs-for-aws-network-load-balancers/",
+      "crawl_time": "2025-04-08",
+      "vendor": "AWS",
+      "type": "BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/aws/blog/2025_04_18_66ad646c.md": {
+    "file": "data/raw/aws/blog/2025_04_18_66ad646c.md",
+    "last_analyzed": "2025-05-09 00:52:47",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Simplify ALB’s public IP address assignment with VPC IPAM",
+      "original_url": "https://aws.amazon.com/blogs/networking-and-content-delivery/simplify-albs-public-ip-address-assignment-with-vpc-ipam/",
+      "crawl_time": "2025-04-18",
+      "vendor": "AWS",
+      "type": "BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/aws/blog/2025_04_30_826a52d3.md": {
+    "file": "data/raw/aws/blog/2025_04_30_826a52d3.md",
+    "last_analyzed": "2025-05-09 00:52:50",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Visualizing network performance of your AWS Cloud workloads with Network Flow Monitor",
+      "original_url": "https://aws.amazon.com/blogs/networking-and-content-delivery/visualizing-network-performance-of-your-aws-cloud-workloads-with-network-flow-monitor/",
+      "crawl_time": "2025-04-30",
+      "vendor": "AWS",
+      "type": "BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/aws/blog/2025_04_15_9bfd2502.md": {
+    "file": "data/raw/aws/blog/2025_04_15_9bfd2502.md",
+    "last_analyzed": "2025-05-09 00:52:51",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Simplifying Egress Inspection with AWS Cloud WAN Service Insertion for Greenfield Deployments",
+      "original_url": "https://aws.amazon.com/blogs/networking-and-content-delivery/simplifying-egress-inspection-with-aws-cloud-wan-service-insertion-for-greenfield-deployments/",
+      "crawl_time": "2025-04-15",
+      "vendor": "AWS",
+      "type": "BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_03_20_a953d26a.md": {
+    "file": "data/raw/aws/whatsnew/2025_03_20_a953d26a.md",
+    "last_analyzed": "2025-05-09 00:53:24",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "AWS Network Firewall introduces new flow management feature",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/03/aws-network-firewall-flow-management-feature/",
+      "crawl_time": "2025-03-20",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_05_07_3e7a962e.md": {
+    "file": "data/raw/aws/whatsnew/2025_05_07_3e7a962e.md",
+    "last_analyzed": "2025-05-09 01:11:01",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Amazon Route 53 Resolver Query Logging now available in two new AWS Regions",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/05/amazon-route-53-resolver-query-logging-new-aws-regions",
+      "crawl_time": "2025-05-07",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/blog/2025_05_02_ad2cb59f.md": {
+    "file": "data/raw/aws/blog/2025_05_02_ad2cb59f.md",
+    "last_analyzed": "2025-05-09 00:53:52",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Simplify hybrid inspection using AWS Cloud WAN service insertion",
+      "original_url": "https://aws.amazon.com/blogs/networking-and-content-delivery/simplify-hybrid-inspection-using-aws-cloud-wan-service-insertion/",
+      "crawl_time": "2025-05-02",
+      "vendor": "AWS",
+      "type": "BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_05_01_9dd24c8a.md": {
+    "file": "data/raw/aws/whatsnew/2025_05_01_9dd24c8a.md",
+    "last_analyzed": "2025-05-09 00:53:59",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Amazon VPC IPAM now allows cost distribution to AWS Organization member-accounts",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/05/amazon-vpc-ipam-cost-distribution-aws-organization-member-accounts",
+      "crawl_time": "2025-05-01",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/blog/2025_05_06_0e8d52b5.md": {
+    "file": "data/raw/aws/blog/2025_05_06_0e8d52b5.md",
+    "last_analyzed": "2025-05-09 00:54:11",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Scale your SaaS application at the edge with the new Amazon CloudFront SaaS Manager",
+      "original_url": "https://aws.amazon.com/blogs/networking-and-content-delivery/scale-your-saas-application-at-the-edge-with-the-new-amazon-cloudfront-saas-manager/",
+      "crawl_time": "2025-05-06",
+      "vendor": "AWS",
+      "type": "BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_03_26_608764de.md": {
+    "file": "data/raw/aws/whatsnew/2025_03_26_608764de.md",
+    "last_analyzed": "2025-05-09 00:54:13",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Amazon Application Recovery Controller announces AWS FIS recovery action for zonal autoshift",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/03/amazon-application-recovery-controller-fis-recovery-action/",
+      "crawl_time": "2025-03-26",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/blog/2025_05_07_60ba2842.md": {
+    "file": "data/raw/aws/blog/2025_05_07_60ba2842.md",
+    "last_analyzed": "2025-05-09 00:54:16",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Building your first AWS WAF web ACL to protect against evolving threats",
+      "original_url": "https://aws.amazon.com/blogs/networking-and-content-delivery/building-your-first-aws-waf-web-acl-to-protect-against-evolving-threats/",
+      "crawl_time": "2025-05-07",
+      "vendor": "AWS",
+      "type": "BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_05_05_4ebce7ef.md": {
+    "file": "data/raw/aws/whatsnew/2025_05_05_4ebce7ef.md",
+    "last_analyzed": "2025-05-09 00:54:26",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Amazon Connect Contact Lens real-time dashboards are now available in AWS GovCloud (US-West)",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/05/amazon-connect-contact-lens-real-time-dashboards-aws-govcloud-us-west",
+      "crawl_time": "2025-05-05",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/blog/2025_04_21_dde7e02e.md": {
+    "file": "data/raw/aws/blog/2025_04_21_dde7e02e.md",
+    "last_analyzed": "2025-05-09 00:54:27",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Streamlining network deployments using AWS Cloud Control",
+      "original_url": "https://aws.amazon.com/blogs/networking-and-content-delivery/streamlining-network-deployments-using-aws-cloud-control/",
+      "crawl_time": "2025-04-21",
+      "vendor": "AWS",
+      "type": "BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_03_13_8bebea7e.md": {
+    "file": "data/raw/aws/whatsnew/2025_03_13_8bebea7e.md",
+    "last_analyzed": "2025-05-09 00:54:39",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Amazon Route 53 Traffic Flow introduces a new visual editor to improve DNS policy editing",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/03/amazon-route-53-traffic-flow-visual-editor-improve-dns-policy-editing",
+      "crawl_time": "2025-03-13",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_04_02_afbe5ca0.md": {
+    "file": "data/raw/aws/whatsnew/2025_04_02_afbe5ca0.md",
+    "last_analyzed": "2025-05-09 00:54:51",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Amazon CloudFront supports VPC Origin modification with CloudFront Functions",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/04/amazon-cloudfront-vpc-origin-modification-functions/",
+      "crawl_time": "2025-04-02",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_03_26_6c037a31.md": {
+    "file": "data/raw/aws/whatsnew/2025_03_26_6c037a31.md",
+    "last_analyzed": "2025-05-09 00:54:51",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Amazon Route 53 Profiles now supports Internet Protocol Version 6 (IPv6) Service Endpoints",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/03/amazon-route-53-profiles-ipv6-service-endpoints",
+      "crawl_time": "2025-03-26",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_03_27_9b14babe.md": {
+    "file": "data/raw/aws/whatsnew/2025_03_27_9b14babe.md",
+    "last_analyzed": "2025-05-09 01:11:05",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "AWS Network Firewall adds pass action rule alerts and JA4 filtering",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/03/aws-network-firewall-pass-action-rule-alerts-ja4-filtering",
+      "crawl_time": "2025-03-27",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_04_16_7296c2fc.md": {
+    "file": "data/raw/aws/whatsnew/2025_04_16_7296c2fc.md",
+    "last_analyzed": "2025-05-09 00:55:03",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Amazon CloudFront announces Anycast Static IPs support for apex domains",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/04/amazon-cloudfront-anycast-static-ips-apex-domains",
+      "crawl_time": "2025-04-16",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_03_18_12631ae2.md": {
+    "file": "data/raw/aws/whatsnew/2025_03_18_12631ae2.md",
+    "last_analyzed": "2025-05-09 00:55:17",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "AWS PrivateLink cross-region connectivity now available in 6 additional regions",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/03/aws-privatelink-cross-region-connectivity-6-additional-regions/",
+      "crawl_time": "2025-03-18",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_04_01_e56d2e4e.md": {
+    "file": "data/raw/aws/whatsnew/2025_04_01_e56d2e4e.md",
+    "last_analyzed": "2025-05-09 00:55:30",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Announcing the general availability of Amazon VPC Route Server",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/04/amazon-vpc-route-server/",
+      "crawl_time": "2025-04-01",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_04_28_ad7f0755.md": {
+    "file": "data/raw/aws/whatsnew/2025_04_28_ad7f0755.md",
+    "last_analyzed": "2025-05-09 00:55:32",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Automated HTTP validated public certificates with Amazon CloudFront",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/04/automated-http-validated-public-certificates-amazon-cloudfront",
+      "crawl_time": "2025-04-28",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_04_14_5f04c62f.md": {
+    "file": "data/raw/aws/whatsnew/2025_04_14_5f04c62f.md",
+    "last_analyzed": "2025-05-09 01:11:01",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "AWS Lambda@Edge announces advanced logging controls",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/04/aws-lambda-edge-advanced-logging-controls/",
+      "crawl_time": "2025-04-14",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_03_27_45585c39.md": {
+    "file": "data/raw/aws/whatsnew/2025_03_27_45585c39.md",
+    "last_analyzed": "2025-05-09 00:55:48",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Amazon VPC IP Address Manager is now available in two additional AWS Regions",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/03/amazon-vpc-ip-address-manager-two-additional-regions/",
+      "crawl_time": "2025-03-27",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_03_03_257a297a.md": {
+    "file": "data/raw/aws/whatsnew/2025_03_03_257a297a.md",
+    "last_analyzed": "2025-05-09 00:55:50",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Amazon API Gateway now supports HTTP APIs, mTLS, multi-level base path mappings, and WAF in additional regions",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/03/amazon-api-gateway-http-apis-mtls-multi-level-base-path-mappings-waf-additional-regions",
+      "crawl_time": "2025-03-03",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_04_28_ea928613.md": {
+    "file": "data/raw/aws/whatsnew/2025_04_28_ea928613.md",
+    "last_analyzed": "2025-05-09 00:55:59",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "AWS Client VPN now supports Client Routes Enforcement",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/04/aws-client-vpn-client-routes-enforcement/",
+      "crawl_time": "2025-04-28",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_04_04_b16fe584.md": {
+    "file": "data/raw/aws/whatsnew/2025_04_04_b16fe584.md",
+    "last_analyzed": "2025-05-09 00:56:09",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Amazon Route 53 adds public authoritative DNS service to AWS GovCloud (US) Regions",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/04/amazon-route-53-public-authoritative-dns-aws-govcloud-us-regions",
+      "crawl_time": "2025-04-04",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_03_14_ac992f24.md": {
+    "file": "data/raw/aws/whatsnew/2025_03_14_ac992f24.md",
+    "last_analyzed": "2025-05-09 00:56:18",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "AWS announces new AWS Direct Connect location in Lisbon, Portugal",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/03/aws-direct-connect-location-lisbon-portugal",
+      "crawl_time": "2025-03-14",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_03_31_8d2c82c7.md": {
+    "file": "data/raw/aws/whatsnew/2025_03_31_8d2c82c7.md",
+    "last_analyzed": "2025-05-09 01:11:36",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "AWS announces new AWS Direct Connect location in Athens, Greece",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/03/aws-direct-connect-location-athens-greece",
+      "crawl_time": "2025-03-31",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_02_19_ae09fa72.md": {
+    "file": "data/raw/aws/whatsnew/2025_02_19_ae09fa72.md",
+    "last_analyzed": "2025-05-09 00:56:30",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "AWS Network Firewall introduces automated domain lists and insights",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/02/aws-network-firewall-automated-domain-lists",
+      "crawl_time": "2025-02-19",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_01_24_a2170046.md": {
+    "file": "data/raw/aws/whatsnew/2025_01_24_a2170046.md",
+    "last_analyzed": "2025-05-09 00:56:37",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "AWS announces new edge location in the Kingdom of Saudi Arabia",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/01/new-edge-location-kingdom-saudi-arabia",
+      "crawl_time": "2025-01-24",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_04_28_2d1ec580.md": {
+    "file": "data/raw/aws/whatsnew/2025_04_28_2d1ec580.md",
+    "last_analyzed": "2025-05-09 00:56:42",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Amazon Route 53 Profiles now supports VPC endpoints",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/04/amazon-route-53-profiles-vpc-endpoints",
+      "crawl_time": "2025-04-28",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_02_25_78fef26d.md": {
+    "file": "data/raw/aws/whatsnew/2025_02_25_78fef26d.md",
+    "last_analyzed": "2025-05-09 00:56:54",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Amazon Location Service now supports AWS PrivateLink",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/02/amazon-location-service-supports-privatelink/",
+      "crawl_time": "2025-02-25",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_04_28_969434b0.md": {
+    "file": "data/raw/aws/whatsnew/2025_04_28_969434b0.md",
+    "last_analyzed": "2025-05-09 00:56:59",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Announcing SaaS Manager for Amazon CloudFront",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/04/saas-manager-amazon-cloudfront/",
+      "crawl_time": "2025-04-28",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_04_10_8f035003.md": {
+    "file": "data/raw/aws/whatsnew/2025_04_10_8f035003.md",
+    "last_analyzed": "2025-05-09 00:57:04",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Load Balancer Capacity Unit Reservation for Gateway Load Balancers",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/04/load-balancer-capacity-unit-reservation-gateway-load-balancers",
+      "crawl_time": "2025-04-10",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_05_01_8418a0dd.md": {
+    "file": "data/raw/aws/whatsnew/2025_05_01_8418a0dd.md",
+    "last_analyzed": "2025-05-09 00:57:24",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Amazon Route 53 Resolver DNS Firewall is now available in additional regions",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/05/amazon-route-53-resolver-dns-firewall-additional-regions/",
+      "crawl_time": "2025-05-01",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_03_25_bc755c61.md": {
+    "file": "data/raw/aws/whatsnew/2025_03_25_bc755c61.md",
+    "last_analyzed": "2025-05-09 00:57:28",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Amazon EventBridge Scheduler now supports AWS PrivateLink",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/03/amazon-eventbridge-scheduler-privatelink/",
+      "crawl_time": "2025-03-25",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_03_27_01652b41.md": {
+    "file": "data/raw/aws/whatsnew/2025_03_27_01652b41.md",
+    "last_analyzed": "2025-05-09 00:57:37",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "AWS Network Manager and AWS Cloud WAN now support AWS PrivateLink and IPv6",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/03/aws-network-manager-cloud-wan-privatelink-ipv6",
+      "crawl_time": "2025-03-27",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_04_30_ad0acb4c.md": {
+    "file": "data/raw/aws/whatsnew/2025_04_30_ad0acb4c.md",
+    "last_analyzed": "2025-05-09 01:11:54",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Amazon VPC Lattice now supports IPv6 for management endpoints",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/04/amazon-vpc-lattice-ipv6-management-endpoints/",
+      "crawl_time": "2025-04-30",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_03_18_0778cfe5.md": {
+    "file": "data/raw/aws/whatsnew/2025_03_18_0778cfe5.md",
+    "last_analyzed": "2025-05-09 00:57:45",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "AWS Client VPN increases authorization rules and route quotas",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/03/aws-client-vpn-authorization-rules-route-quotas",
+      "crawl_time": "2025-03-18",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_02_13_ac4db822.md": {
+    "file": "data/raw/aws/whatsnew/2025_02_13_ac4db822.md",
+    "last_analyzed": "2025-05-09 00:58:18",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "AWS Network Load Balancer now supports removing availability zones",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/02/aws-network-load-balancer-removing-availability-zones",
+      "crawl_time": "2025-02-13",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_04_24_f8c13e0a.md": {
+    "file": "data/raw/aws/whatsnew/2025_04_24_f8c13e0a.md",
+    "last_analyzed": "2025-05-09 00:58:19",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Amazon VPC Reachability Analyzer and Amazon VPC Network Access Analyzer are now available in Europe (Spain) Region",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/04/amazon-vpc-reachability-network-access-analyzer-spain/",
+      "crawl_time": "2025-04-24",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_04_08_84281430.md": {
+    "file": "data/raw/aws/whatsnew/2025_04_08_84281430.md",
+    "last_analyzed": "2025-05-09 00:58:20",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "AWS SAM now supports Amazon API Gateway Custom Domain Names for private REST APIs",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/04/aws-sam-api-gateway-custom-domain-names/",
+      "crawl_time": "2025-04-08",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/azure/blog/2024_05_30_6f945e14.md": {
+    "file": "data/raw/azure/blog/2024_05_30_6f945e14.md",
+    "last_analyzed": "2025-05-09 00:58:34",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Enhance your security capabilities with Azure Bastion Premium",
+      "original_url": "https://azure.microsoft.com/en-us/blog/enhance-your-security-capabilities-with-azure-bastion-premium/",
+      "crawl_time": "2024-05-30",
+      "vendor": "AZURE",
+      "type": "BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/azure/blog/2025_01_27_259b38e6.md": {
+    "file": "data/raw/azure/blog/2025_01_27_259b38e6.md",
+    "last_analyzed": "2025-05-09 00:59:07",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Navigating the 2024 holiday season: Insights into Azure’s DDoS defense",
+      "original_url": "https://azure.microsoft.com/en-us/blog/navigating-the-2024-holiday-season-insights-into-azures-ddos-defense/",
+      "crawl_time": "2025-01-27",
+      "vendor": "AZURE",
+      "type": "BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/azure/blog/2023_09_11_e8cc8166.md": {
+    "file": "data/raw/azure/blog/2023_09_11_e8cc8166.md",
+    "last_analyzed": "2025-05-09 00:59:08",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Accelerating the pace of innovation with Azure Space and our partners",
+      "original_url": "https://azure.microsoft.com/en-us/blog/accelerating-the-pace-of-innovation-with-azure-space-and-our-partners/",
+      "crawl_time": "2023-09-11",
+      "vendor": "AZURE",
+      "type": "BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/azure/blog/2024_05_01_6fc0c83e.md": {
+    "file": "data/raw/azure/blog/2024_05_01_6fc0c83e.md",
+    "last_analyzed": "2025-05-09 00:59:10",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Microsoft RAN slicing solutions: Discover AI-assisted application service assurance capabilities",
+      "original_url": "https://azure.microsoft.com/en-us/blog/microsoft-ran-slicing-solutions-discover-ai-assisted-application-service-assurance-capabilities/",
+      "crawl_time": "2024-05-01",
+      "vendor": "AZURE",
+      "type": "BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/azure/blog/2024_09_24_89902b2a.md": {
+    "file": "data/raw/azure/blog/2024_09_24_89902b2a.md",
+    "last_analyzed": "2025-05-09 00:59:18",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Enterprise trust in Azure OpenAI Service strengthened with Data Zones",
+      "original_url": "https://azure.microsoft.com/en-us/blog/enterprise-trust-in-azure-openai-service-strengthened-with-data-zones/",
+      "crawl_time": "2024-09-24",
+      "vendor": "AZURE",
+      "type": "BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/azure/blog/2024_11_07_da85eb69.md": {
+    "file": "data/raw/azure/blog/2024_11_07_da85eb69.md",
+    "last_analyzed": "2025-05-09 00:59:39",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Unlocking the future: Azure networking updates on security, reliability, and high availability",
+      "original_url": "https://azure.microsoft.com/en-us/blog/unlocking-the-future-azure-networking-updates-on-security-reliability-and-high-availability/",
+      "crawl_time": "2024-11-07",
+      "vendor": "AZURE",
+      "type": "BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/azure/updates/2025-04-29_41cbc8c5.md": {
+    "file": "data/raw/azure/updates/2025-04-29_41cbc8c5.md",
+    "last_analyzed": "2025-05-09 01:12:24",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Generally Available: Next hop IP support for Virtual WAN",
+      "original_url": "",
+      "crawl_time": "2025-04-29",
+      "vendor": "Azure",
+      "type": "Updates"
+    },
+    "processed": true
+  },
+  "data/raw/azure/blog/2024_03_25_991b9cb9.md": {
+    "file": "data/raw/azure/blog/2024_03_25_991b9cb9.md",
+    "last_analyzed": "2025-05-09 00:59:48",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Using Microsoft Azure Virtual Network Manager to enhance network security",
+      "original_url": "https://azure.microsoft.com/en-us/blog/using-microsoft-azure-virtual-network-manager-to-enhance-network-security/",
+      "crawl_time": "2024-03-25",
+      "vendor": "AZURE",
+      "type": "BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/azure/blog/2024_01_25_9c0356e1.md": {
+    "file": "data/raw/azure/blog/2024_01_25_9c0356e1.md",
+    "last_analyzed": "2025-05-09 00:59:52",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Unwrapping the 2023 holiday season: A deep dive into Azure’s DDoS attack landscape",
+      "original_url": "https://azure.microsoft.com/en-us/blog/unwrapping-the-2023-holiday-season-a-deep-dive-into-azures-ddos-attack-landscape/",
+      "crawl_time": "2024-01-25",
+      "vendor": "AZURE",
+      "type": "BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/azure/updates/2025-04-21_9b830b95.md": {
+    "file": "data/raw/azure/updates/2025-04-21_9b830b95.md",
+    "last_analyzed": "2025-05-09 00:59:53",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Generally Available: Azure Firewall resource specific log tables get Azure Monitor Basic plan support",
+      "original_url": "",
+      "crawl_time": "2025-04-21",
+      "vendor": "Azure",
+      "type": "Updates"
+    },
+    "processed": true
+  },
+  "data/raw/azure/blog/2023_08_28_03209dc7.md": {
+    "file": "data/raw/azure/blog/2023_08_28_03209dc7.md",
+    "last_analyzed": "2025-05-09 00:59:54",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Upgrade to App Service Environment v3 today and unlock new capabilities",
+      "original_url": "https://azure.microsoft.com/en-us/blog/upgrade-to-app-service-environment-v3-today-and-unlock-new-capabilities/",
+      "crawl_time": "2023-08-28",
+      "vendor": "AZURE",
+      "type": "BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/azure/updates/2025-04-01_720a51fc.md": {
+    "file": "data/raw/azure/updates/2025-04-01_720a51fc.md",
+    "last_analyzed": "2025-05-09 01:00:00",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Public Preview: CNI Overlay for Application Gateway for Containers and AGIC",
+      "original_url": "",
+      "crawl_time": "2025-04-01",
+      "vendor": "Azure",
+      "type": "Updates"
+    },
+    "processed": true
+  },
+  "data/raw/azure/blog/2024_03_21_bb14f2a5.md": {
+    "file": "data/raw/azure/blog/2024_03_21_bb14f2a5.md",
+    "last_analyzed": "2025-05-09 01:00:06",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Maximize your business potential: Migrate your Windows Server to Azure with expert resources",
+      "original_url": "https://azure.microsoft.com/en-us/blog/maximize-your-business-potential-migrate-your-windows-server-to-azure-with-expert-resources/",
+      "crawl_time": "2024-03-21",
+      "vendor": "AZURE",
+      "type": "BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/azure/updates/2025-04-03_0ccfbcb0.md": {
+    "file": "data/raw/azure/updates/2025-04-03_0ccfbcb0.md",
+    "last_analyzed": "2025-05-09 01:00:25",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Public Preview: Increased VNet limits for Private Endpoints",
+      "original_url": "",
+      "crawl_time": "2025-04-03",
+      "vendor": "Azure",
+      "type": "Updates"
+    },
+    "processed": true
+  },
+  "data/raw/azure/updates/2025-04-08_82949183.md": {
+    "file": "data/raw/azure/updates/2025-04-08_82949183.md",
+    "last_analyzed": "2025-05-09 01:00:28",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Generally Available: Azure Networking Capabilities for Microsoft Copilot in Azure",
+      "original_url": "",
+      "crawl_time": "2025-04-08",
+      "vendor": "Azure",
+      "type": "Updates"
+    },
+    "processed": true
+  },
+  "data/raw/azure/updates/2025-03-31_03dc23cc.md": {
+    "file": "data/raw/azure/updates/2025-03-31_03dc23cc.md",
+    "last_analyzed": "2025-05-09 01:00:32",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Public Preview: ExpressRoute Resiliency Enhancements",
+      "original_url": "",
+      "crawl_time": "2025-03-31",
+      "vendor": "Azure",
+      "type": "Updates"
+    },
+    "processed": true
+  },
+  "data/raw/azure/updates/2025-04-15_03b0ab43.md": {
+    "file": "data/raw/azure/updates/2025-04-15_03b0ab43.md",
+    "last_analyzed": "2025-05-09 01:00:39",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Generally Available: Route-maps for Azure Virtual WAN",
+      "original_url": "",
+      "crawl_time": "2025-04-15",
+      "vendor": "Azure",
+      "type": "Updates"
+    },
+    "processed": true
+  },
+  "data/raw/azure/updates/2025-04-01_48bc431b.md": {
+    "file": "data/raw/azure/updates/2025-04-01_48bc431b.md",
+    "last_analyzed": "2025-05-09 01:00:43",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Public Preview: Azure Front Door Custom Cipher Suite",
+      "original_url": "",
+      "crawl_time": "2025-04-01",
+      "vendor": "Azure",
+      "type": "Updates"
+    },
+    "processed": true
+  },
+  "data/raw/azure/updates/2025-04-29_995ed136.md": {
+    "file": "data/raw/azure/updates/2025-04-29_995ed136.md",
+    "last_analyzed": "2025-05-09 01:00:45",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Generally Available: Azure Firewall integration in Security Copilot",
+      "original_url": "",
+      "crawl_time": "2025-04-29",
+      "vendor": "Azure",
+      "type": "Updates"
+    },
+    "processed": true
+  },
+  "data/raw/azure/updates/2025-03-24_21ec41be.md": {
+    "file": "data/raw/azure/updates/2025-03-24_21ec41be.md",
+    "last_analyzed": "2025-05-09 01:00:52",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Generally Available: Azure Firewall Updates - Parallel IP Group Updates",
+      "original_url": "",
+      "crawl_time": "2025-03-24",
+      "vendor": "Azure",
+      "type": "Updates"
+    },
+    "processed": true
+  },
+  "data/raw/azure/updates/2025-03-31_27fe191c.md": {
+    "file": "data/raw/azure/updates/2025-03-31_27fe191c.md",
+    "last_analyzed": "2025-05-09 01:00:57",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Retirement: Prepare for the Retirement of Manually Registered Azure VPN Clients on March 31, 2028",
+      "original_url": "",
+      "crawl_time": "2025-03-31",
+      "vendor": "Azure",
+      "type": "Updates"
+    },
+    "processed": true
+  },
+  "data/raw/azure/updates/2025-04-29_8e9b9a43.md": {
+    "file": "data/raw/azure/updates/2025-04-29_8e9b9a43.md",
+    "last_analyzed": "2025-05-09 01:01:09",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Public Preview: Azure virtual network terminal access point (TAP)",
+      "original_url": "",
+      "crawl_time": "2025-04-29",
+      "vendor": "Azure",
+      "type": "Updates"
+    },
+    "processed": true
+  },
+  "data/raw/azure/updates/2025-04-29_c320c9c2.md": {
+    "file": "data/raw/azure/updates/2025-04-29_c320c9c2.md",
+    "last_analyzed": "2025-05-09 01:01:12",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Public Preview: Azure WAF CAPTCHA Challenge for Azure Front Door",
+      "original_url": "",
+      "crawl_time": "2025-04-29",
+      "vendor": "Azure",
+      "type": "Updates"
+    },
+    "processed": true
+  },
+  "data/raw/azure/updates/2025-04-16_7c1fc790.md": {
+    "file": "data/raw/azure/updates/2025-04-16_7c1fc790.md",
+    "last_analyzed": "2025-05-09 01:01:13",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Generally Available: Microsoft Azure Available from New Azure for U.S. Government Secret Cloud Region in the US",
+      "original_url": "",
+      "crawl_time": "2025-04-16",
+      "vendor": "Azure",
+      "type": "Updates"
+    },
+    "processed": true
+  },
+  "data/raw/azure/updates/2025-04-17_46693e2b.md": {
+    "file": "data/raw/azure/updates/2025-04-17_46693e2b.md",
+    "last_analyzed": "2025-05-09 01:01:16",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Generally Available: Azure Front Door custom cipher suite",
+      "original_url": "",
+      "crawl_time": "2025-04-17",
+      "vendor": "Azure",
+      "type": "Updates"
+    },
+    "processed": true
+  },
+  "data/raw/azure/updates/2025-03-24_afec5d23.md": {
+    "file": "data/raw/azure/updates/2025-03-24_afec5d23.md",
+    "last_analyzed": "2025-05-09 01:01:23",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Generally Available: New Regions for Azure Front Door Premium with Private Link Enabled Origins",
+      "original_url": "",
+      "crawl_time": "2025-03-24",
+      "vendor": "Azure",
+      "type": "Updates"
+    },
+    "processed": true
+  },
+  "data/raw/azure/updates/2025-04-10_ea77b4e7.md": {
+    "file": "data/raw/azure/updates/2025-04-10_ea77b4e7.md",
+    "last_analyzed": "2025-05-09 01:01:27",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Generally Available: Azure Bastion Developer now in 36 public regions",
+      "original_url": "",
+      "crawl_time": "2025-04-10",
+      "vendor": "Azure",
+      "type": "Updates"
+    },
+    "processed": true
+  },
+  "data/raw/azure/tech-blog/2025_04_10_9b425aab.md": {
+    "file": "data/raw/azure/tech-blog/2025_04_10_9b425aab.md",
+    "last_analyzed": "2025-05-09 01:01:39",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "ExpressRoute Metro and Global Reach Expansion",
+      "original_url": "https://techcommunity.microsoft.com/blog/azurenetworkingblog/expressroute-metro-and-global-reach-expansion/4402756",
+      "crawl_time": "2025-04-10",
+      "vendor": "AZURE",
+      "type": "TECH-BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/azure/tech-blog/2025_05_06_1a9e1a38.md": {
+    "file": "data/raw/azure/tech-blog/2025_05_06_1a9e1a38.md",
+    "last_analyzed": "2025-05-09 01:01:48",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Azure virtual network terminal access point (TAP) public preview announcement",
+      "original_url": "https://techcommunity.microsoft.com/blog/azurenetworkingblog/azure-virtual-network-terminal-access-point-tap-public-preview-announcement/4405540",
+      "crawl_time": "2025-05-06",
+      "vendor": "AZURE",
+      "type": "TECH-BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/azure/tech-blog/2025_04_23_10f0212a.md": {
+    "file": "data/raw/azure/tech-blog/2025_04_23_10f0212a.md",
+    "last_analyzed": "2025-05-09 01:02:13",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "High-Scale Kubernetes Networking with Azure CNI Powered by Cilium",
+      "original_url": "https://techcommunity.microsoft.com/blog/azurenetworkingblog/high-scale-kubernetes-networking-with-azure-cni-powered-by-cilium/4407234",
+      "crawl_time": "2025-04-23",
+      "vendor": "AZURE",
+      "type": "TECH-BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/azure/tech-blog/2025_05_02_8e93a090.md": {
+    "file": "data/raw/azure/tech-blog/2025_05_02_8e93a090.md",
+    "last_analyzed": "2025-05-09 01:02:21",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "What's New in the World of eBPF from Azure Container Networking!",
+      "original_url": "https://techcommunity.microsoft.com/blog/azurenetworkingblog/whats-new-in-the-world-of-ebpf-from-azure-container-networking/4410254",
+      "crawl_time": "2025-05-02",
+      "vendor": "AZURE",
+      "type": "TECH-BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/azure/tech-blog/2025_04_14_072c9b44.md": {
+    "file": "data/raw/azure/tech-blog/2025_04_14_072c9b44.md",
+    "last_analyzed": "2025-05-09 01:02:23",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Introducing Subnet Peering in Azure",
+      "original_url": "https://techcommunity.microsoft.com/blog/azurenetworkingblog/introducing-subnet-peering-in-azure/4383841",
+      "crawl_time": "2025-04-14",
+      "vendor": "AZURE",
+      "type": "TECH-BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/azure/tech-blog/2025_04_29_41e1d3c9.md": {
+    "file": "data/raw/azure/tech-blog/2025_04_29_41e1d3c9.md",
+    "last_analyzed": "2025-05-09 01:02:30",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Azure CNI now supports Node Subnet IPAM mode with Cilium Dataplane",
+      "original_url": "https://techcommunity.microsoft.com/blog/azurenetworkingblog/azure-cni-now-supports-node-subnet-ipam-mode-with-cilium-dataplane/4409359",
+      "crawl_time": "2025-04-29",
+      "vendor": "AZURE",
+      "type": "TECH-BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/azure/tech-blog/2025_05_07_227fa246.md": {
+    "file": "data/raw/azure/tech-blog/2025_05_07_227fa246.md",
+    "last_analyzed": "2025-05-09 01:02:43",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Unmasking DDoS Attacks (Part 1/3)",
+      "original_url": "https://techcommunity.microsoft.com/blog/azurenetworkingblog/unmasking-ddos-attacks-part-13/4384794",
+      "crawl_time": "2025-05-07",
+      "vendor": "AZURE",
+      "type": "TECH-BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/gcp/blog/2025_05_01_40667f7a.md": {
+    "file": "data/raw/gcp/blog/2025_05_01_40667f7a.md",
+    "last_analyzed": "2025-05-09 01:02:58",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "WAN: Premium Tier & Verified Peering Provider for reliable global connectivity",
+      "original_url": "https://cloud.google.com/blog/products/networking/premium-tier-and-verified-peering-providers-enable-cloud-wan",
+      "crawl_time": "2025-05-01",
+      "vendor": "GCP",
+      "type": "BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/gcp/blog/2025_03_01_c6bc1034.md": {
+    "file": "data/raw/gcp/blog/2025_03_01_c6bc1034.md",
+    "last_analyzed": "2025-05-09 01:03:00",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Dynamic 5G services, made possible by AI and intent-based automation",
+      "original_url": "https://cloud.google.com/blog/topics/telecommunications/how-dynamic-5g-services-are-possible-with-ai",
+      "crawl_time": "2025-03-01",
+      "vendor": "GCP",
+      "type": "BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/gcp/blog/2025_02_27_06f1dccf.md": {
+    "file": "data/raw/gcp/blog/2025_02_27_06f1dccf.md",
+    "last_analyzed": "2025-05-09 01:03:02",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Inter-VPC connectivity architecture patterns in Cross-Cloud Network",
+      "original_url": "https://cloud.google.com/blog/products/networking/inter-network-communication-design-with-ncc-vpc-peering",
+      "crawl_time": "2025-02-27",
+      "vendor": "GCP",
+      "type": "BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/gcp/blog/2025_03_14_a0e7365b.md": {
+    "file": "data/raw/gcp/blog/2025_03_14_a0e7365b.md",
+    "last_analyzed": "2025-05-09 01:03:18",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Streamlined Security: Introducing Network Security Integration",
+      "original_url": "https://cloud.google.com/blog/products/networking/introducing-network-security-integration",
+      "crawl_time": "2025-03-14",
+      "vendor": "GCP",
+      "type": "BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/gcp/blog/2025_04_23_576617e3.md": {
+    "file": "data/raw/gcp/blog/2025_04_23_576617e3.md",
+    "last_analyzed": "2025-05-09 01:03:18",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Diving into the technology behind Google's AI-era global network",
+      "original_url": "https://cloud.google.com/blog/products/networking/google-global-network-technology-deep-dive",
+      "crawl_time": "2025-04-23",
+      "vendor": "GCP",
+      "type": "BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/gcp/blog/2025_04_10_6270ac88.md": {
+    "file": "data/raw/gcp/blog/2025_04_10_6270ac88.md",
+    "last_analyzed": "2025-05-09 01:03:23",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "WAN: Connect your global enterprise with a network built for the AI era",
+      "original_url": "https://cloud.google.com/blog/products/networking/connect-globally-with-cloud-wan-for-the-ai-era",
+      "crawl_time": "2025-04-10",
+      "vendor": "GCP",
+      "type": "BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/gcp/blog/2025_04_10_55782b4e.md": {
+    "file": "data/raw/gcp/blog/2025_04_10_55782b4e.md",
+    "last_analyzed": "2025-05-09 01:03:33",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Google's AI-powered next-generation global network: Built for the Gemini era",
+      "original_url": "https://cloud.google.com/blog/products/networking/google-global-network-principles-and-innovations",
+      "crawl_time": "2025-04-10",
+      "vendor": "GCP",
+      "type": "BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/gcp/blog/2025_03_20_43702b48.md": {
+    "file": "data/raw/gcp/blog/2025_03_20_43702b48.md",
+    "last_analyzed": "2025-05-09 01:03:47",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Using RDMA over Converged Ethernet networking for AI on Google Cloud",
+      "original_url": "https://cloud.google.com/blog/products/networking/rdma-rocev2-for-ai-workloads-on-google-cloud",
+      "crawl_time": "2025-03-20",
+      "vendor": "GCP",
+      "type": "BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/gcp/blog/2025_04_10_17e0bfea.md": {
+    "file": "data/raw/gcp/blog/2025_04_10_17e0bfea.md",
+    "last_analyzed": "2025-05-09 01:03:48",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "What’s new with Google Cloud networking",
+      "original_url": "https://cloud.google.com/blog/products/networking/networking-innovations-at-google-cloud-next25",
+      "crawl_time": "2025-04-10",
+      "vendor": "GCP",
+      "type": "BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/gcp/blog/2025_04_15_14d7da63.md": {
+    "file": "data/raw/gcp/blog/2025_04_15_14d7da63.md",
+    "last_analyzed": "2025-05-09 01:03:55",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Announcing cloud-native integration of security service edge (SSE) with Cloud WAN",
+      "original_url": "https://cloud.google.com/blog/products/networking/ncc-gateway-for-cloud-wan-helps-secure-network-access",
+      "crawl_time": "2025-04-15",
+      "vendor": "GCP",
+      "type": "BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_03_07_d63baebf.md": {
+    "file": "data/raw/aws/whatsnew/2025_03_07_d63baebf.md",
+    "last_analyzed": "2025-05-09 01:11:03",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Application Load Balancer announces integration with Amazon VPC IPAM",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/03/application-load-balancer-integration-vpc-ipam/",
+      "crawl_time": "2025-03-07",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_03_31_2684c83d.md": {
+    "file": "data/raw/aws/whatsnew/2025_03_31_2684c83d.md",
+    "last_analyzed": "2025-05-09 01:11:03",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "API Gateway launches support for dual-stack (IPv4 and IPv6) endpoints",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/03/api-gateway-dual-stack-ipv4-ipv6-endpoints/",
+      "crawl_time": "2025-03-31",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/azure/updates/2025-04-17_59c4cf91.md": {
+    "file": "data/raw/azure/updates/2025-04-17_59c4cf91.md",
+    "last_analyzed": "2025-05-09 01:12:16",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Generally Available: ExpressRoute Metro Peering locations and Global Reach are now available in more regions",
+      "original_url": "",
+      "crawl_time": "2025-04-17",
+      "vendor": "Azure",
+      "type": "Updates"
+    },
+    "processed": true
+  },
+  "data/raw/azure/updates/2025-04-10_87f2b8e7.md": {
+    "file": "data/raw/azure/updates/2025-04-10_87f2b8e7.md",
+    "last_analyzed": "2025-05-09 01:12:25",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Generally Available: Azure Front Door capturing request header, response header, and request query string values as server variables",
+      "original_url": "",
+      "crawl_time": "2025-04-10",
+      "vendor": "Azure",
+      "type": "Updates"
+    },
+    "processed": true
+  },
+  "data/raw/azure/updates/2025-04-08_085988c6.md": {
+    "file": "data/raw/azure/updates/2025-04-08_085988c6.md",
+    "last_analyzed": "2025-05-09 01:12:29",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Generally Available: Application Gateway as a Private Link Enabled Origin for Front Door Premium",
+      "original_url": "",
+      "crawl_time": "2025-04-08",
+      "vendor": "Azure",
+      "type": "Updates"
+    },
+    "processed": true
+  },
+  "data/raw/azure/tech-blog/2025_05_01_a2cfe959.md": {
+    "file": "data/raw/azure/tech-blog/2025_05_01_a2cfe959.md",
+    "last_analyzed": "2025-05-09 01:12:56",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Deploying Virtual Networks Across Tenants Using Azure Virtual Network Manager IP Address Management",
+      "original_url": "https://techcommunity.microsoft.com/blog/azurenetworkingblog/deploying-virtual-networks-across-tenants-using-azure-virtual-network-manager-ip/4410161",
+      "crawl_time": "2025-05-01",
+      "vendor": "AZURE",
+      "type": "TECH-BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_03_28_e587f0b3.md": {
+    "file": "data/raw/aws/whatsnew/2025_03_28_e587f0b3.md",
+    "last_analyzed": "2025-05-09 01:15:40",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Amazon EC2 now supports more bandwidth and jumbo frames to select destinations",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/03/amazon-ec2-bandwidth-jumbo-frames",
+      "crawl_time": "2025-03-28",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_04_11_d19ddfe5.md": {
+    "file": "data/raw/aws/whatsnew/2025_04_11_d19ddfe5.md",
+    "last_analyzed": "2025-05-09 01:15:42",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "AWS simplifies Amazon VPC Peering billing",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/04/amazon-vpc-peering-billing/",
+      "crawl_time": "2025-04-11",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_03_14_b0da9836.md": {
+    "file": "data/raw/aws/whatsnew/2025_03_14_b0da9836.md",
+    "last_analyzed": "2025-05-09 01:15:42",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "AWS Verified Access achieves FedRAMP High and Moderate authorization",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/03/aws-verified-access-fedramp-high-moderate-authorization",
+      "crawl_time": "2025-03-14",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_05_08_8f500232.md": {
+    "file": "data/raw/aws/whatsnew/2025_05_08_8f500232.md",
+    "last_analyzed": "2025-05-09 01:15:43",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "AWS announces new AWS Direct Connect location in Brisbane, Australia",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/05/aws-direct-connect-location-brisbane-australia",
+      "crawl_time": "2025-05-08",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/azure/blog/2024_05_07_209639bf.md": {
+    "file": "data/raw/azure/blog/2024_05_07_209639bf.md",
+    "last_analyzed": "2025-05-09 01:15:49",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Bringing generative AI to Azure network security with new Microsoft Copilot integrations",
+      "original_url": "https://azure.microsoft.com/en-us/blog/bringing-generative-ai-to-azure-network-security-with-new-microsoft-copilot-integrations/",
+      "crawl_time": "2024-05-07",
+      "vendor": "AZURE",
+      "type": "BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/azure/blog/2024_03_19_9520daa9.md": {
+    "file": "data/raw/azure/blog/2024_03_19_9520daa9.md",
+    "last_analyzed": "2025-05-09 01:15:50",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Microsoft open sources Retina: A cloud-native container networking observability platform",
+      "original_url": "https://azure.microsoft.com/en-us/blog/microsoft-open-sources-retina-a-cloud-native-container-networking-observability-platform/",
+      "crawl_time": "2024-03-19",
+      "vendor": "AZURE",
+      "type": "BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/azure/tech-blog/2025_04_15_637c5d9d.md": {
+    "file": "data/raw/azure/tech-blog/2025_04_15_637c5d9d.md",
+    "last_analyzed": "2025-05-09 01:16:29",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Announcing the general availability of Route-Maps for Azure virtual WAN.",
+      "original_url": "https://techcommunity.microsoft.com/blog/azurenetworkingblog/announcing-the-general-availability-of-route-maps-for-azure-virtual-wan-/4402492",
+      "crawl_time": "2025-04-15",
+      "vendor": "AZURE",
+      "type": "TECH-BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/azure/tech-blog/2025_04_30_fb5f37ae.md": {
+    "file": "data/raw/azure/tech-blog/2025_04_30_fb5f37ae.md",
+    "last_analyzed": "2025-05-09 01:16:30",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Introducing Layer 7 Network Policies with Advanced Container Networking Services for AKS Clusters!",
+      "original_url": "https://techcommunity.microsoft.com/blog/azurenetworkingblog/introducing-layer-7-network-policies-with-advanced-container-networking-services/4409782",
+      "crawl_time": "2025-04-30",
+      "vendor": "AZURE",
+      "type": "TECH-BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/aws/blog/2025_02_25_923e08b9.md": {
+    "file": "data/raw/aws/blog/2025_02_25_923e08b9.md",
+    "last_analyzed": "2025-05-09 01:25:31",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Enhancing Security with AWS Verified Access and Microsoft Entra ID Integration",
+      "original_url": "https://aws.amazon.com/blogs/networking-and-content-delivery/enhancing-security-with-aws-verified-access-and-microsoft-entra-id-integration/",
+      "crawl_time": "2025-02-25",
+      "vendor": "AWS",
+      "type": "BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/aws/blog/2025_02_27_4ab52814.md": {
+    "file": "data/raw/aws/blog/2025_02_27_4ab52814.md",
+    "last_analyzed": "2025-05-09 01:25:47",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Visualize and gain insights into your VPC with Amazon Q in Amazon QuickSight",
+      "original_url": "https://aws.amazon.com/blogs/networking-and-content-delivery/visualize-and-gain-insights-into-your-vpc-with-amazon-q-in-amazon-quicksight/",
+      "crawl_time": "2025-02-27",
+      "vendor": "AWS",
+      "type": "BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/aws/blog/2025_03_10_8c2b1da4.md": {
+    "file": "data/raw/aws/blog/2025_03_10_8c2b1da4.md",
+    "last_analyzed": "2025-05-09 01:25:50",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "How Glovo is protecting their public APIs with a combination of AWS Edge Services",
+      "original_url": "https://aws.amazon.com/blogs/networking-and-content-delivery/how-glovo-is-protecting-their-public-apis-with-a-combination-of-aws-edge-services/",
+      "crawl_time": "2025-03-10",
+      "vendor": "AWS",
+      "type": "BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/aws/blog/2025_03_24_5106405d.md": {
+    "file": "data/raw/aws/blog/2025_03_24_5106405d.md",
+    "last_analyzed": "2025-05-09 01:25:51",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Using Amazon Route 53 Resolver DNS Firewall to detect malicious domains",
+      "original_url": "https://aws.amazon.com/blogs/networking-and-content-delivery/using-amazon-route-53-resolver-dns-firewall-to-detect-malicious-domains/",
+      "crawl_time": "2025-03-24",
+      "vendor": "AWS",
+      "type": "BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/aws/blog/2025_03_07_f31bc0a6.md": {
+    "file": "data/raw/aws/blog/2025_03_07_f31bc0a6.md",
+    "last_analyzed": "2025-05-09 01:25:54",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "How to use AWS WAF Bot Control for Targeted Bots signals and mitigate evasive bots with adaptive user experience",
+      "original_url": "https://aws.amazon.com/blogs/networking-and-content-delivery/how-to-use-aws-waf-bot-control-for-targeted-bots-signals-and-mitigate-evasive-bots-with-adaptive-user-experience/",
+      "crawl_time": "2025-03-07",
+      "vendor": "AWS",
+      "type": "BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2024_11_21_2629a7b7.md": {
+    "file": "data/raw/aws/whatsnew/2024_11_21_2629a7b7.md",
+    "last_analyzed": "2025-05-09 01:26:22",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Amazon API Gateway now supports Custom Domain Name for private REST APIs",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2024/11/amazon-api-gateway-custom-domain-name-private-rest-apis/",
+      "crawl_time": "2024-11-21",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2024_11_25_edc03e01.md": {
+    "file": "data/raw/aws/whatsnew/2024_11_25_edc03e01.md",
+    "last_analyzed": "2025-05-09 01:26:23",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "AWS Cloud WAN simplifies on-premises connectivity via AWS Direct Connect",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2024/11/aws-cloud-wan-on-premises-connectivity-direct-connect",
+      "crawl_time": "2024-11-25",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2024_11_26_d0ebadfc.md": {
+    "file": "data/raw/aws/whatsnew/2024_11_26_d0ebadfc.md",
+    "last_analyzed": "2025-05-09 01:26:29",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "AWS Network Firewall expands the list of supported protocols and keywords in firewall rules",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2024/11/aws-network-firewall-list-protocols-keywords-firewall/",
+      "crawl_time": "2024-11-26",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2024_11_21_9f15c334.md": {
+    "file": "data/raw/aws/whatsnew/2024_11_21_9f15c334.md",
+    "last_analyzed": "2025-05-09 01:26:34",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Amazon CloudWatch Internet Monitor adds AWS Local Zones support for VPC subnets",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2024/11/amazon-cloudwatch-internet-monitor-aws-local-zones-vpc-subnets",
+      "crawl_time": "2024-11-21",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/blog/2025_03_12_6962b5da.md": {
+    "file": "data/raw/aws/blog/2025_03_12_6962b5da.md",
+    "last_analyzed": "2025-05-09 01:26:54",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Building Resilient IPv6 Network with SD-WANs and AWS Cloud WAN Connect with GRE",
+      "original_url": "https://aws.amazon.com/blogs/networking-and-content-delivery/building-resilient-ipv6-network-with-sd-wans-and-aws-cloud-wan-connect-with-gre/",
+      "crawl_time": "2025-03-12",
+      "vendor": "AWS",
+      "type": "BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2024_12_01_f1b8478d.md": {
+    "file": "data/raw/aws/whatsnew/2024_12_01_f1b8478d.md",
+    "last_analyzed": "2025-05-09 01:26:56",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "AWS Verified Access now supports secure access to resources over non-HTTP(S) protocols (Preview)",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2024/12/aws-verified-access-secure-access-resources-non-https-protocols-preview",
+      "crawl_time": "2024-12-01",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2024_12_13_da35f4cc.md": {
+    "file": "data/raw/aws/whatsnew/2024_12_13_da35f4cc.md",
+    "last_analyzed": "2025-05-09 01:27:01",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Amazon EC2 instances support bandwidth configurations for VPC and EBS",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2024/12/amazon-ec2-instances-bandwidth-configurations-vpc-ebs",
+      "crawl_time": "2024-12-13",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2024_12_01_3e1b3b77.md": {
+    "file": "data/raw/aws/whatsnew/2024_12_01_3e1b3b77.md",
+    "last_analyzed": "2025-05-09 01:27:02",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "AWS announces AWS Data Transfer Terminal for high-speed data uploads",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2024/12/aws-data-transfer-terminal-high-speed-data-uploads",
+      "crawl_time": "2024-12-01",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_01_22_eb044aa9.md": {
+    "file": "data/raw/aws/whatsnew/2025_01_22_eb044aa9.md",
+    "last_analyzed": "2025-05-09 01:27:37",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "AWS Client VPN announces support for concurrent VPN connections",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/01/aws-client-vpn-concurrent-vpn-connections/",
+      "crawl_time": "2025-01-22",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2024_12_13_97a83e9c.md": {
+    "file": "data/raw/aws/whatsnew/2024_12_13_97a83e9c.md",
+    "last_analyzed": "2025-05-09 01:27:37",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "AWS Cloud Map now supports Service Level Attributes",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2024/12/aws-cloud-map-service-level-attributes",
+      "crawl_time": "2024-12-13",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2024_11_22_c8aa393a.md": {
+    "file": "data/raw/aws/whatsnew/2024_11_22_c8aa393a.md",
+    "last_analyzed": "2025-05-09 01:27:40",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "AWS Application Load Balancer introduces Certificate Authority advertisement to simplify client behavior while using Mutual TLS",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2024/11/aws-application-load-balancer-certificate-authority-advertisement",
+      "crawl_time": "2024-11-22",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2024_11_21_d1c7e59a.md": {
+    "file": "data/raw/aws/whatsnew/2024_11_21_d1c7e59a.md",
+    "last_analyzed": "2025-05-09 01:27:45",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "AWS announces Media Quality-Aware Resiliency for live streaming",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2024/11/aws-announces-media-quality-aware-resiliency-live-streaming",
+      "crawl_time": "2024-11-21",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2024_12_13_a29f5707.md": {
+    "file": "data/raw/aws/whatsnew/2024_12_13_a29f5707.md",
+    "last_analyzed": "2025-05-09 01:28:01",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "AWS announces new AWS Direct Connect location in Osaka, Japan",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2024/12/aws-direct-connect-location-osaka-japan/",
+      "crawl_time": "2024-12-13",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2024_12_23_35ccb1b7.md": {
+    "file": "data/raw/aws/whatsnew/2024_12_23_35ccb1b7.md",
+    "last_analyzed": "2025-05-09 01:28:11",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Amazon Lightsail API endpoints now support connectivity over Internet Protocol version 6 (IPv6)",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2024/12/amazon-lightsail-api-endpoints-connectivity-ipv6",
+      "crawl_time": "2024-12-23",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2024_11_26_7da72dfa.md": {
+    "file": "data/raw/aws/whatsnew/2024_11_26_7da72dfa.md",
+    "last_analyzed": "2025-05-09 01:28:12",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "AWS PrivateLink now supports cross-region connectivity",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2024/11/aws-privatelink-across-region-connectivity",
+      "crawl_time": "2024-11-26",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2024_12_12_d7430c99.md": {
+    "file": "data/raw/aws/whatsnew/2024_12_12_d7430c99.md",
+    "last_analyzed": "2025-05-09 01:28:18",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Amazon Route 53 Resolver DNS Firewall and DNS Firewall Advanced now available in the Asia Pacific (Malaysia) Region",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2024/12/amazon-route-53-resolver-dns-firewall-advanced-malaysia-region",
+      "crawl_time": "2024-12-12",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2024_12_18_ee693afe.md": {
+    "file": "data/raw/aws/whatsnew/2024_12_18_ee693afe.md",
+    "last_analyzed": "2025-05-09 01:28:18",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "AWS Backup now supports dual-stack (IPv4 and IPv6) environments",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2024/12/aws-backup-dual-stack-ipv4-ipv6-environments/",
+      "crawl_time": "2024-12-18",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2024_12_20_75297277.md": {
+    "file": "data/raw/aws/whatsnew/2024_12_20_75297277.md",
+    "last_analyzed": "2025-05-09 01:28:33",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Amazon WorkSpaces Personal now supports AWS Global Accelerator",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2024/12/amazon-workspaces-personal-aws-global-accelerator",
+      "crawl_time": "2024-12-20",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2024_11_20_3bfdadfd.md": {
+    "file": "data/raw/aws/whatsnew/2024_11_20_3bfdadfd.md",
+    "last_analyzed": "2025-05-09 01:28:44",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Amazon CloudFront now supports Anycast Static IPs",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2024/11/amazon-cloudfront-anycast-static-ips",
+      "crawl_time": "2024-11-20",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_01_14_bfb3241d.md": {
+    "file": "data/raw/aws/whatsnew/2025_01_14_bfb3241d.md",
+    "last_analyzed": "2025-05-09 01:28:59",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "AWS announces new AWS Direct Connect location and expansion in Querétaro, Mexico",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/01/aws-direct-connect-expansion-queretaro-mexico/",
+      "crawl_time": "2025-01-14",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2024_11_22_24a403e7.md": {
+    "file": "data/raw/aws/whatsnew/2024_11_22_24a403e7.md",
+    "last_analyzed": "2025-05-09 01:28:59",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Amazon Application Recovery Controller zonal shift and zonal autoshift support Application Load Balancers",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2024/11/amazon-recovery-controller-zonal-shift-autoshift-load-balancers/",
+      "crawl_time": "2024-11-22",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_01_13_242f7864.md": {
+    "file": "data/raw/aws/whatsnew/2025_01_13_242f7864.md",
+    "last_analyzed": "2025-05-09 01:29:05",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "AWS Security Hub now integrates with Amazon Route 53 Resolver DNS Firewall",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/01/aws-security-hub-route-53-resolver-dns-firewall/",
+      "crawl_time": "2025-01-13",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2024_11_21_8e23cb63.md": {
+    "file": "data/raw/aws/whatsnew/2024_11_21_8e23cb63.md",
+    "last_analyzed": "2025-05-09 01:29:18",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "AWS Application Load Balancer introduces header modification for enhanced traffic control and security",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2024/11/aws-application-load-balancer-header-modification-enhanced-traffic-control-security",
+      "crawl_time": "2024-11-21",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2024_11_21_fea6b1a8.md": {
+    "file": "data/raw/aws/whatsnew/2024_11_21_fea6b1a8.md",
+    "last_analyzed": "2025-05-09 01:29:25",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Amazon VPC IPAM now supports enabling IPAM for organizational units within AWS Organizations",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2024/11/amazon-vpc-ipam-organizational-units-aws-organizations",
+      "crawl_time": "2024-11-21",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2024_11_21_bc273e08.md": {
+    "file": "data/raw/aws/whatsnew/2024_11_21_bc273e08.md",
+    "last_analyzed": "2025-05-09 01:29:38",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Amazon CloudFront announces origin modifications using CloudFront Functions",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2024/11/amazon-cloudfront-origin-modifications-cloudfront-functions",
+      "crawl_time": "2024-11-21",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2024_12_02_6f48c2d8.md": {
+    "file": "data/raw/aws/whatsnew/2024_12_02_6f48c2d8.md",
+    "last_analyzed": "2025-05-09 01:29:38",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "VPC Lattice now includes TCP support with VPC Resources",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2024/12/vpc-lattice-tcp-vpc-resources",
+      "crawl_time": "2024-12-02",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_01_08_491977ac.md": {
+    "file": "data/raw/aws/whatsnew/2025_01_08_491977ac.md",
+    "last_analyzed": "2025-05-09 01:29:43",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "AWS announces new AWS Direct Connect location and expansion in Bangkok, Thailand",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/01/aws-direct-connect-location-expansion-bangkok-thailand/",
+      "crawl_time": "2025-01-08",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2025_01_08_55c74a1f.md": {
+    "file": "data/raw/aws/whatsnew/2025_01_08_55c74a1f.md",
+    "last_analyzed": "2025-05-09 01:29:57",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Amazon MSK Connect APIs now support AWS PrivateLink",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2025/01/amazon-msk-connect-apis-aws-privatelink",
+      "crawl_time": "2025-01-08",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2024_12_19_cbc78695.md": {
+    "file": "data/raw/aws/whatsnew/2024_12_19_cbc78695.md",
+    "last_analyzed": "2025-05-09 01:30:06",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "AWS PrivateLink cross-region connectivity now available in 14 additional Regions",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2024/12/aws-private-link-cross-region-connectivity-additional-regions",
+      "crawl_time": "2024-12-19",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2024_11_22_10b5b261.md": {
+    "file": "data/raw/aws/whatsnew/2024_11_22_10b5b261.md",
+    "last_analyzed": "2025-05-09 01:30:20",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "Cross-zone enabled Application Load Balancer now supports zonal shift and zonal autoshift",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2024/11/cross-zone-application-load-balancer-zonal-shift-autoshift",
+      "crawl_time": "2024-11-22",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2024_12_20_6588a951.md": {
+    "file": "data/raw/aws/whatsnew/2024_12_20_6588a951.md",
+    "last_analyzed": "2025-05-09 01:30:20",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "AWS Network Firewall now supports IPv6 Service Endpoints",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2024/12/aws-network-firewall-ipv6-service-endpoints/",
+      "crawl_time": "2024-12-20",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/azure/updates/2025-03-13_76055cce.md": {
+    "file": "data/raw/azure/updates/2025-03-13_76055cce.md",
+    "last_analyzed": "2025-05-09 01:30:20",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Generally Available: API Management as a Private Link-Enabled Origin for Front Door Premium",
+      "original_url": "",
+      "crawl_time": "2025-03-13",
+      "vendor": "Azure",
+      "type": "Updates"
+    },
+    "processed": true
+  },
+  "data/raw/azure/updates/2025-02-10_ccb8f2a8.md": {
+    "file": "data/raw/azure/updates/2025-02-10_ccb8f2a8.md",
+    "last_analyzed": "2025-05-09 01:30:37",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Public Preview: Azure Firewall Updates - Customer Provided Public IP Support for Secured Virtual Hubs",
+      "original_url": "",
+      "crawl_time": "2025-02-10",
+      "vendor": "Azure",
+      "type": "Updates"
+    },
+    "processed": true
+  },
+  "data/raw/azure/updates/2025-02-25_ad25e462.md": {
+    "file": "data/raw/azure/updates/2025-02-25_ad25e462.md",
+    "last_analyzed": "2025-05-09 01:30:38",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Generally Available: Azure Load Balancer Health Event Logs",
+      "original_url": "",
+      "crawl_time": "2025-02-25",
+      "vendor": "Azure",
+      "type": "Updates"
+    },
+    "processed": true
+  },
+  "data/raw/azure/updates/2025-02-11_3a929190.md": {
+    "file": "data/raw/azure/updates/2025-02-11_3a929190.md",
+    "last_analyzed": "2025-05-09 01:30:39",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Generally Available: New Pricing for Azure Virtual Network Manager",
+      "original_url": "",
+      "crawl_time": "2025-02-11",
+      "vendor": "Azure",
+      "type": "Updates"
+    },
+    "processed": true
+  },
+  "data/raw/azure/tech-blog/2025_03_31_61ebc76b.md": {
+    "file": "data/raw/azure/tech-blog/2025_03_31_61ebc76b.md",
+    "last_analyzed": "2025-05-09 01:31:15",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "ExpressRoute Gateway Migration Playbook",
+      "original_url": "https://techcommunity.microsoft.com/blog/azurenetworkingblog/expressroute-gateway-migration-playbook/4398933",
+      "crawl_time": "2025-03-31",
+      "vendor": "AZURE",
+      "type": "TECH-BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/azure/tech-blog/2025_04_18_cecc0d7e.md": {
+    "file": "data/raw/azure/tech-blog/2025_04_18_cecc0d7e.md",
+    "last_analyzed": "2025-05-09 01:31:22",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Best Practices for Securing Access to VMs",
+      "original_url": "https://techcommunity.microsoft.com/blog/azurenetworkingblog/best-practices-for-securing-access-to-vms/4405778",
+      "crawl_time": "2025-04-18",
+      "vendor": "AZURE",
+      "type": "TECH-BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/azure/tech-blog/2025_04_18_83ee4067.md": {
+    "file": "data/raw/azure/tech-blog/2025_04_18_83ee4067.md",
+    "last_analyzed": "2025-05-09 01:31:23",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Private only Bastion: Connect Through Bastion Without a Public IP",
+      "original_url": "https://techcommunity.microsoft.com/blog/azurenetworkingblog/private-only-bastion-connect-through-bastion-without-a-public-ip/4405756",
+      "crawl_time": "2025-04-18",
+      "vendor": "AZURE",
+      "type": "TECH-BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/azure/tech-blog/2025_03_20_3b15f963.md": {
+    "file": "data/raw/azure/tech-blog/2025_03_20_3b15f963.md",
+    "last_analyzed": "2025-05-09 01:31:38",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "The Deployment of Hollow Core Fiber (HCF) in Azure’s Network",
+      "original_url": "https://techcommunity.microsoft.com/blog/azurenetworkingblog/the-deployment-of-hollow-core-fiber-hcf-in-azure%E2%80%99s-network/4395340",
+      "crawl_time": "2025-03-20",
+      "vendor": "AZURE",
+      "type": "TECH-BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/azure/tech-blog/2025_03_26_3fb6bb35.md": {
+    "file": "data/raw/azure/tech-blog/2025_03_26_3fb6bb35.md",
+    "last_analyzed": "2025-05-09 01:31:45",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "The Basics: VNET Peering",
+      "original_url": "https://techcommunity.microsoft.com/blog/azurenetworkingblog/subnet-peering/4397640",
+      "crawl_time": "2025-03-26",
+      "vendor": "AZURE",
+      "type": "TECH-BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/azure/tech-blog/2025_03_20_d4585625.md": {
+    "file": "data/raw/azure/tech-blog/2025_03_20_d4585625.md",
+    "last_analyzed": "2025-05-09 01:31:51",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Combining firewall protection and SD-WAN connectivity in Azure virtual WAN",
+      "original_url": "https://techcommunity.microsoft.com/blog/azurenetworkingblog/combining-firewall-protection-and-sd-wan-connectivity-in-azure-virtual-wan/4394880",
+      "crawl_time": "2025-03-20",
+      "vendor": "AZURE",
+      "type": "TECH-BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/azure/tech-blog/2025_04_09_f76959cb.md": {
+    "file": "data/raw/azure/tech-blog/2025_04_09_f76959cb.md",
+    "last_analyzed": "2025-05-09 01:31:53",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Accelerate designing, troubleshooting & securing your network with Gen-AI powered tools, now GA.",
+      "original_url": "https://techcommunity.microsoft.com/blog/azurenetworkingblog/accelerate-designing-troubleshooting--securing-your-network-with-gen-ai-powered-/4402527",
+      "crawl_time": "2025-04-09",
+      "vendor": "AZURE",
+      "type": "TECH-BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/gcp/blog/2025_02_22_7b599342.md": {
+    "file": "data/raw/gcp/blog/2025_02_22_7b599342.md",
+    "last_analyzed": "2025-05-09 01:31:53",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Introducing Cloud DNS public IP health checks, for more resilient multicloud deployments",
+      "original_url": "https://cloud.google.com/blog/products/networking/public-ip-health-checks-in-cloud-dns-now-ga",
+      "crawl_time": "2025-02-22",
+      "vendor": "GCP",
+      "type": "BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/gcp/blog/2025_02_20_2ee2fbe2.md": {
+    "file": "data/raw/gcp/blog/2025_02_20_2ee2fbe2.md",
+    "last_analyzed": "2025-05-09 01:31:54",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Rethinking 5G: The cloud imperative",
+      "original_url": "https://cloud.google.com/blog/topics/telecommunications/ericsson-and-google-cloud-collaborating-on-5g",
+      "crawl_time": "2025-02-20",
+      "vendor": "GCP",
+      "type": "BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/azure/tech-blog/2025_03_19_ddc0f16e.md": {
+    "file": "data/raw/azure/tech-blog/2025_03_19_ddc0f16e.md",
+    "last_analyzed": "2025-05-09 01:32:01",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Automated Deployment of Cross-Tenant Azure Virtual Hubs Virtual Networks Connection",
+      "original_url": "https://techcommunity.microsoft.com/blog/azurenetworkingblog/automated-deployment-of-cross-tenant-azure-virtual-hubs-virtual-networks-connect/4393709",
+      "crawl_time": "2025-03-19",
+      "vendor": "AZURE",
+      "type": "TECH-BLOG"
+    },
+    "processed": true
+  },
+  "data/raw/aws/whatsnew/2024_12_01_25767de4.md": {
+    "file": "data/raw/aws/whatsnew/2024_12_01_25767de4.md",
+    "last_analyzed": "2025-05-09 01:34:01",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:16"
+      }
+    },
+    "info": {
+      "title": "AWS announces access to VPC resources over AWS PrivateLink",
+      "original_url": "https://aws.amazon.com/about-aws/whats-new/2024/12/access-vpc-resources-aws-privatelink/",
+      "crawl_time": "2024-12-01",
+      "vendor": "AWS",
+      "type": "WHATSNEW"
+    },
+    "processed": true
+  },
+  "data/raw/azure/tech-blog/2025_04_29_1a9e1a38.md": {
+    "file": "data/raw/azure/tech-blog/2025_04_29_1a9e1a38.md",
+    "last_analyzed": "2025-05-09 01:34:12",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2025-05-09 01:34:17"
+      }
+    },
+    "info": {
+      "title": "Azure virtual network terminal access point (TAP) public preview announcement",
+      "original_url": "https://techcommunity.microsoft.com/blog/azurenetworkingblog/azure-virtual-network-terminal-access-point-tap-public-preview-announcement/4405540",
+      "crawl_time": "2025-04-29",
+      "vendor": "AZURE",
+      "type": "TECH-BLOG"
+    },
+    "processed": true
+  }
+}

@@ -1,14 +1,14 @@
 # AI分析基础配置
 ai_analyzer:
-  # model: "grok3-mini-beta" # 使用的AI模型名称
-  model: "qwen-max"
+  model: "grok-3-mini-beta" # 使用的AI模型名称
+  # model: "qwen-max"
   max_tokens: 8192 # 最大令牌数
   temperature: 0.5 # 温度参数
   max_workers: 4 # 同时分析的最大文件数，设置为4个线程同时运行
   api_rate_limit: 60 # 每分钟允许的最大API调用次数，避免API过载
   use_dynamic_pool: true # 启用动态线程池进行分析
-  # api_base: "https://api.x.ai/v1"
-  api_base: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  api_base: "https://api.x.ai/v1"
+  # api_base: "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
   # api_key在config.secret.yaml中配置
   

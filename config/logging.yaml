@@ -15,7 +15,7 @@ logging:
     console:
       class: logging.StreamHandler
       formatter: colored
-      level: INFO  # 控制台默认级别
+      level: DEBUG  # 控制台默认级别
       stream: ext://sys.stdout
     file:
       class: logging.handlers.RotatingFileHandler
