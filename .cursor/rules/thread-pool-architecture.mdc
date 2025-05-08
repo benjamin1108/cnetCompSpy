@@ -1,0 +1,61 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# 线程池架构
+
+## 线程池实现
+
+项目使用自定义线程池实现并发爬虫和分析任务：
+
+- [utils/thread_pool.py](mdc:src/utils/thread_pool.py) - 主要的线程池实现
+  - `ThreadPool` - 基本线程池类，较简单的实现
+  - `AdaptiveThreadPool` - 自适应线程池类，能根据队列大小和API使用率动态调整线程数
+
+## 工作原理
+
+`AdaptiveThreadPool`具有以下关键特性：
+
+1. **动态线程管理**：根据任务队列大小和API使用率自动调整线程数量
+2. **精确的频率限制**：通过`PreciseRateLimiter`控制API调用频率
+3. **监控线程**：单独的线程用于监控线程池性能和处理空闲超时
+4. **优雅关闭机制**：通过发送哨兵任务(`None`)通知工作线程退出
+
+## 关键方法
+
+- `__init__()` - 初始化线程池，设置初始线程数、最大线程数和API限制
+- `start()` - 启动线程池，创建初始工作线程和监控线程
+- `add_task(func, *args, **kwargs)` - 向线程池添加任务
+- `shutdown(wait=True, timeout=300)` - 关闭线程池，可选等待所有线程完成
+- `_worker_loop(thread_id)` - 工作线程主循环，处理任务队列中的任务
+- `_monitor_performance()` - 监控线程循环，监控线程池性能并处理空闲超时
+
+## 常见问题与解决方案
+
+### 问题1：线程池卡住不退出
+
+当工作线程卡在任务执行中，或监控线程等待条件不满足时，线程池可能无法正常关闭：
+
+```python
+# 优化前的关闭逻辑
+def shutdown(self, wait=True):
+    self.active = False
+    # 发送退出信号...
+    # 等待线程退出...
+    
+# 优化后的关闭逻辑
+def shutdown(self, wait=True, timeout=300):
+    self.active = False
+    # 发送退出信号...
+    # 带超时等待线程退出...
+    # 即使有线程未响应，也继续执行...
+```
+
+### 问题2：工作线程循环中的阻塞点
+
+工作线程主循环可能在多个点阻塞：
+- 在`queue.get()`调用时阻塞等待任务
+- 在执行任务函数期间阻塞
+
+优化方案是确保任何阻塞操作都有合理的超时，并且定期检查`self.active`标志。
