@@ -1,0 +1,486 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# 元数据架构
+
+## 元数据类型定义
+
+项目使用两种核心元数据文件管理爬虫和分析状态：
+
+- [data/metadata/analysis_metadata.json](mdc:data/metadata/analysis_metadata.json) - 存储文件分析状态
+  - 按文件路径索引
+  - 记录每个文件的分析状态、任务执行情况和基本信息
+- [data/metadata/crawler_metadata.json](mdc:data/metadata/crawler_metadata.json) - 存储爬虫抓取记录
+  - 按厂商、来源类型和URL三级结构组织
+  - 记录每个URL的抓取时间、标题和存储路径
+
+## 元数据结构
+
+### analysis_metadata.json
+
+结构示例：
+```json
+{
+  "data/raw/aws/blog/2023_01_15_abcdef12.md": {
+    "file": "data/raw/aws/blog/2023_01_15_abcdef12.md",
+    "last_analyzed": "2023-01-16 10:30:45",
+    "tasks": {
+      "AI标题翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2023-01-16 10:28:15"
+      },
+      "AI竞争分析": {
+        "success": true,
+        "error": null,
+        "timestamp": "2023-01-16 10:29:32"
+      },
+      "AI全文翻译": {
+        "success": true,
+        "error": null,
+        "timestamp": "2023-01-16 10:30:45"
+      }
+    },
+    "info": {
+      "title": "AWS Announces New Feature X",
+      "original_url": "https://aws.amazon.com/blogs/aws/new-feature-x",
+      "crawl_time": "2023-01-15",
+      "vendor": "AWS",
+      "type": "BLOG"
+    },
+    "processed": true
+  }
+}
+```
+
+### crawler_metadata.json
+
+结构示例：
+```json
+{
+  "aws": {
+    "blog": {
+      "https://aws.amazon.com/blogs/aws/new-feature-x": {
+        "title": "AWS Announces New Feature X",
+        "url": "https://aws.amazon.com/blogs/aws/new-feature-x",
+        "crawl_time": "2023-01-15T08:45:30.123456",
+        "filepath": "/home/user/cnetCompSpy/data/raw/aws/blog/2023_01_15_abcdef12.md",
+        "vendor": "aws",
+        "source_type": "blog"
+      }
+    }
+  }
+}
+```
+
+## 关键操作规则
+
+### 线程安全操作
+
+元数据文件操作必须保证线程安全，因为多个爬虫和分析线程可能并发访问：
+
+```python
+import json
+import os
+import threading
+import fcntl
+
+# 全局锁，用于确保线程安全
+metadata_lock = threading.RLock()
+
+def load_metadata(file_path):
+    """线程安全地加载元数据文件"""
+    with metadata_lock:
+        if not os.path.exists(file_path):
+            return {}
+            
+        with open(file_path, 'r', encoding='utf-8') as f:
+            # 使用文件锁确保不会与其他进程冲突
+            fcntl.flock(f, fcntl.LOCK_SH)
+            try:
+                return json.load(f)
+            finally:
+                fcntl.flock(f, fcntl.LOCK_UN)
+
+def save_metadata(file_path, metadata):
+    """线程安全地保存元数据文件"""
+    with metadata_lock:
+        # 确保目录存在
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        
+        # 先写入临时文件，然后原子性重命名
+        temp_file = f"{file_path}.tmp"
+        with open(temp_file, 'w', encoding='utf-8') as f:
+            fcntl.flock(f, fcntl.LOCK_EX)
+            try:
+                json.dump(metadata, f, ensure_ascii=False, indent=2)
+            finally:
+                fcntl.flock(f, fcntl.LOCK_UN)
+        
+        # 原子性重命名
+        os.rename(temp_file, file_path)
+```
+
+### 元数据更新规则
+
+更新分析元数据时，需遵循以下规则：
+
+1. **原子性操作**：每次更新必须是原子性的，不能出现部分更新
+2. **格式一致性**：必须保持与现有记录相同的格式
+3. **日期格式规范**：严格遵循规定的日期格式
+   - 日期：`YYYY-MM-DD`
+   - 日期时间：`YYYY-MM-DD HH:MM:SS`
+   - ISO日期时间：`YYYY-MM-DDThh:mm:ss.sssZ`
+4. **缺省值规范**：未知字段应使用以下缺省值
+   - 字符串：`""`（空字符串）
+   - 布尔值：`false`
+   - 数字：`0`
+   - 对象：`{}`（空对象）
+   - 数组：`[]`（空数组）
+   - 错误：`null`（表示无错误）
+
+## 常见操作场景
+
+### 场景1：添加新爬取的文件
+
+当爬虫完成文件爬取后，需要同时更新crawler_metadata和创建analysis_metadata初始记录：
+
+```python
+def record_crawled_file(url, title, filepath, vendor, source_type):
+    """记录新爬取的文件到元数据"""
+    # 更新crawler_metadata
+    crawler_meta_path = "data/metadata/crawler_metadata.json"
+    crawler_meta = load_metadata(crawler_meta_path)
+    
+    # 确保vendor和source_type存在
+    if vendor not in crawler_meta:
+        crawler_meta[vendor] = {}
+    if source_type not in crawler_meta[vendor]:
+        crawler_meta[vendor][source_type] = {}
+    
+    # 添加URL记录
+    from datetime import datetime
+    timestamp = datetime.now().isoformat()
+    crawler_meta[vendor][source_type][url] = {
+        "title": title,
+        "url": url,
+        "crawl_time": timestamp,
+        "filepath": filepath,
+        "vendor": vendor.lower(),
+        "source_type": source_type.lower()
+    }
+    
+    # 保存更新
+    save_metadata(crawler_meta_path, crawler_meta)
+    
+    # 创建analysis_metadata初始记录
+    analysis_meta_path = "data/metadata/analysis_metadata.json"
+    analysis_meta = load_metadata(analysis_meta_path)
+    
+    # 初始化文件记录
+    simple_date = datetime.now().strftime("%Y-%m-%d")
+    analysis_meta[filepath] = {
+        "file": filepath,
+        "last_analyzed": "",  # 尚未分析
+        "tasks": {},          # 尚无任务执行
+        "info": {
+            "title": title,
+            "original_url": url,
+            "crawl_time": simple_date,
+            "vendor": vendor.upper(),
+            "type": source_type.upper()
+        },
+        "processed": False    # 尚未处理完成
+    }
+    
+    # 保存更新
+    save_metadata(analysis_meta_path, analysis_meta)
+```
+
+### 场景2：更新分析任务状态
+
+当AI完成某个分析任务后，需要更新analysis_metadata中的任务状态：
+
+```python
+def update_task_status(filepath, task_name, success=True, error=None):
+    """更新文件分析任务状态"""
+    metadata_path = "data/metadata/analysis_metadata.json"
+    metadata = load_metadata(metadata_path)
+    
+    # 确保文件记录存在
+    if filepath not in metadata:
+        # 记录缺失，需要初始化
+        raise ValueError(f"文件记录不存在: {filepath}")
+    
+    # 更新任务状态
+    from datetime import datetime
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    if "tasks" not in metadata[filepath]:
+        metadata[filepath]["tasks"] = {}
+    
+    metadata[filepath]["tasks"][task_name] = {
+        "success": success,
+        "error": error,
+        "timestamp": timestamp
+    }
+    
+    # 更新最后分析时间
+    metadata[filepath]["last_analyzed"] = timestamp
+    
+    # 检查是否所有必要任务都已完成
+    all_tasks_completed = True
+    required_tasks = ["AI标题翻译", "AI竞争分析", "AI全文翻译"]
+    for task in required_tasks:
+        if task not in metadata[filepath]["tasks"] or not metadata[filepath]["tasks"][task]["success"]:
+            all_tasks_completed = False
+            break
+    
+    metadata[filepath]["processed"] = all_tasks_completed
+    
+    # 保存更新
+    save_metadata(metadata_path, metadata)
+```
+
+## 元数据验证规则
+
+为保证元数据质量，应定期执行以下验证：
+
+1. **结构完整性检查**：确保每个记录都有所有必要字段
+2. **类型检查**：确保每个字段的数据类型正确
+3. **日期格式检查**：确保所有日期时间字段格式正确
+4. **一致性检查**：确保分析状态与任务执行记录一致
+5. **引用完整性检查**：确保crawler_metadata和analysis_metadata之间的引用关系正确
+
+验证示例：
+```python
+def validate_metadata():
+    """验证元数据文件的正确性"""
+    issues = []
+    
+    # 加载元数据
+    analysis_path = "data/metadata/analysis_metadata.json"
+    crawler_path = "data/metadata/crawler_metadata.json"
+    
+    analysis_meta = load_metadata(analysis_path)
+    crawler_meta = load_metadata(crawler_path)
+    
+    # 检查analysis_metadata的每条记录
+    for filepath, data in analysis_meta.items():
+        # 结构完整性检查
+        required_fields = ["file", "last_analyzed", "tasks", "info", "processed"]
+        for field in required_fields:
+            if field not in data:
+                issues.append(f"文件记录缺少必要字段: {filepath} -> {field}")
+        
+        # info字段检查
+        if "info" in data:
+            info_fields = ["title", "original_url", "crawl_time", "vendor", "type"]
+            for field in info_fields:
+                if field not in data["info"]:
+                    issues.append(f"文件info缺少必要字段: {filepath} -> info.{field}")
+    
+    # 检查crawler_metadata的每条记录
+    for vendor, vendor_data in crawler_meta.items():
+        for source_type, source_data in vendor_data.items():
+            for url, item_data in source_data.items():
+                # 结构完整性检查
+                required_fields = ["title", "url", "crawl_time", "filepath", "vendor", "source_type"]
+                for field in required_fields:
+                    if field not in item_data:
+                        issues.append(f"URL记录缺少必要字段: {url} -> {field}")
+                
+                # 检查vendor一致性
+                if "vendor" in item_data and item_data["vendor"].lower() != vendor.lower():
+                    issues.append(f"vendor不一致: {url}, 键={vendor}, 值={item_data['vendor']}")
+                
+                # 检查source_type一致性
+                if "source_type" in item_data and item_data["source_type"].lower() != source_type.lower():
+                    issues.append(f"source_type不一致: {url}, 键={source_type}, 值={item_data['source_type']}")
+                
+                # 引用完整性检查
+                if "filepath" in item_data:
+                    filepath = item_data["filepath"]
+                    if filepath not in analysis_meta:
+                        issues.append(f"URL记录引用了不存在的文件: {url} -> {filepath}")
+    
+    return issues
+```
+
+## 常见问题与解决方案
+
+### 问题1：元数据不一致
+
+症状: analysis_metadata.json和crawler_metadata.json之间的数据不一致，例如filepath在一个文件中存在但在另一个中不存在。
+
+解决方案:
+```python
+def fix_metadata_inconsistency():
+    """修复元数据不一致问题"""
+    analysis_path = "data/metadata/analysis_metadata.json"
+    crawler_path = "data/metadata/crawler_metadata.json"
+    
+    analysis_meta = load_metadata(analysis_path)
+    crawler_meta = load_metadata(crawler_path)
+    
+    # 构建反向映射: filepath -> [vendor, source_type, url]
+    filepath_map = {}
+    for vendor, vendor_data in crawler_meta.items():
+        for source_type, source_data in vendor_data.items():
+            for url, item_data in source_data.items():
+                if "filepath" in item_data:
+                    filepath_map[item_data["filepath"]] = (vendor, source_type, url)
+    
+    # 检查analysis_meta中缺少的记录
+    for filepath in filepath_map:
+        if filepath not in analysis_meta:
+            vendor, source_type, url = filepath_map[filepath]
+            item_data = crawler_meta[vendor][source_type][url]
+            
+            # 创建缺失的analysis记录
+            analysis_meta[filepath] = {
+                "file": filepath,
+                "last_analyzed": "",
+                "tasks": {},
+                "info": {
+                    "title": item_data["title"],
+                    "original_url": url,
+                    "crawl_time": item_data["crawl_time"].split("T")[0],  # 提取日期部分
+                    "vendor": vendor.upper(),
+                    "type": source_type.upper()
+                },
+                "processed": False
+            }
+    
+    # 检查crawler_meta中缺少的记录
+    crawler_filepaths = set(filepath_map.keys())
+    analysis_filepaths = set(analysis_meta.keys())
+    
+    missing_in_crawler = analysis_filepaths - crawler_filepaths
+    for filepath in missing_in_crawler:
+        if os.path.exists(filepath):
+            # 文件存在但在crawler_meta中缺失
+            info = analysis_meta[filepath]["info"]
+            vendor = info["vendor"].lower()
+            source_type = info["type"].lower()
+            url = info["original_url"]
+            
+            # 确保vendor和source_type存在
+            if vendor not in crawler_meta:
+                crawler_meta[vendor] = {}
+            if source_type not in crawler_meta[vendor]:
+                crawler_meta[vendor][source_type] = {}
+            
+            # 添加缺失的记录
+            crawler_meta[vendor][source_type][url] = {
+                "title": info["title"],
+                "url": url,
+                "crawl_time": f"{info['crawl_time']}T00:00:00.000000",
+                "filepath": filepath,
+                "vendor": vendor,
+                "source_type": source_type
+            }
+    
+    # 保存修复后的元数据
+    save_metadata(analysis_path, analysis_meta)
+    save_metadata(crawler_path, crawler_meta)
+```
+
+### 问题2：日期格式错误
+
+症状: 元数据中的日期格式不一致，导致处理错误。
+
+解决方案:
+```python
+def fix_date_formats():
+    """修复元数据中的日期格式问题"""
+    from datetime import datetime
+    import re
+    
+    analysis_path = "data/metadata/analysis_metadata.json"
+    crawler_path = "data/metadata/crawler_metadata.json"
+    
+    analysis_meta = load_metadata(analysis_path)
+    crawler_meta = load_metadata(crawler_path)
+    
+    # 日期格式修复函数
+    def fix_date(date_str, target_format):
+        """尝试修复各种日期格式为目标格式"""
+        if not date_str:
+            return ""
+            
+        formats_to_try = [
+            "%Y-%m-%d %H:%M:%S",
+            "%Y-%m-%dT%H:%M:%S.%fZ",
+            "%Y-%m-%dT%H:%M:%S",
+            "%Y-%m-%d",
+            "%Y/%m/%d %H:%M:%S",
+            "%Y/%m/%d"
+        ]
+        
+        # 尝试解析日期
+        parsed_date = None
+        for fmt in formats_to_try:
+            try:
+                parsed_date = datetime.strptime(date_str, fmt)
+                break
+            except ValueError:
+                continue
+        
+        # 特殊处理，尝试使用正则表达式解析
+        if parsed_date is None:
+            match = re.match(r"(\d{4})[-/]?(\d{1,2})[-/]?(\d{1,2})(?:[T ](mdc:\d{1,2}):(\d{1,2}):(\d{1,2}))?", date_str)
+            if match:
+                groups = match.groups()
+                year, month, day = int(groups[0]), int(groups[1]), int(groups[2])
+                hour, minute, second = 0, 0, 0
+                if len(groups) > 3 and groups[3] is not None:
+                    hour, minute, second = int(groups[3]), int(groups[4]), int(groups[5])
+                try:
+                    parsed_date = datetime(year, month, day, hour, minute, second)
+                except ValueError:
+                    pass
+        
+        # 无法解析，返回原始字符串
+        if parsed_date is None:
+            return date_str
+            
+        # 格式化为目标格式
+        if target_format == "date":
+            return parsed_date.strftime("%Y-%m-%d")
+        elif target_format == "datetime":
+            return parsed_date.strftime("%Y-%m-%d %H:%M:%S")
+        elif target_format == "iso":
+            return parsed_date.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+        else:
+            return date_str
+    
+    # 修复analysis_meta中的日期
+    for filepath, data in analysis_meta.items():
+        # 修复last_analyzed
+        if "last_analyzed" in data:
+            data["last_analyzed"] = fix_date(data["last_analyzed"], "datetime")
+        
+        # 修复tasks中的timestamp
+        if "tasks" in data:
+            for task_name, task_data in data["tasks"].items():
+                if "timestamp" in task_data:
+                    task_data["timestamp"] = fix_date(task_data["timestamp"], "datetime")
+        
+        # 修复info中的crawl_time
+        if "info" in data and "crawl_time" in data["info"]:
+            data["info"]["crawl_time"] = fix_date(data["info"]["crawl_time"], "date")
+    
+    # 修复crawler_meta中的日期
+    for vendor, vendor_data in crawler_meta.items():
+        for source_type, source_data in vendor_data.items():
+            for url, item_data in source_data.items():
+                if "crawl_time" in item_data:
+                    item_data["crawl_time"] = fix_date(item_data["crawl_time"], "iso")
+    
+    # 保存修复后的元数据
+    save_metadata(analysis_path, analysis_meta)
+    save_metadata(crawler_path, crawler_meta)
+```

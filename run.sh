@@ -856,8 +856,15 @@ crawl_data() {
     # 激活虚拟环境
     activate_venv
     
+    # 检查是否已经指定了--config参数
+    if ! echo "$*" | grep -q -- "--config"; then
+        CONFIG_ARG="--config \"$SCRIPT_DIR/config\""
+    else
+        CONFIG_ARG=""
+    fi
+    
     # 调用Python模块，明确指定配置文件路径
-    python -m src.main --mode crawl --config "$SCRIPT_DIR/config" "$@"
+    eval "python -m src.main --mode crawl $CONFIG_ARG $@"
 }
 
 # 分析数据
@@ -897,8 +904,15 @@ analyze_data() {
     # 激活虚拟环境
     activate_venv
     
+    # 检查是否已经指定了--config参数
+    if ! echo "$*" | grep -q -- "--config"; then
+        CONFIG_ARG="--config \"$SCRIPT_DIR/config\""
+    else
+        CONFIG_ARG=""
+    fi
+    
     # 调用Python模块，明确指定配置文件路径
-    python -m src.main --mode analyze --config "$SCRIPT_DIR/config" "$@"
+    eval "python -m src.main --mode analyze $CONFIG_ARG $@"
 }
 
 # 比较元数据和实际文件统计

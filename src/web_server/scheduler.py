@@ -22,6 +22,9 @@ class Scheduler:
         self.current_dingtalk_push_time = None
         self.current_dingtalk_push_day = None
         self.current_check_interval = None
+        self.debug_mode = False
+        self.vendor = None  # 厂商设置
+        self.limit = None   # 文章数量限制
         self.load_config()
 
     def load_config(self):
@@ -37,6 +40,9 @@ class Scheduler:
             new_check_interval = config.get('scheduler', {}).get('check_interval', 10)
             new_dingtalk_push_time = config.get('dingtalk', {}).get('weekly_push_time', '12:00')
             new_dingtalk_push_day = config.get('dingtalk', {}).get('weekly_push_day', 5)  # 默认周五
+            new_debug_mode = config.get('scheduler', {}).get('debug_mode', False)
+            new_vendor = config.get('scheduler', {}).get('vendor', None)  # 厂商设置，默认为None（全部厂商）
+            new_limit = config.get('scheduler', {}).get('limit', None)    # 文章数量限制，默认为None（无限制）
             
             # 确保星期几的值在1-7之间
             if not (1 <= new_dingtalk_push_day <= 7):
@@ -62,21 +68,43 @@ class Scheduler:
                 self.current_dingtalk_push_day = new_dingtalk_push_day
                 config_changed = True
             
+            if new_debug_mode != self.debug_mode:
+                self.debug_mode = new_debug_mode
+                config_changed = True
+            
+            if new_vendor != self.vendor:
+                self.vendor = new_vendor
+                config_changed = True
+                
+            if new_limit != self.limit:
+                self.limit = new_limit
+                config_changed = True
+            
             if config_changed:
                 weekday_names = {1: "周一", 2: "周二", 3: "周三", 4: "周四", 5: "周五", 6: "周六", 7: "周日"}
                 weekday_name = weekday_names.get(new_dingtalk_push_day, "未知")
-                logger.info(f"定时任务配置已加载：每日任务时间={new_daily_task_time}, 钉钉推送时间={weekday_name} {new_dingtalk_push_time}, 检查间隔={new_check_interval}秒")
+                vendor_info = f"厂商={new_vendor}" if new_vendor else "厂商=全部"
+                limit_info = f"限制={new_limit}篇" if new_limit else "限制=无"
+                
+                logger.info(f"定时任务配置已加载：每日任务时间={new_daily_task_time}, 钉钉推送时间={weekday_name} {new_dingtalk_push_time}, " + 
+                          f"检查间隔={new_check_interval}秒, 调试模式={'开启' if new_debug_mode else '关闭'}, {vendor_info}, {limit_info}")
             
             self.daily_task_time = new_daily_task_time
             self.check_interval = new_check_interval
             self.dingtalk_push_time = new_dingtalk_push_time
             self.dingtalk_push_day = new_dingtalk_push_day
+            self.debug_mode = new_debug_mode
+            self.vendor = new_vendor
+            self.limit = new_limit
         except Exception as e:
             logger.error(f"加载配置文件出错：{e}")
             self.daily_task_time = '02:00'
             self.check_interval = 10
             self.dingtalk_push_time = '12:00'
             self.dingtalk_push_day = 5  # 默认周五
+            self.debug_mode = False
+            self.vendor = None
+            self.limit = None
 
     def should_run_task(self):
         """检查是否应该运行每日任务"""
@@ -137,7 +165,24 @@ class Scheduler:
         logger.info(f"启动每日任务脚本：{script_path}")
         
         try:
-            process = subprocess.Popen([script_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            cmd = [script_path]
+            
+            # 添加调试模式参数
+            if self.debug_mode:
+                cmd.append('--debug')
+                logger.info("以调试模式运行每日任务")
+            
+            # 添加厂商参数
+            if self.vendor:
+                cmd.extend(['--vendor', self.vendor])
+                logger.info(f"仅处理厂商: {self.vendor}")
+                
+            # 添加文章数量限制参数
+            if self.limit:
+                cmd.extend(['--limit', str(self.limit)])
+                logger.info(f"文章数量限制: {self.limit}篇")
+                
+            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
             stdout, stderr = process.communicate()
             if process.returncode == 0:
                 logger.info(f"每日任务脚本执行成功：\n{stdout}")
@@ -158,7 +203,12 @@ class Scheduler:
             run_script = os.path.join(root_dir, 'run.sh')
             
             # 执行钉钉推送命令
-            process = subprocess.Popen([run_script, 'dingtalk'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            cmd = [run_script, 'dingpush', 'weekly']
+            if self.debug_mode:
+                cmd.append('--debug')
+                logger.info("以调试模式运行钉钉推送")
+                
+            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
             stdout, stderr = process.communicate()
             
             if process.returncode == 0:

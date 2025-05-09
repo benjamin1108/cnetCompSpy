@@ -215,6 +215,7 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("--config", help="指定配置文件路径")
     parser.add_argument("--force", action="store_true", help="强制执行，忽略本地metadata或文件是否已存在")
     parser.add_argument("--file", help="指定要分析的文件路径，仅在analyze模式下有效")
+    parser.add_argument("--debug", action="store_true", help="启用调试模式，输出详细的日志信息")
     
     return parser.parse_args()
 
@@ -449,10 +450,11 @@ def main() -> int:
     config = get_config(args)
     
     # 在执行任何操作前设置日志
-    # 注意：目前 main.py 的参数解析没有 log_level 或 debug，这些是在 web_server/run.py 中的
-    # 如果需要 main.py 也支持这些，需要添加到 parse_arguments
-    # 这里暂时只使用配置文件中的设置
-    setup_unified_logging(config)
+    # 如果指定了debug参数，设置日志级别为DEBUG
+    debug_mode = args.debug
+    if debug_mode:
+        logger.info("启用调试模式，将显示详细日志")
+    setup_unified_logging(config, log_level_override="DEBUG" if debug_mode else None, debug_mode=debug_mode)
 
     # 如果指定了clean参数，清理数据目录
     if args.clean:

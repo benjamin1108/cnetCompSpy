@@ -4,7 +4,7 @@
       "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-04-29_41cbc8c5.md": {
         "title": "Generally Available: Next hop IP support for Virtual WAN",
         "url": "",
-        "crawl_time": "2025-05-09T01:33:18.049438",
+        "crawl_time": "2025-05-09T20:27:53.676880",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-04-29_41cbc8c5.md",
         "vendor": "azure",
         "source_type": "updates"
@@ -12,7 +12,7 @@
       "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-04-21_9b830b95.md": {
         "title": "Generally Available: Azure Firewall resource specific log tables get Azure Monitor Basic plan support",
         "url": "",
-        "crawl_time": "2025-05-09T01:33:18.056380",
+        "crawl_time": "2025-05-09T20:27:53.684406",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-04-21_9b830b95.md",
         "vendor": "azure",
         "source_type": "updates"
@@ -20,7 +20,7 @@
       "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-04-01_720a51fc.md": {
         "title": "Public Preview: CNI Overlay for Application Gateway for Containers and AGIC",
         "url": "",
-        "crawl_time": "2025-05-09T01:33:18.063374",
+        "crawl_time": "2025-05-09T20:27:53.691535",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-04-01_720a51fc.md",
         "vendor": "azure",
         "source_type": "updates"
@@ -28,7 +28,7 @@
       "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-04-03_0ccfbcb0.md": {
         "title": "Public Preview: Increased VNet limits for Private Endpoints ",
         "url": "",
-        "crawl_time": "2025-05-09T01:33:18.070035",
+        "crawl_time": "2025-05-09T20:27:53.698820",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-04-03_0ccfbcb0.md",
         "vendor": "azure",
         "source_type": "updates"
@@ -36,7 +36,7 @@
       "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-04-08_82949183.md": {
         "title": "Generally Available: Azure Networking Capabilities for Microsoft Copilot in Azure ",
         "url": "",
-        "crawl_time": "2025-05-09T01:33:18.076856",
+        "crawl_time": "2025-05-09T20:27:53.705823",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-04-08_82949183.md",
         "vendor": "azure",
         "source_type": "updates"
@@ -44,7 +44,7 @@
       "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-03-31_03dc23cc.md": {
         "title": "Public Preview: ExpressRoute Resiliency Enhancements",
         "url": "",
-        "crawl_time": "2025-05-09T01:33:18.097262",
+        "crawl_time": "2025-05-09T20:27:53.727069",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-03-31_03dc23cc.md",
         "vendor": "azure",
         "source_type": "updates"
@@ -52,7 +52,7 @@
       "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-03-24_21ec41be.md": {
         "title": "Generally Available: Azure Firewall Updates - Parallel IP Group Updates ",
         "url": "",
-        "crawl_time": "2025-05-09T01:33:18.104054",
+        "crawl_time": "2025-05-09T20:27:53.734354",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-03-24_21ec41be.md",
         "vendor": "azure",
         "source_type": "updates"
@@ -60,7 +60,7 @@
       "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-04-15_03b0ab43.md": {
         "title": "Generally Available: Route-maps for Azure Virtual WAN",
         "url": "",
-        "crawl_time": "2025-05-09T01:33:18.116585",
+        "crawl_time": "2025-05-09T20:27:53.748435",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-04-15_03b0ab43.md",
         "vendor": "azure",
         "source_type": "updates"
@@ -68,7 +68,7 @@
       "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-03-31_27fe191c.md": {
         "title": "Retirement: Prepare for the Retirement of Manually Registered Azure VPN Clients on March 31, 2028",
         "url": "",
-        "crawl_time": "2025-05-09T01:33:18.123259",
+        "crawl_time": "2025-05-09T20:27:53.756055",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-03-31_27fe191c.md",
         "vendor": "azure",
         "source_type": "updates"
@@ -76,7 +76,7 @@
       "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-04-01_48bc431b.md": {
         "title": "Public Preview: Azure Front Door Custom Cipher Suite",
         "url": "",
-        "crawl_time": "2025-05-09T01:33:18.129580",
+        "crawl_time": "2025-05-09T20:27:53.763372",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-04-01_48bc431b.md",
         "vendor": "azure",
         "source_type": "updates"
@@ -84,7 +84,7 @@
       "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-04-29_995ed136.md": {
         "title": "Generally Available: Azure Firewall integration in Security Copilot",
         "url": "",
-        "crawl_time": "2025-05-09T01:33:18.135991",
+        "crawl_time": "2025-05-09T20:27:53.771202",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-04-29_995ed136.md",
         "vendor": "azure",
         "source_type": "updates"
@@ -92,7 +92,7 @@
       "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-04-29_8e9b9a43.md": {
         "title": "Public Preview: Azure virtual network terminal access point (TAP) ",
         "url": "",
-        "crawl_time": "2025-05-09T01:33:18.142315",
+        "crawl_time": "2025-05-09T20:27:53.778914",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-04-29_8e9b9a43.md",
         "vendor": "azure",
         "source_type": "updates"
@@ -100,7 +100,7 @@
       "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-04-29_c320c9c2.md": {
         "title": "Public Preview: Azure WAF CAPTCHA Challenge for Azure Front Door",
         "url": "",
-        "crawl_time": "2025-05-09T01:33:18.148752",
+        "crawl_time": "2025-05-09T20:27:53.786244",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-04-29_c320c9c2.md",
         "vendor": "azure",
         "source_type": "updates"
@@ -108,7 +108,7 @@
       "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-04-16_7c1fc790.md": {
         "title": "Generally Available: Microsoft Azure Available from New Azure for U.S. Government Secret Cloud Region in the US",
         "url": "",
-        "crawl_time": "2025-05-09T01:33:18.161773",
+        "crawl_time": "2025-05-09T20:27:53.800777",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-04-16_7c1fc790.md",
         "vendor": "azure",
         "source_type": "updates"
@@ -116,7 +116,7 @@
       "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-04-17_46693e2b.md": {
         "title": "Generally Available: Azure Front Door custom cipher suite ",
         "url": "",
-        "crawl_time": "2025-05-09T01:33:18.168583",
+        "crawl_time": "2025-05-09T20:27:53.809803",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-04-17_46693e2b.md",
         "vendor": "azure",
         "source_type": "updates"
@@ -124,7 +124,7 @@
       "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-03-24_afec5d23.md": {
         "title": "Generally Available: New Regions for Azure Front Door Premium with Private Link Enabled Origins",
         "url": "",
-        "crawl_time": "2025-05-09T01:33:18.174934",
+        "crawl_time": "2025-05-09T20:27:53.816997",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-03-24_afec5d23.md",
         "vendor": "azure",
         "source_type": "updates"
@@ -132,7 +132,7 @@
       "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-04-10_ea77b4e7.md": {
         "title": "Generally Available: Azure Bastion Developer now in 36 public regions ",
         "url": "",
-        "crawl_time": "2025-05-09T01:33:18.181258",
+        "crawl_time": "2025-05-09T20:27:53.824416",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-04-10_ea77b4e7.md",
         "vendor": "azure",
         "source_type": "updates"
@@ -140,7 +140,7 @@
       "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-04-17_59c4cf91.md": {
         "title": "Generally Available: ExpressRoute Metro Peering locations and Global Reach are now available in more regions",
         "url": "",
-        "crawl_time": "2025-05-09T01:33:18.036009",
+        "crawl_time": "2025-05-09T20:27:53.661970",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-04-17_59c4cf91.md",
         "vendor": "azure",
         "source_type": "updates"
@@ -148,7 +148,7 @@
       "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-04-10_87f2b8e7.md": {
         "title": "Generally Available: Azure Front Door capturing request header, response header, and request query string values as server variables",
         "url": "",
-        "crawl_time": "2025-05-09T01:33:18.090549",
+        "crawl_time": "2025-05-09T20:27:53.719800",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-04-10_87f2b8e7.md",
         "vendor": "azure",
         "source_type": "updates"
@@ -156,7 +156,7 @@
       "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-04-08_085988c6.md": {
         "title": "Generally Available: Application Gateway as a Private Link Enabled Origin for Front Door Premium  ",
         "url": "",
-        "crawl_time": "2025-05-09T01:33:18.155408",
+        "crawl_time": "2025-05-09T20:27:53.793431",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-04-08_085988c6.md",
         "vendor": "azure",
         "source_type": "updates"
@@ -164,7 +164,7 @@
       "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-03-13_76055cce.md": {
         "title": "Generally Available: API Management as a Private Link-Enabled Origin for Front Door Premium",
         "url": "",
-        "crawl_time": "2025-05-09T01:33:18.042497",
+        "crawl_time": "2025-05-09T20:27:53.669254",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-03-13_76055cce.md",
         "vendor": "azure",
         "source_type": "updates"
@@ -172,7 +172,7 @@
       "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-02-11_3a929190.md": {
         "title": "Generally Available: New Pricing for Azure Virtual Network Manager  ",
         "url": "",
-        "crawl_time": "2025-05-09T01:33:18.083755",
+        "crawl_time": "2025-05-09T20:27:53.712784",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-02-11_3a929190.md",
         "vendor": "azure",
         "source_type": "updates"
@@ -180,7 +180,7 @@
       "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-02-10_ccb8f2a8.md": {
         "title": "Public Preview: Azure Firewall Updates - Customer Provided Public IP Support for Secured Virtual Hubs",
         "url": "",
-        "crawl_time": "2025-05-09T01:33:18.110499",
+        "crawl_time": "2025-05-09T20:27:53.741376",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-02-10_ccb8f2a8.md",
         "vendor": "azure",
         "source_type": "updates"
@@ -188,7 +188,7 @@
       "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-02-25_ad25e462.md": {
         "title": "Generally Available: Azure Load Balancer Health Event Logs",
         "url": "",
-        "crawl_time": "2025-05-09T01:33:18.187817",
+        "crawl_time": "2025-05-09T20:27:53.832099",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/updates/2025-02-25_ad25e462.md",
         "vendor": "azure",
         "source_type": "updates"
@@ -198,7 +198,7 @@
       "https://techcommunity.microsoft.com/blog/azurenetworkingblog/unmasking-ddos-attacks-part-13/4384794": {
         "title": "Unmasking DDoS Attacks (Part 1/3)",
         "url": "https://techcommunity.microsoft.com/blog/azurenetworkingblog/unmasking-ddos-attacks-part-13/4384794",
-        "crawl_time": "2025-05-09T01:33:18.262951",
+        "crawl_time": "2025-05-09T20:27:53.911128",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/tech-blog/2025_05_07_227fa246.md",
         "vendor": "azure",
         "source_type": "tech-blog"
@@ -206,7 +206,7 @@
       "https://techcommunity.microsoft.com/blog/azurenetworkingblog/whats-new-in-the-world-of-ebpf-from-azure-container-networking/4410254": {
         "title": "What's New in the World of eBPF from Azure Container Networking!",
         "url": "https://techcommunity.microsoft.com/blog/azurenetworkingblog/whats-new-in-the-world-of-ebpf-from-azure-container-networking/4410254",
-        "crawl_time": "2025-05-09T01:33:18.282321",
+        "crawl_time": "2025-05-09T20:27:53.933013",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/tech-blog/2025_05_02_8e93a090.md",
         "vendor": "azure",
         "source_type": "tech-blog"
@@ -214,7 +214,7 @@
       "https://techcommunity.microsoft.com/blog/azurenetworkingblog/introducing-layer-7-network-policies-with-advanced-container-networking-services/4409782": {
         "title": "Introducing Layer 7 Network Policies with Advanced Container Networking Services for AKS Clusters!",
         "url": "https://techcommunity.microsoft.com/blog/azurenetworkingblog/introducing-layer-7-network-policies-with-advanced-container-networking-services/4409782",
-        "crawl_time": "2025-05-09T01:33:18.236707",
+        "crawl_time": "2025-05-09T20:27:53.882679",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/tech-blog/2025_04_30_fb5f37ae.md",
         "vendor": "azure",
         "source_type": "tech-blog"
@@ -222,7 +222,7 @@
       "https://techcommunity.microsoft.com/blog/azurenetworkingblog/azure-cni-now-supports-node-subnet-ipam-mode-with-cilium-dataplane/4409359": {
         "title": "Azure CNI now supports Node Subnet IPAM mode with Cilium Dataplane",
         "url": "https://techcommunity.microsoft.com/blog/azurenetworkingblog/azure-cni-now-supports-node-subnet-ipam-mode-with-cilium-dataplane/4409359",
-        "crawl_time": "2025-05-09T01:33:18.315002",
+        "crawl_time": "2025-05-09T20:27:53.975826",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/tech-blog/2025_04_29_41e1d3c9.md",
         "vendor": "azure",
         "source_type": "tech-blog"
@@ -230,7 +230,7 @@
       "https://techcommunity.microsoft.com/blog/azurenetworkingblog/azure-virtual-network-terminal-access-point-tap-public-preview-announcement/4405540": {
         "title": "Azure virtual network terminal access point (TAP) public preview announcement",
         "url": "https://techcommunity.microsoft.com/blog/azurenetworkingblog/azure-virtual-network-terminal-access-point-tap-public-preview-announcement/4405540",
-        "crawl_time": "2025-05-09T01:33:18.222803",
+        "crawl_time": "2025-05-09T20:27:53.868346",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/tech-blog/2025_05_06_1a9e1a38.md",
         "vendor": "azure",
         "source_type": "tech-blog"
@@ -238,7 +238,7 @@
       "https://techcommunity.microsoft.com/blog/azurenetworkingblog/high-scale-kubernetes-networking-with-azure-cni-powered-by-cilium/4407234": {
         "title": "High-Scale Kubernetes Networking with Azure CNI Powered by Cilium",
         "url": "https://techcommunity.microsoft.com/blog/azurenetworkingblog/high-scale-kubernetes-networking-with-azure-cni-powered-by-cilium/4407234",
-        "crawl_time": "2025-05-09T01:33:18.301752",
+        "crawl_time": "2025-05-09T20:27:53.960815",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/tech-blog/2025_04_23_10f0212a.md",
         "vendor": "azure",
         "source_type": "tech-blog"
@@ -246,7 +246,7 @@
       "https://techcommunity.microsoft.com/blog/azurenetworkingblog/announcing-the-general-availability-of-route-maps-for-azure-virtual-wan-/4402492": {
         "title": "Announcing the general availability of Route-Maps for Azure virtual WAN.",
         "url": "https://techcommunity.microsoft.com/blog/azurenetworkingblog/announcing-the-general-availability-of-route-maps-for-azure-virtual-wan-/4402492",
-        "crawl_time": "2025-05-09T01:33:18.249768",
+        "crawl_time": "2025-05-09T20:27:53.896690",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/tech-blog/2025_04_15_637c5d9d.md",
         "vendor": "azure",
         "source_type": "tech-blog"
@@ -254,7 +254,7 @@
       "https://techcommunity.microsoft.com/blog/azurenetworkingblog/introducing-subnet-peering-in-azure/4383841": {
         "title": "Introducing Subnet Peering in Azure",
         "url": "https://techcommunity.microsoft.com/blog/azurenetworkingblog/introducing-subnet-peering-in-azure/4383841",
-        "crawl_time": "2025-05-09T01:33:18.243418",
+        "crawl_time": "2025-05-09T20:27:53.889689",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/tech-blog/2025_04_14_072c9b44.md",
         "vendor": "azure",
         "source_type": "tech-blog"
@@ -262,7 +262,7 @@
       "https://techcommunity.microsoft.com/blog/azurenetworkingblog/expressroute-metro-and-global-reach-expansion/4402756": {
         "title": "ExpressRoute Metro and Global Reach Expansion",
         "url": "https://techcommunity.microsoft.com/blog/azurenetworkingblog/expressroute-metro-and-global-reach-expansion/4402756",
-        "crawl_time": "2025-05-09T01:33:18.230202",
+        "crawl_time": "2025-05-09T20:27:53.875657",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/tech-blog/2025_04_10_9b425aab.md",
         "vendor": "azure",
         "source_type": "tech-blog"
@@ -270,7 +270,7 @@
       "https://techcommunity.microsoft.com/blog/azurenetworkingblog/deploying-virtual-networks-across-tenants-using-azure-virtual-network-manager-ip/4410161": {
         "title": "Deploying Virtual Networks Across Tenants Using Azure Virtual Network Manager IP Address Management",
         "url": "https://techcommunity.microsoft.com/blog/azurenetworkingblog/deploying-virtual-networks-across-tenants-using-azure-virtual-network-manager-ip/4410161",
-        "crawl_time": "2025-05-09T01:33:18.256644",
+        "crawl_time": "2025-05-09T20:27:53.903836",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/tech-blog/2025_05_01_a2cfe959.md",
         "vendor": "azure",
         "source_type": "tech-blog"
@@ -278,7 +278,7 @@
       "https://techcommunity.microsoft.com/blog/azurenetworkingblog/expressroute-gateway-migration-playbook/4398933": {
         "title": "ExpressRoute Gateway Migration Playbook",
         "url": "https://techcommunity.microsoft.com/blog/azurenetworkingblog/expressroute-gateway-migration-playbook/4398933",
-        "crawl_time": "2025-05-09T01:33:18.194608",
+        "crawl_time": "2025-05-09T20:27:53.840083",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/tech-blog/2025_03_31_61ebc76b.md",
         "vendor": "azure",
         "source_type": "tech-blog"
@@ -286,7 +286,7 @@
       "https://techcommunity.microsoft.com/blog/azurenetworkingblog/subnet-peering/4397640": {
         "title": "Subnet Peering",
         "url": "https://techcommunity.microsoft.com/blog/azurenetworkingblog/subnet-peering/4397640",
-        "crawl_time": "2025-05-09T01:33:18.207506",
+        "crawl_time": "2025-05-09T20:27:53.854407",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/tech-blog/2025_03_26_3fb6bb35.md",
         "vendor": "azure",
         "source_type": "tech-blog"
@@ -294,7 +294,7 @@
       "https://techcommunity.microsoft.com/blog/azurenetworkingblog/best-practices-for-securing-access-to-vms/4405778": {
         "title": "Best Practices for Securing Access to VMs",
         "url": "https://techcommunity.microsoft.com/blog/azurenetworkingblog/best-practices-for-securing-access-to-vms/4405778",
-        "crawl_time": "2025-05-09T01:33:18.214218",
+        "crawl_time": "2025-05-09T20:27:53.861406",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/tech-blog/2025_04_18_cecc0d7e.md",
         "vendor": "azure",
         "source_type": "tech-blog"
@@ -302,7 +302,7 @@
       "https://techcommunity.microsoft.com/blog/azurenetworkingblog/the-deployment-of-hollow-core-fiber-hcf-in-azure%E2%80%99s-network/4395340": {
         "title": "The Deployment of Hollow Core Fiber (HCF) in Azure’s Network",
         "url": "https://techcommunity.microsoft.com/blog/azurenetworkingblog/the-deployment-of-hollow-core-fiber-hcf-in-azure%E2%80%99s-network/4395340",
-        "crawl_time": "2025-05-09T01:33:18.269429",
+        "crawl_time": "2025-05-09T20:27:53.918536",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/tech-blog/2025_03_20_3b15f963.md",
         "vendor": "azure",
         "source_type": "tech-blog"
@@ -310,7 +310,7 @@
       "https://techcommunity.microsoft.com/blog/azurenetworkingblog/private-only-bastion-connect-through-bastion-without-a-public-ip/4405756": {
         "title": "Private only Bastion: Connect Through Bastion Without a Public IP",
         "url": "https://techcommunity.microsoft.com/blog/azurenetworkingblog/private-only-bastion-connect-through-bastion-without-a-public-ip/4405756",
-        "crawl_time": "2025-05-09T01:33:18.275943",
+        "crawl_time": "2025-05-09T20:27:53.925818",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/tech-blog/2025_04_18_83ee4067.md",
         "vendor": "azure",
         "source_type": "tech-blog"
@@ -318,7 +318,7 @@
       "https://techcommunity.microsoft.com/blog/azurenetworkingblog/combining-firewall-protection-and-sd-wan-connectivity-in-azure-virtual-wan/4394880": {
         "title": "Combining firewall protection and SD-WAN connectivity in Azure virtual WAN",
         "url": "https://techcommunity.microsoft.com/blog/azurenetworkingblog/combining-firewall-protection-and-sd-wan-connectivity-in-azure-virtual-wan/4394880",
-        "crawl_time": "2025-05-09T01:33:18.288642",
+        "crawl_time": "2025-05-09T20:27:53.940158",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/tech-blog/2025_03_20_d4585625.md",
         "vendor": "azure",
         "source_type": "tech-blog"
@@ -326,7 +326,7 @@
       "https://techcommunity.microsoft.com/blog/azurenetworkingblog/automated-deployment-of-cross-tenant-azure-virtual-hubs-virtual-networks-connect/4393709": {
         "title": "Automated Deployment of Cross-Tenant Azure Virtual Hubs Virtual Networks Connection",
         "url": "https://techcommunity.microsoft.com/blog/azurenetworkingblog/automated-deployment-of-cross-tenant-azure-virtual-hubs-virtual-networks-connect/4393709",
-        "crawl_time": "2025-05-09T01:33:18.295069",
+        "crawl_time": "2025-05-09T20:27:53.953187",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/tech-blog/2025_03_19_ddc0f16e.md",
         "vendor": "azure",
         "source_type": "tech-blog"
@@ -334,7 +334,7 @@
       "https://techcommunity.microsoft.com/blog/azurenetworkingblog/accelerate-designing-troubleshooting--securing-your-network-with-gen-ai-powered-/4402527": {
         "title": "Accelerate designing, troubleshooting & securing your network with Gen-AI powered tools, now GA.",
         "url": "https://techcommunity.microsoft.com/blog/azurenetworkingblog/accelerate-designing-troubleshooting--securing-your-network-with-gen-ai-powered-/4402527",
-        "crawl_time": "2025-05-09T01:33:18.308558",
+        "crawl_time": "2025-05-09T20:27:53.968372",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/tech-blog/2025_04_09_f76959cb.md",
         "vendor": "azure",
         "source_type": "tech-blog"
@@ -344,7 +344,7 @@
       "https://azure.microsoft.com/en-us/blog/navigating-the-2024-holiday-season-insights-into-azures-ddos-defense/": {
         "title": "Navigating the 2024 holiday season: Insights into Azure’s DDoS defense",
         "url": "https://azure.microsoft.com/en-us/blog/navigating-the-2024-holiday-season-insights-into-azures-ddos-defense/",
-        "crawl_time": "2025-05-09T01:33:17.974753",
+        "crawl_time": "2025-05-09T20:27:53.591980",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/blog/2025_01_27_259b38e6.md",
         "vendor": "azure",
         "source_type": "blog"
@@ -352,7 +352,7 @@
       "https://azure.microsoft.com/en-us/blog/unlocking-the-future-azure-networking-updates-on-security-reliability-and-high-availability/": {
         "title": "Unlocking the future: Azure networking updates on security, reliability, and high availability",
         "url": "https://azure.microsoft.com/en-us/blog/unlocking-the-future-azure-networking-updates-on-security-reliability-and-high-availability/",
-        "crawl_time": "2025-05-09T01:33:18.002444",
+        "crawl_time": "2025-05-09T20:27:53.622466",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/blog/2024_11_07_da85eb69.md",
         "vendor": "azure",
         "source_type": "blog"
@@ -360,7 +360,7 @@
       "https://azure.microsoft.com/en-us/blog/enterprise-trust-in-azure-openai-service-strengthened-with-data-zones/": {
         "title": "Enterprise trust in Azure OpenAI Service strengthened with Data Zones",
         "url": "https://azure.microsoft.com/en-us/blog/enterprise-trust-in-azure-openai-service-strengthened-with-data-zones/",
-        "crawl_time": "2025-05-09T01:33:17.981129",
+        "crawl_time": "2025-05-09T20:27:53.599752",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/blog/2024_09_24_89902b2a.md",
         "vendor": "azure",
         "source_type": "blog"
@@ -368,7 +368,7 @@
       "https://azure.microsoft.com/en-us/blog/enhance-your-security-capabilities-with-azure-bastion-premium/": {
         "title": "Enhance your security capabilities with Azure Bastion Premium",
         "url": "https://azure.microsoft.com/en-us/blog/enhance-your-security-capabilities-with-azure-bastion-premium/",
-        "crawl_time": "2025-05-09T01:33:17.960671",
+        "crawl_time": "2025-05-09T20:27:53.577192",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/blog/2024_05_30_6f945e14.md",
         "vendor": "azure",
         "source_type": "blog"
@@ -376,7 +376,7 @@
       "https://azure.microsoft.com/en-us/blog/bringing-generative-ai-to-azure-network-security-with-new-microsoft-copilot-integrations/": {
         "title": "Bringing generative AI to Azure network security with new Microsoft Copilot integrations",
         "url": "https://azure.microsoft.com/en-us/blog/bringing-generative-ai-to-azure-network-security-with-new-microsoft-copilot-integrations/",
-        "crawl_time": "2025-05-09T01:33:17.995069",
+        "crawl_time": "2025-05-09T20:27:53.614921",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/blog/2024_05_07_209639bf.md",
         "vendor": "azure",
         "source_type": "blog"
@@ -384,7 +384,7 @@
       "https://azure.microsoft.com/en-us/blog/microsoft-ran-slicing-solutions-discover-ai-assisted-application-service-assurance-capabilities/": {
         "title": "Microsoft RAN slicing solutions: Discover AI-assisted application service assurance capabilities",
         "url": "https://azure.microsoft.com/en-us/blog/microsoft-ran-slicing-solutions-discover-ai-assisted-application-service-assurance-capabilities/",
-        "crawl_time": "2025-05-09T01:33:17.988419",
+        "crawl_time": "2025-05-09T20:27:53.607292",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/blog/2024_05_01_6fc0c83e.md",
         "vendor": "azure",
         "source_type": "blog"
@@ -392,7 +392,7 @@
       "https://azure.microsoft.com/en-us/blog/using-microsoft-azure-virtual-network-manager-to-enhance-network-security/": {
         "title": "Using Microsoft Azure Virtual Network Manager to enhance network security",
         "url": "https://azure.microsoft.com/en-us/blog/using-microsoft-azure-virtual-network-manager-to-enhance-network-security/",
-        "crawl_time": "2025-05-09T01:33:18.009037",
+        "crawl_time": "2025-05-09T20:27:53.630888",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/blog/2024_03_25_991b9cb9.md",
         "vendor": "azure",
         "source_type": "blog"
@@ -400,7 +400,7 @@
       "https://azure.microsoft.com/en-us/blog/maximize-your-business-potential-migrate-your-windows-server-to-azure-with-expert-resources/": {
         "title": "Maximize your business potential: Migrate your Windows Server to Azure with expert resources",
         "url": "https://azure.microsoft.com/en-us/blog/maximize-your-business-potential-migrate-your-windows-server-to-azure-with-expert-resources/",
-        "crawl_time": "2025-05-09T01:33:18.029073",
+        "crawl_time": "2025-05-09T20:27:53.654104",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/blog/2024_03_21_bb14f2a5.md",
         "vendor": "azure",
         "source_type": "blog"
@@ -408,7 +408,7 @@
       "https://azure.microsoft.com/en-us/blog/microsoft-open-sources-retina-a-cloud-native-container-networking-observability-platform/": {
         "title": "Microsoft open sources Retina: A cloud-native container networking observability platform",
         "url": "https://azure.microsoft.com/en-us/blog/microsoft-open-sources-retina-a-cloud-native-container-networking-observability-platform/",
-        "crawl_time": "2025-05-09T01:33:17.953734",
+        "crawl_time": "2025-05-09T20:27:53.569750",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/blog/2024_03_19_9520daa9.md",
         "vendor": "azure",
         "source_type": "blog"
@@ -416,7 +416,7 @@
       "https://azure.microsoft.com/en-us/blog/unwrapping-the-2023-holiday-season-a-deep-dive-into-azures-ddos-attack-landscape/": {
         "title": "Unwrapping the 2023 holiday season: A deep dive into Azure’s DDoS attack landscape",
         "url": "https://azure.microsoft.com/en-us/blog/unwrapping-the-2023-holiday-season-a-deep-dive-into-azures-ddos-attack-landscape/",
-        "crawl_time": "2025-05-09T01:33:18.015359",
+        "crawl_time": "2025-05-09T20:27:53.638542",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/blog/2024_01_25_9c0356e1.md",
         "vendor": "azure",
         "source_type": "blog"
@@ -424,7 +424,7 @@
       "https://azure.microsoft.com/en-us/blog/accelerating-the-pace-of-innovation-with-azure-space-and-our-partners/": {
         "title": "Accelerating the pace of innovation with Azure Space and our partners",
         "url": "https://azure.microsoft.com/en-us/blog/accelerating-the-pace-of-innovation-with-azure-space-and-our-partners/",
-        "crawl_time": "2025-05-09T01:33:17.967646",
+        "crawl_time": "2025-05-09T20:27:53.584377",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/blog/2023_09_11_e8cc8166.md",
         "vendor": "azure",
         "source_type": "blog"
@@ -432,7 +432,7 @@
       "https://azure.microsoft.com/en-us/blog/upgrade-to-app-service-environment-v3-today-and-unlock-new-capabilities/": {
         "title": "Upgrade to App Service Environment v3 today and unlock new capabilities",
         "url": "https://azure.microsoft.com/en-us/blog/upgrade-to-app-service-environment-v3-today-and-unlock-new-capabilities/",
-        "crawl_time": "2025-05-09T01:33:18.022256",
+        "crawl_time": "2025-05-09T20:27:53.646601",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/azure/blog/2023_08_28_03209dc7.md",
         "vendor": "azure",
         "source_type": "blog"
@@ -444,7 +444,7 @@
       "https://aws.amazon.com/blogs/networking-and-content-delivery/building-your-first-aws-waf-web-acl-to-protect-against-evolving-threats/": {
         "title": "Building your first AWS WAF web ACL to protect against evolving threats",
         "url": "https://aws.amazon.com/blogs/networking-and-content-delivery/building-your-first-aws-waf-web-acl-to-protect-against-evolving-threats/",
-        "crawl_time": "2025-05-09T01:33:17.488234",
+        "crawl_time": "2025-05-09T20:27:53.003629",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/blog/2025_05_07_60ba2842.md",
         "vendor": "aws",
         "source_type": "blog"
@@ -452,7 +452,7 @@
       "https://aws.amazon.com/blogs/networking-and-content-delivery/scale-your-saas-application-at-the-edge-with-the-new-amazon-cloudfront-saas-manager/": {
         "title": "Scale your SaaS application at the edge with the new Amazon CloudFront SaaS Manager",
         "url": "https://aws.amazon.com/blogs/networking-and-content-delivery/scale-your-saas-application-at-the-edge-with-the-new-amazon-cloudfront-saas-manager/",
-        "crawl_time": "2025-05-09T01:33:17.471121",
+        "crawl_time": "2025-05-09T20:27:52.981016",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/blog/2025_05_06_0e8d52b5.md",
         "vendor": "aws",
         "source_type": "blog"
@@ -460,7 +460,7 @@
       "https://aws.amazon.com/blogs/networking-and-content-delivery/aws-secures-internet-routing-with-rpki-plus-security-checks/": {
         "title": "AWS secures internet routing with RPKI plus security checks",
         "url": "https://aws.amazon.com/blogs/networking-and-content-delivery/aws-secures-internet-routing-with-rpki-plus-security-checks/",
-        "crawl_time": "2025-05-09T01:33:17.431093",
+        "crawl_time": "2025-05-09T20:27:52.927995",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/blog/2025_05_02_75f6bec8.md",
         "vendor": "aws",
         "source_type": "blog"
@@ -468,7 +468,7 @@
       "https://aws.amazon.com/blogs/networking-and-content-delivery/simplify-hybrid-inspection-using-aws-cloud-wan-service-insertion/": {
         "title": "Simplify hybrid inspection using AWS Cloud WAN service insertion",
         "url": "https://aws.amazon.com/blogs/networking-and-content-delivery/simplify-hybrid-inspection-using-aws-cloud-wan-service-insertion/",
-        "crawl_time": "2025-05-09T01:33:17.465543",
+        "crawl_time": "2025-05-09T20:27:52.973309",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/blog/2025_05_02_ad2cb59f.md",
         "vendor": "aws",
         "source_type": "blog"
@@ -476,7 +476,7 @@
       "https://aws.amazon.com/blogs/networking-and-content-delivery/visualizing-network-performance-of-your-aws-cloud-workloads-with-network-flow-monitor/": {
         "title": "Visualizing network performance of your AWS Cloud workloads with Network Flow Monitor",
         "url": "https://aws.amazon.com/blogs/networking-and-content-delivery/visualizing-network-performance-of-your-aws-cloud-workloads-with-network-flow-monitor/",
-        "crawl_time": "2025-05-09T01:33:17.425257",
+        "crawl_time": "2025-05-09T20:27:52.920203",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/blog/2025_04_30_826a52d3.md",
         "vendor": "aws",
         "source_type": "blog"
@@ -484,7 +484,7 @@
       "https://aws.amazon.com/blogs/networking-and-content-delivery/streamlining-network-deployments-using-aws-cloud-control/": {
         "title": "Streamlining network deployments using AWS Cloud Control",
         "url": "https://aws.amazon.com/blogs/networking-and-content-delivery/streamlining-network-deployments-using-aws-cloud-control/",
-        "crawl_time": "2025-05-09T01:33:17.482766",
+        "crawl_time": "2025-05-09T20:27:52.995981",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/blog/2025_04_21_dde7e02e.md",
         "vendor": "aws",
         "source_type": "blog"
@@ -492,7 +492,7 @@
       "https://aws.amazon.com/blogs/networking-and-content-delivery/simplify-albs-public-ip-address-assignment-with-vpc-ipam/": {
         "title": "Simplify ALB’s public IP address assignment with VPC IPAM",
         "url": "https://aws.amazon.com/blogs/networking-and-content-delivery/simplify-albs-public-ip-address-assignment-with-vpc-ipam/",
-        "crawl_time": "2025-05-09T01:33:17.459906",
+        "crawl_time": "2025-05-09T20:27:52.965889",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/blog/2025_04_18_66ad646c.md",
         "vendor": "aws",
         "source_type": "blog"
@@ -500,7 +500,7 @@
       "https://aws.amazon.com/blogs/networking-and-content-delivery/simplifying-egress-inspection-with-aws-cloud-wan-service-insertion-for-greenfield-deployments/": {
         "title": "Simplifying Egress Inspection with AWS Cloud WAN Service Insertion for Greenfield Deployments",
         "url": "https://aws.amazon.com/blogs/networking-and-content-delivery/simplifying-egress-inspection-with-aws-cloud-wan-service-insertion-for-greenfield-deployments/",
-        "crawl_time": "2025-05-09T01:33:17.442946",
+        "crawl_time": "2025-05-09T20:27:52.943455",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/blog/2025_04_15_9bfd2502.md",
         "vendor": "aws",
         "source_type": "blog"
@@ -508,7 +508,7 @@
       "https://aws.amazon.com/blogs/networking-and-content-delivery/exploring-data-transfer-costs-for-aws-network-load-balancers/": {
         "title": "Exploring Data Transfer Costs for AWS Network Load Balancers",
         "url": "https://aws.amazon.com/blogs/networking-and-content-delivery/exploring-data-transfer-costs-for-aws-network-load-balancers/",
-        "crawl_time": "2025-05-09T01:33:17.448469",
+        "crawl_time": "2025-05-09T20:27:52.951030",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/blog/2025_04_08_af122aaf.md",
         "vendor": "aws",
         "source_type": "blog"
@@ -516,7 +516,7 @@
       "https://aws.amazon.com/blogs/networking-and-content-delivery/securing-your-web-applications-and-optimizing-their-performance-with-aws-application-load-balancer/": {
         "title": "Securing your web applications and optimizing their performance with AWS Application Load Balancer",
         "url": "https://aws.amazon.com/blogs/networking-and-content-delivery/securing-your-web-applications-and-optimizing-their-performance-with-aws-application-load-balancer/",
-        "crawl_time": "2025-05-09T01:33:17.419315",
+        "crawl_time": "2025-05-09T20:27:52.912732",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/blog/2025_04_08_17de8dd6.md",
         "vendor": "aws",
         "source_type": "blog"
@@ -524,7 +524,7 @@
       "https://aws.amazon.com/blogs/networking-and-content-delivery/visualize-and-gain-insights-into-your-vpc-with-amazon-q-in-amazon-quicksight/": {
         "title": "Visualize and gain insights into your VPC with Amazon Q in Amazon QuickSight",
         "url": "https://aws.amazon.com/blogs/networking-and-content-delivery/visualize-and-gain-insights-into-your-vpc-with-amazon-q-in-amazon-quicksight/",
-        "crawl_time": "2025-05-09T01:33:17.412779",
+        "crawl_time": "2025-05-09T20:27:52.904134",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/blog/2025_02_27_4ab52814.md",
         "vendor": "aws",
         "source_type": "blog"
@@ -532,7 +532,7 @@
       "https://aws.amazon.com/blogs/networking-and-content-delivery/using-amazon-route-53-resolver-dns-firewall-to-detect-malicious-domains/": {
         "title": "Using Amazon Route 53 Resolver DNS Firewall to detect malicious domains",
         "url": "https://aws.amazon.com/blogs/networking-and-content-delivery/using-amazon-route-53-resolver-dns-firewall-to-detect-malicious-domains/",
-        "crawl_time": "2025-05-09T01:33:17.437240",
+        "crawl_time": "2025-05-09T20:27:52.936146",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/blog/2025_03_24_5106405d.md",
         "vendor": "aws",
         "source_type": "blog"
@@ -540,7 +540,7 @@
       "https://aws.amazon.com/blogs/networking-and-content-delivery/how-glovo-is-protecting-their-public-apis-with-a-combination-of-aws-edge-services/": {
         "title": "How Glovo is protecting their public APIs with a combination of AWS Edge Services",
         "url": "https://aws.amazon.com/blogs/networking-and-content-delivery/how-glovo-is-protecting-their-public-apis-with-a-combination-of-aws-edge-services/",
-        "crawl_time": "2025-05-09T01:33:17.454324",
+        "crawl_time": "2025-05-09T20:27:52.958163",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/blog/2025_03_10_8c2b1da4.md",
         "vendor": "aws",
         "source_type": "blog"
@@ -548,7 +548,7 @@
       "https://aws.amazon.com/blogs/networking-and-content-delivery/enhancing-security-with-aws-verified-access-and-microsoft-entra-id-integration/": {
         "title": "Enhancing Security with AWS Verified Access and Microsoft Entra ID Integration",
         "url": "https://aws.amazon.com/blogs/networking-and-content-delivery/enhancing-security-with-aws-verified-access-and-microsoft-entra-id-integration/",
-        "crawl_time": "2025-05-09T01:33:17.476806",
+        "crawl_time": "2025-05-09T20:27:52.988345",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/blog/2025_02_25_923e08b9.md",
         "vendor": "aws",
         "source_type": "blog"
@@ -556,7 +556,7 @@
       "https://aws.amazon.com/blogs/networking-and-content-delivery/how-to-use-aws-waf-bot-control-for-targeted-bots-signals-and-mitigate-evasive-bots-with-adaptive-user-experience/": {
         "title": "How to use AWS WAF Bot Control for Targeted Bots signals and mitigate evasive bots with adaptive user experience",
         "url": "https://aws.amazon.com/blogs/networking-and-content-delivery/how-to-use-aws-waf-bot-control-for-targeted-bots-signals-and-mitigate-evasive-bots-with-adaptive-user-experience/",
-        "crawl_time": "2025-05-09T01:33:17.493799",
+        "crawl_time": "2025-05-09T20:27:53.011522",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/blog/2025_03_07_f31bc0a6.md",
         "vendor": "aws",
         "source_type": "blog"
@@ -564,7 +564,7 @@
       "https://aws.amazon.com/blogs/networking-and-content-delivery/building-resilient-ipv6-network-with-sd-wans-and-aws-cloud-wan-connect-with-gre/": {
         "title": "Building Resilient IPv6 Network with SD-WANs and AWS Cloud WAN Connect with GRE",
         "url": "https://aws.amazon.com/blogs/networking-and-content-delivery/building-resilient-ipv6-network-with-sd-wans-and-aws-cloud-wan-connect-with-gre/",
-        "crawl_time": "2025-05-09T01:33:17.499322",
+        "crawl_time": "2025-05-09T20:27:53.020471",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/blog/2025_03_12_6962b5da.md",
         "vendor": "aws",
         "source_type": "blog"
@@ -574,7 +574,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/05/amazon-route-53-resolver-dns-firewall-additional-regions/": {
         "title": "Amazon Route 53 Resolver DNS Firewall is now available in additional regions",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/05/amazon-route-53-resolver-dns-firewall-additional-regions/",
-        "crawl_time": "2025-05-09T01:33:17.856230",
+        "crawl_time": "2025-05-09T20:27:53.454021",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_05_01_8418a0dd.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -582,7 +582,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/03/amazon-application-recovery-controller-fis-recovery-action/": {
         "title": "Amazon Application Recovery Controller announces AWS FIS recovery action for zonal autoshift",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/03/amazon-application-recovery-controller-fis-recovery-action/",
-        "crawl_time": "2025-05-09T01:33:17.582042",
+        "crawl_time": "2025-05-09T20:27:53.129526",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_03_26_608764de.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -590,7 +590,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/04/aws-lambda-edge-advanced-logging-controls/": {
         "title": "AWS Lambda@Edge announces advanced logging controls",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/04/aws-lambda-edge-advanced-logging-controls/",
-        "crawl_time": "2025-05-09T01:33:17.714428",
+        "crawl_time": "2025-05-09T20:27:53.286052",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_04_14_5f04c62f.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -598,7 +598,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/03/aws-network-firewall-flow-management-feature/": {
         "title": "AWS Network Firewall introduces new flow management feature",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/03/aws-network-firewall-flow-management-feature/",
-        "crawl_time": "2025-05-09T01:33:17.535055",
+        "crawl_time": "2025-05-09T20:27:53.067689",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_03_20_a953d26a.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -606,7 +606,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/03/amazon-eventbridge-scheduler-privatelink/": {
         "title": "Amazon EventBridge Scheduler now supports AWS PrivateLink",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/03/amazon-eventbridge-scheduler-privatelink/",
-        "crawl_time": "2025-05-09T01:33:17.863199",
+        "crawl_time": "2025-05-09T20:27:53.461435",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_03_25_bc755c61.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -614,7 +614,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/04/amazon-vpc-peering-billing/": {
         "title": "AWS simplifies Amazon VPC Peering billing",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/04/amazon-vpc-peering-billing/",
-        "crawl_time": "2025-05-09T01:33:17.914541",
+        "crawl_time": "2025-05-09T20:27:53.523850",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_04_11_d19ddfe5.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -622,7 +622,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/04/saas-manager-amazon-cloudfront/": {
         "title": "Announcing SaaS Manager for Amazon CloudFront",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/04/saas-manager-amazon-cloudfront/",
-        "crawl_time": "2025-05-09T01:33:17.824388",
+        "crawl_time": "2025-05-09T20:27:53.416461",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_04_28_969434b0.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -630,7 +630,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/05/amazon-vpc-ipam-cost-distribution-aws-organization-member-accounts": {
         "title": "Amazon VPC IPAM now allows cost distribution to AWS Organization member-accounts",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/05/amazon-vpc-ipam-cost-distribution-aws-organization-member-accounts",
-        "crawl_time": "2025-05-09T01:33:17.576165",
+        "crawl_time": "2025-05-09T20:27:53.122290",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_05_01_9dd24c8a.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -638,7 +638,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/03/application-load-balancer-integration-vpc-ipam/": {
         "title": "Application Load Balancer announces integration with Amazon VPC IPAM",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/03/application-load-balancer-integration-vpc-ipam/",
-        "crawl_time": "2025-05-09T01:33:17.773377",
+        "crawl_time": "2025-05-09T20:27:53.353922",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_03_07_d63baebf.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -646,7 +646,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/05/amazon-connect-contact-lens-real-time-dashboards-aws-govcloud-us-west": {
         "title": "Amazon Connect Contact Lens real-time dashboards are now available in AWS GovCloud (US-West)",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/05/amazon-connect-contact-lens-real-time-dashboards-aws-govcloud-us-west",
-        "crawl_time": "2025-05-09T01:33:17.588319",
+        "crawl_time": "2025-05-09T20:27:53.136833",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_05_05_4ebce7ef.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -654,7 +654,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/04/amazon-vpc-route-server/": {
         "title": "Announcing the general availability of Amazon VPC Route Server ",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/04/amazon-vpc-route-server/",
-        "crawl_time": "2025-05-09T01:33:17.720735",
+        "crawl_time": "2025-05-09T20:27:53.294855",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_04_01_e56d2e4e.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -662,7 +662,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/04/amazon-cloudfront-anycast-static-ips-apex-domains": {
         "title": "Amazon CloudFront announces Anycast Static IPs support for apex domains",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/04/amazon-cloudfront-anycast-static-ips-apex-domains",
-        "crawl_time": "2025-05-09T01:33:17.665980",
+        "crawl_time": "2025-05-09T20:27:53.225303",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_04_16_7296c2fc.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -670,7 +670,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/04/aws-sam-api-gateway-custom-domain-names/": {
         "title": "AWS SAM now supports Amazon API Gateway Custom Domain Names for private REST APIs",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/04/aws-sam-api-gateway-custom-domain-names/",
-        "crawl_time": "2025-05-09T01:33:17.940085",
+        "crawl_time": "2025-05-09T20:27:53.554052",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_04_08_84281430.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -678,7 +678,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/04/automated-http-validated-public-certificates-amazon-cloudfront": {
         "title": "Automated HTTP validated public certificates with Amazon CloudFront",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/04/automated-http-validated-public-certificates-amazon-cloudfront",
-        "crawl_time": "2025-05-09T01:33:17.708351",
+        "crawl_time": "2025-05-09T20:27:53.278921",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_04_28_ad7f0755.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -686,7 +686,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/03/amazon-api-gateway-http-apis-mtls-multi-level-base-path-mappings-waf-additional-regions": {
         "title": "Amazon API Gateway now supports HTTP APIs, mTLS, multi-level base path mappings, and WAF in additional regions",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/03/amazon-api-gateway-http-apis-mtls-multi-level-base-path-mappings-waf-additional-regions",
-        "crawl_time": "2025-05-09T01:33:17.741744",
+        "crawl_time": "2025-05-09T20:27:53.316175",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_03_03_257a297a.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -694,7 +694,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/03/amazon-route-53-traffic-flow-visual-editor-improve-dns-policy-editing": {
         "title": "Amazon Route 53 Traffic Flow introduces a new visual editor to improve DNS policy editing",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/03/amazon-route-53-traffic-flow-visual-editor-improve-dns-policy-editing",
-        "crawl_time": "2025-05-09T01:33:17.594315",
+        "crawl_time": "2025-05-09T20:27:53.144257",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_03_13_8bebea7e.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -702,7 +702,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/04/amazon-route-53-profiles-vpc-endpoints": {
         "title": "Amazon Route 53 Profiles now supports VPC endpoints",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/04/amazon-route-53-profiles-vpc-endpoints",
-        "crawl_time": "2025-05-09T01:33:17.818291",
+        "crawl_time": "2025-05-09T20:27:53.408865",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_04_28_2d1ec580.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -710,7 +710,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/03/aws-direct-connect-location-lisbon-portugal": {
         "title": "AWS announces new AWS Direct Connect location in Lisbon, Portugal",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/03/aws-direct-connect-location-lisbon-portugal",
-        "crawl_time": "2025-05-09T01:33:17.792671",
+        "crawl_time": "2025-05-09T20:27:53.378007",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_03_14_ac992f24.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -718,7 +718,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/04/amazon-vpc-reachability-network-access-analyzer-spain/": {
         "title": "Amazon VPC Reachability Analyzer and Amazon VPC Network Access Analyzer are now available in Europe (Spain) Region",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/04/amazon-vpc-reachability-network-access-analyzer-spain/",
-        "crawl_time": "2025-05-09T01:33:17.920843",
+        "crawl_time": "2025-05-09T20:27:53.531411",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_04_24_f8c13e0a.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -726,7 +726,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/04/amazon-vpc-lattice-ipv6-management-endpoints/": {
         "title": "Amazon VPC Lattice now supports IPv6 for management endpoints",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/04/amazon-vpc-lattice-ipv6-management-endpoints/",
-        "crawl_time": "2025-05-09T01:33:17.888804",
+        "crawl_time": "2025-05-09T20:27:53.492283",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_04_30_ad0acb4c.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -734,7 +734,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/03/amazon-route-53-profiles-ipv6-service-endpoints": {
         "title": "Amazon Route 53 Profiles now supports Internet Protocol Version 6 (IPv6) Service Endpoints",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/03/amazon-route-53-profiles-ipv6-service-endpoints",
-        "crawl_time": "2025-05-09T01:33:17.625280",
+        "crawl_time": "2025-05-09T20:27:53.181116",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_03_26_6c037a31.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -742,7 +742,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/04/amazon-cloudfront-vpc-origin-modification-functions/": {
         "title": "Amazon CloudFront supports VPC Origin modification with CloudFront Functions",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/04/amazon-cloudfront-vpc-origin-modification-functions/",
-        "crawl_time": "2025-05-09T01:33:17.653944",
+        "crawl_time": "2025-05-09T20:27:53.210348",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_04_02_afbe5ca0.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -750,7 +750,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/03/amazon-vpc-ip-address-manager-two-additional-regions/": {
         "title": "Amazon VPC IP Address Manager is now available in two additional AWS Regions",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/03/amazon-vpc-ip-address-manager-two-additional-regions/",
-        "crawl_time": "2025-05-09T01:33:17.726772",
+        "crawl_time": "2025-05-09T20:27:53.302060",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_03_27_45585c39.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -758,7 +758,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/03/aws-verified-access-fedramp-high-moderate-authorization": {
         "title": "AWS Verified Access achieves FedRAMP High and Moderate authorization",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/03/aws-verified-access-fedramp-high-moderate-authorization",
-        "crawl_time": "2025-05-09T01:33:17.849933",
+        "crawl_time": "2025-05-09T20:27:53.446124",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_03_14_b0da9836.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -766,7 +766,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/04/load-balancer-capacity-unit-reservation-gateway-load-balancers": {
         "title": "Load Balancer Capacity Unit Reservation for Gateway Load Balancers",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/04/load-balancer-capacity-unit-reservation-gateway-load-balancers",
-        "crawl_time": "2025-05-09T01:33:17.837385",
+        "crawl_time": "2025-05-09T20:27:53.430646",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_04_10_8f035003.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -774,7 +774,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/03/aws-direct-connect-location-athens-greece": {
         "title": "AWS announces new AWS Direct Connect location in Athens, Greece",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/03/aws-direct-connect-location-athens-greece",
-        "crawl_time": "2025-05-09T01:33:17.786418",
+        "crawl_time": "2025-05-09T20:27:53.370327",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_03_31_8d2c82c7.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -782,7 +782,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/04/amazon-route-53-public-authoritative-dns-aws-govcloud-us-regions": {
         "title": "Amazon Route 53 adds public authoritative DNS service to AWS GovCloud (US) Regions",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/04/amazon-route-53-public-authoritative-dns-aws-govcloud-us-regions",
-        "crawl_time": "2025-05-09T01:33:17.760839",
+        "crawl_time": "2025-05-09T20:27:53.338705",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_04_04_b16fe584.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -790,7 +790,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/02/amazon-location-service-supports-privatelink/": {
         "title": "Amazon Location Service now supports AWS PrivateLink",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/02/amazon-location-service-supports-privatelink/",
-        "crawl_time": "2025-05-09T01:33:17.830850",
+        "crawl_time": "2025-05-09T20:27:53.423652",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_02_25_78fef26d.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -798,7 +798,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/03/aws-network-firewall-pass-action-rule-alerts-ja4-filtering": {
         "title": "AWS Network Firewall adds pass action rule alerts and JA4 filtering",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/03/aws-network-firewall-pass-action-rule-alerts-ja4-filtering",
-        "crawl_time": "2025-05-09T01:33:17.660139",
+        "crawl_time": "2025-05-09T20:27:53.217575",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_03_27_9b14babe.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -806,7 +806,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/04/aws-client-vpn-client-routes-enforcement/": {
         "title": "AWS Client VPN now supports Client Routes Enforcement",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/04/aws-client-vpn-client-routes-enforcement/",
-        "crawl_time": "2025-05-09T01:33:17.754440",
+        "crawl_time": "2025-05-09T20:27:53.331054",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_04_28_ea928613.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -814,7 +814,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/02/aws-network-firewall-automated-domain-lists": {
         "title": "AWS Network Firewall introduces automated domain lists and insights",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/02/aws-network-firewall-automated-domain-lists",
-        "crawl_time": "2025-05-09T01:33:17.805447",
+        "crawl_time": "2025-05-09T20:27:53.394257",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_02_19_ae09fa72.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -822,7 +822,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/01/new-edge-location-kingdom-saudi-arabia": {
         "title": "AWS announces new edge location in the Kingdom of Saudi Arabia",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/01/new-edge-location-kingdom-saudi-arabia",
-        "crawl_time": "2025-05-09T01:33:17.811529",
+        "crawl_time": "2025-05-09T20:27:53.401728",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_01_24_a2170046.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -830,7 +830,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/03/aws-network-manager-cloud-wan-privatelink-ipv6": {
         "title": "AWS Network Manager and AWS Cloud WAN now support AWS PrivateLink and IPv6",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/03/aws-network-manager-cloud-wan-privatelink-ipv6",
-        "crawl_time": "2025-05-09T01:33:17.901604",
+        "crawl_time": "2025-05-09T20:27:53.507143",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_03_27_01652b41.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -838,7 +838,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/02/aws-network-load-balancer-removing-availability-zones": {
         "title": "AWS Network Load Balancer now supports removing availability zones",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/02/aws-network-load-balancer-removing-availability-zones",
-        "crawl_time": "2025-05-09T01:33:17.927164",
+        "crawl_time": "2025-05-09T20:27:53.539147",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_02_13_ac4db822.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -846,7 +846,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/03/aws-client-vpn-authorization-rules-route-quotas": {
         "title": "AWS Client VPN increases authorization rules and route quotas ",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/03/aws-client-vpn-authorization-rules-route-quotas",
-        "crawl_time": "2025-05-09T01:33:17.875795",
+        "crawl_time": "2025-05-09T20:27:53.476966",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_03_18_0778cfe5.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -854,7 +854,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/05/amazon-route-53-resolver-query-logging-new-aws-regions": {
         "title": "Amazon Route 53 Resolver Query Logging now available in two new AWS Regions",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/05/amazon-route-53-resolver-query-logging-new-aws-regions",
-        "crawl_time": "2025-05-09T01:33:17.504976",
+        "crawl_time": "2025-05-09T20:27:53.027860",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_05_07_3e7a962e.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -862,7 +862,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/03/aws-privatelink-cross-region-connectivity-6-additional-regions/": {
         "title": "AWS PrivateLink cross-region connectivity now available in 6 additional regions",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/03/aws-privatelink-cross-region-connectivity-6-additional-regions/",
-        "crawl_time": "2025-05-09T01:33:17.695915",
+        "crawl_time": "2025-05-09T20:27:53.263242",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_03_18_12631ae2.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -870,7 +870,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/03/amazon-ec2-bandwidth-jumbo-frames": {
         "title": "Amazon EC2 now supports more bandwidth and jumbo frames to select destinations",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/03/amazon-ec2-bandwidth-jumbo-frames",
-        "crawl_time": "2025-05-09T01:33:17.882141",
+        "crawl_time": "2025-05-09T20:27:53.484859",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_03_28_e587f0b3.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -878,7 +878,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/03/api-gateway-dual-stack-ipv4-ipv6-endpoints/": {
         "title": "API Gateway launches support for dual-stack (IPv4 and IPv6) endpoints",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/03/api-gateway-dual-stack-ipv4-ipv6-endpoints/",
-        "crawl_time": "2025-05-09T01:33:17.529181",
+        "crawl_time": "2025-05-09T20:27:53.060110",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_03_31_2684c83d.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -886,7 +886,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/05/aws-direct-connect-location-brisbane-australia": {
         "title": "AWS announces new AWS Direct Connect location in Brisbane, Australia",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/05/aws-direct-connect-location-brisbane-australia",
-        "crawl_time": "2025-05-09T01:33:17.799114",
+        "crawl_time": "2025-05-09T20:27:53.386043",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_05_08_8f500232.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -894,7 +894,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2024/11/aws-cloud-wan-on-premises-connectivity-direct-connect": {
         "title": "AWS Cloud WAN simplifies on-premises connectivity via AWS Direct Connect ",
         "url": "https://aws.amazon.com/about-aws/whats-new/2024/11/aws-cloud-wan-on-premises-connectivity-direct-connect",
-        "crawl_time": "2025-05-09T01:33:17.511677",
+        "crawl_time": "2025-05-09T20:27:53.035090",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2024_11_25_edc03e01.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -902,7 +902,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2024/11/aws-network-firewall-list-protocols-keywords-firewall/": {
         "title": "AWS Network Firewall expands the list of supported protocols and keywords in firewall rules",
         "url": "https://aws.amazon.com/about-aws/whats-new/2024/11/aws-network-firewall-list-protocols-keywords-firewall/",
-        "crawl_time": "2025-05-09T01:33:17.517744",
+        "crawl_time": "2025-05-09T20:27:53.042546",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2024_11_26_d0ebadfc.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -910,7 +910,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2024/11/amazon-api-gateway-custom-domain-name-private-rest-apis/": {
         "title": "Amazon API Gateway now supports Custom Domain Name for private REST APIs",
         "url": "https://aws.amazon.com/about-aws/whats-new/2024/11/amazon-api-gateway-custom-domain-name-private-rest-apis/",
-        "crawl_time": "2025-05-09T01:33:17.523417",
+        "crawl_time": "2025-05-09T20:27:53.051510",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2024_11_21_2629a7b7.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -918,7 +918,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2024/11/amazon-cloudwatch-internet-monitor-aws-local-zones-vpc-subnets": {
         "title": "Amazon CloudWatch Internet Monitor adds AWS Local Zones support for VPC subnets",
         "url": "https://aws.amazon.com/about-aws/whats-new/2024/11/amazon-cloudwatch-internet-monitor-aws-local-zones-vpc-subnets",
-        "crawl_time": "2025-05-09T01:33:17.541309",
+        "crawl_time": "2025-05-09T20:27:53.075441",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2024_11_21_9f15c334.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -926,7 +926,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2024/12/aws-verified-access-secure-access-resources-non-https-protocols-preview": {
         "title": "AWS Verified Access now supports secure access to resources over non-HTTP(S) protocols (Preview) ",
         "url": "https://aws.amazon.com/about-aws/whats-new/2024/12/aws-verified-access-secure-access-resources-non-https-protocols-preview",
-        "crawl_time": "2025-05-09T01:33:17.546904",
+        "crawl_time": "2025-05-09T20:27:53.082502",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2024_12_01_f1b8478d.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -934,7 +934,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2024/12/amazon-ec2-instances-bandwidth-configurations-vpc-ebs": {
         "title": "Amazon EC2 instances support bandwidth configurations for VPC and EBS",
         "url": "https://aws.amazon.com/about-aws/whats-new/2024/12/amazon-ec2-instances-bandwidth-configurations-vpc-ebs",
-        "crawl_time": "2025-05-09T01:33:17.552703",
+        "crawl_time": "2025-05-09T20:27:53.089983",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2024_12_13_da35f4cc.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -942,7 +942,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2024/12/aws-data-transfer-terminal-high-speed-data-uploads": {
         "title": "AWS announces AWS Data Transfer Terminal for high-speed data uploads",
         "url": "https://aws.amazon.com/about-aws/whats-new/2024/12/aws-data-transfer-terminal-high-speed-data-uploads",
-        "crawl_time": "2025-05-09T01:33:17.558577",
+        "crawl_time": "2025-05-09T20:27:53.097863",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2024_12_01_3e1b3b77.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -950,7 +950,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2024/12/access-vpc-resources-aws-privatelink/": {
         "title": "AWS announces access to VPC resources over AWS PrivateLink",
         "url": "https://aws.amazon.com/about-aws/whats-new/2024/12/access-vpc-resources-aws-privatelink/",
-        "crawl_time": "2025-05-09T01:33:17.564790",
+        "crawl_time": "2025-05-09T20:27:53.107980",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2024_12_01_25767de4.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -958,7 +958,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2024/12/aws-cloud-map-service-level-attributes": {
         "title": "AWS Cloud Map now supports Service Level Attributes",
         "url": "https://aws.amazon.com/about-aws/whats-new/2024/12/aws-cloud-map-service-level-attributes",
-        "crawl_time": "2025-05-09T01:33:17.570464",
+        "crawl_time": "2025-05-09T20:27:53.115076",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2024_12_13_97a83e9c.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -966,7 +966,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2024/11/aws-announces-media-quality-aware-resiliency-live-streaming": {
         "title": "AWS announces Media Quality-Aware Resiliency for live streaming",
         "url": "https://aws.amazon.com/about-aws/whats-new/2024/11/aws-announces-media-quality-aware-resiliency-live-streaming",
-        "crawl_time": "2025-05-09T01:33:17.600306",
+        "crawl_time": "2025-05-09T20:27:53.151720",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2024_11_21_d1c7e59a.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -974,7 +974,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2024/11/aws-application-load-balancer-certificate-authority-advertisement": {
         "title": "AWS Application Load Balancer introduces Certificate Authority advertisement to simplify client behavior while using Mutual TLS",
         "url": "https://aws.amazon.com/about-aws/whats-new/2024/11/aws-application-load-balancer-certificate-authority-advertisement",
-        "crawl_time": "2025-05-09T01:33:17.606085",
+        "crawl_time": "2025-05-09T20:27:53.159218",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2024_11_22_c8aa393a.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -982,7 +982,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/01/aws-client-vpn-concurrent-vpn-connections/": {
         "title": "AWS Client VPN announces support for concurrent VPN connections",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/01/aws-client-vpn-concurrent-vpn-connections/",
-        "crawl_time": "2025-05-09T01:33:17.612919",
+        "crawl_time": "2025-05-09T20:27:53.166377",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_01_22_eb044aa9.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -990,7 +990,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2024/12/aws-direct-connect-location-osaka-japan/": {
         "title": "AWS announces new AWS Direct Connect location in Osaka, Japan",
         "url": "https://aws.amazon.com/about-aws/whats-new/2024/12/aws-direct-connect-location-osaka-japan/",
-        "crawl_time": "2025-05-09T01:33:17.619423",
+        "crawl_time": "2025-05-09T20:27:53.173618",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2024_12_13_a29f5707.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -998,7 +998,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2024/12/amazon-lightsail-api-endpoints-connectivity-ipv6": {
         "title": "Amazon Lightsail API endpoints now support connectivity over Internet Protocol version 6 (IPv6)",
         "url": "https://aws.amazon.com/about-aws/whats-new/2024/12/amazon-lightsail-api-endpoints-connectivity-ipv6",
-        "crawl_time": "2025-05-09T01:33:17.631982",
+        "crawl_time": "2025-05-09T20:27:53.188443",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2024_12_23_35ccb1b7.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -1006,7 +1006,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2024/11/aws-privatelink-across-region-connectivity": {
         "title": "AWS PrivateLink now supports cross-region connectivity",
         "url": "https://aws.amazon.com/about-aws/whats-new/2024/11/aws-privatelink-across-region-connectivity",
-        "crawl_time": "2025-05-09T01:33:17.640215",
+        "crawl_time": "2025-05-09T20:27:53.195907",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2024_11_26_7da72dfa.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -1014,7 +1014,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2024/12/amazon-route-53-resolver-dns-firewall-advanced-malaysia-region": {
         "title": "Amazon Route 53 Resolver DNS Firewall and DNS Firewall Advanced now available in the Asia Pacific (Malaysia) Region",
         "url": "https://aws.amazon.com/about-aws/whats-new/2024/12/amazon-route-53-resolver-dns-firewall-advanced-malaysia-region",
-        "crawl_time": "2025-05-09T01:33:17.647936",
+        "crawl_time": "2025-05-09T20:27:53.203006",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2024_12_12_d7430c99.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -1022,7 +1022,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2024/12/aws-backup-dual-stack-ipv4-ipv6-environments/": {
         "title": "AWS Backup now supports dual-stack (IPv4 and IPv6) environments",
         "url": "https://aws.amazon.com/about-aws/whats-new/2024/12/aws-backup-dual-stack-ipv4-ipv6-environments/",
-        "crawl_time": "2025-05-09T01:33:17.672103",
+        "crawl_time": "2025-05-09T20:27:53.233016",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2024_12_18_ee693afe.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -1030,7 +1030,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2024/12/amazon-workspaces-personal-aws-global-accelerator": {
         "title": "Amazon WorkSpaces Personal now supports AWS Global Accelerator",
         "url": "https://aws.amazon.com/about-aws/whats-new/2024/12/amazon-workspaces-personal-aws-global-accelerator",
-        "crawl_time": "2025-05-09T01:33:17.678042",
+        "crawl_time": "2025-05-09T20:27:53.240095",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2024_12_20_75297277.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -1038,7 +1038,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2024/11/amazon-cloudfront-anycast-static-ips": {
         "title": "Amazon CloudFront now supports Anycast Static IPs",
         "url": "https://aws.amazon.com/about-aws/whats-new/2024/11/amazon-cloudfront-anycast-static-ips",
-        "crawl_time": "2025-05-09T01:33:17.683909",
+        "crawl_time": "2025-05-09T20:27:53.247129",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2024_11_20_3bfdadfd.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -1046,7 +1046,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/01/aws-direct-connect-expansion-queretaro-mexico/": {
         "title": "AWS announces new AWS Direct Connect location and expansion in Querétaro, Mexico",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/01/aws-direct-connect-expansion-queretaro-mexico/",
-        "crawl_time": "2025-05-09T01:33:17.689894",
+        "crawl_time": "2025-05-09T20:27:53.255793",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_01_14_bfb3241d.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -1054,7 +1054,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/01/aws-security-hub-route-53-resolver-dns-firewall/": {
         "title": "AWS Security Hub now integrates with Amazon Route 53 Resolver DNS Firewall",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/01/aws-security-hub-route-53-resolver-dns-firewall/",
-        "crawl_time": "2025-05-09T01:33:17.701943",
+        "crawl_time": "2025-05-09T20:27:53.270782",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_01_13_242f7864.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -1062,7 +1062,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2024/11/amazon-recovery-controller-zonal-shift-autoshift-load-balancers/": {
         "title": "Amazon Application Recovery Controller zonal shift and zonal autoshift support Application Load Balancers",
         "url": "https://aws.amazon.com/about-aws/whats-new/2024/11/amazon-recovery-controller-zonal-shift-autoshift-load-balancers/",
-        "crawl_time": "2025-05-09T01:33:17.732981",
+        "crawl_time": "2025-05-09T20:27:53.309115",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2024_11_22_24a403e7.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -1070,7 +1070,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2024/11/aws-application-load-balancer-header-modification-enhanced-traffic-control-security": {
         "title": "AWS Application Load Balancer introduces header modification for enhanced traffic control and security",
         "url": "https://aws.amazon.com/about-aws/whats-new/2024/11/aws-application-load-balancer-header-modification-enhanced-traffic-control-security",
-        "crawl_time": "2025-05-09T01:33:17.748101",
+        "crawl_time": "2025-05-09T20:27:53.323548",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2024_11_21_8e23cb63.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -1078,7 +1078,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2024/11/amazon-vpc-ipam-organizational-units-aws-organizations": {
         "title": "Amazon VPC IPAM now supports enabling IPAM for organizational units within AWS Organizations",
         "url": "https://aws.amazon.com/about-aws/whats-new/2024/11/amazon-vpc-ipam-organizational-units-aws-organizations",
-        "crawl_time": "2025-05-09T01:33:17.767119",
+        "crawl_time": "2025-05-09T20:27:53.345993",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2024_11_21_fea6b1a8.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -1086,7 +1086,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2024/12/vpc-lattice-tcp-vpc-resources": {
         "title": "VPC Lattice now includes TCP support with VPC Resources",
         "url": "https://aws.amazon.com/about-aws/whats-new/2024/12/vpc-lattice-tcp-vpc-resources",
-        "crawl_time": "2025-05-09T01:33:17.779693",
+        "crawl_time": "2025-05-09T20:27:53.361900",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2024_12_02_6f48c2d8.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -1094,7 +1094,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2024/11/amazon-cloudfront-origin-modifications-cloudfront-functions": {
         "title": "Amazon CloudFront announces origin modifications using CloudFront Functions ",
         "url": "https://aws.amazon.com/about-aws/whats-new/2024/11/amazon-cloudfront-origin-modifications-cloudfront-functions",
-        "crawl_time": "2025-05-09T01:33:17.843682",
+        "crawl_time": "2025-05-09T20:27:53.438443",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2024_11_21_bc273e08.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -1102,7 +1102,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/01/aws-direct-connect-location-expansion-bangkok-thailand/": {
         "title": "AWS announces new AWS Direct Connect location and expansion in Bangkok, Thailand",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/01/aws-direct-connect-location-expansion-bangkok-thailand/",
-        "crawl_time": "2025-05-09T01:33:17.869306",
+        "crawl_time": "2025-05-09T20:27:53.469084",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_01_08_491977ac.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -1110,7 +1110,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2025/01/amazon-msk-connect-apis-aws-privatelink": {
         "title": "Amazon MSK Connect APIs now support AWS PrivateLink",
         "url": "https://aws.amazon.com/about-aws/whats-new/2025/01/amazon-msk-connect-apis-aws-privatelink",
-        "crawl_time": "2025-05-09T01:33:17.895323",
+        "crawl_time": "2025-05-09T20:27:53.499987",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2025_01_08_55c74a1f.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -1118,7 +1118,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2024/12/aws-private-link-cross-region-connectivity-additional-regions": {
         "title": "AWS PrivateLink cross-region connectivity now available in 14 additional Regions",
         "url": "https://aws.amazon.com/about-aws/whats-new/2024/12/aws-private-link-cross-region-connectivity-additional-regions",
-        "crawl_time": "2025-05-09T01:33:17.907942",
+        "crawl_time": "2025-05-09T20:27:53.514339",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2024_12_19_cbc78695.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -1126,7 +1126,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2024/11/cross-zone-application-load-balancer-zonal-shift-autoshift": {
         "title": "Cross-zone enabled Application Load Balancer now supports zonal shift and zonal autoshift",
         "url": "https://aws.amazon.com/about-aws/whats-new/2024/11/cross-zone-application-load-balancer-zonal-shift-autoshift",
-        "crawl_time": "2025-05-09T01:33:17.933589",
+        "crawl_time": "2025-05-09T20:27:53.546944",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2024_11_22_10b5b261.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -1134,7 +1134,7 @@
       "https://aws.amazon.com/about-aws/whats-new/2024/12/aws-network-firewall-ipv6-service-endpoints/": {
         "title": "AWS Network Firewall now supports IPv6 Service Endpoints",
         "url": "https://aws.amazon.com/about-aws/whats-new/2024/12/aws-network-firewall-ipv6-service-endpoints/",
-        "crawl_time": "2025-05-09T01:33:17.946650",
+        "crawl_time": "2025-05-09T20:27:53.562357",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/aws/whatsnew/2024_12_20_6588a951.md",
         "vendor": "aws",
         "source_type": "whatsnew"
@@ -1146,7 +1146,7 @@
       "https://cloud.google.com/blog/products/networking/premium-tier-and-verified-peering-providers-enable-cloud-wan": {
         "title": "WAN: Premium Tier & Verified Peering Provider for reliable global connectivity",
         "url": "https://cloud.google.com/blog/products/networking/premium-tier-and-verified-peering-providers-enable-cloud-wan",
-        "crawl_time": "2025-05-09T01:33:18.321794",
+        "crawl_time": "2025-05-09T20:27:53.983196",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/gcp/blog/2025_05_01_40667f7a.md",
         "vendor": "gcp",
         "source_type": "blog"
@@ -1154,7 +1154,7 @@
       "https://cloud.google.com/blog/products/networking/google-global-network-technology-deep-dive": {
         "title": "Diving into the technology behind Google's AI-era global network",
         "url": "https://cloud.google.com/blog/products/networking/google-global-network-technology-deep-dive",
-        "crawl_time": "2025-05-09T01:33:18.368526",
+        "crawl_time": "2025-05-09T20:27:54.028883",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/gcp/blog/2025_04_23_576617e3.md",
         "vendor": "gcp",
         "source_type": "blog"
@@ -1162,7 +1162,7 @@
       "https://cloud.google.com/blog/products/networking/ncc-gateway-for-cloud-wan-helps-secure-network-access": {
         "title": "Announcing cloud-native integration of security service edge (SSE) with Cloud WAN",
         "url": "https://cloud.google.com/blog/products/networking/ncc-gateway-for-cloud-wan-helps-secure-network-access",
-        "crawl_time": "2025-05-09T01:33:18.414002",
+        "crawl_time": "2025-05-09T20:27:54.066693",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/gcp/blog/2025_04_15_14d7da63.md",
         "vendor": "gcp",
         "source_type": "blog"
@@ -1170,7 +1170,7 @@
       "https://cloud.google.com/blog/products/networking/connect-globally-with-cloud-wan-for-the-ai-era": {
         "title": "WAN: Connect your global enterprise with a network built for the AI era",
         "url": "https://cloud.google.com/blog/products/networking/connect-globally-with-cloud-wan-for-the-ai-era",
-        "crawl_time": "2025-05-09T01:33:18.360747",
+        "crawl_time": "2025-05-09T20:27:54.021527",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/gcp/blog/2025_04_10_6270ac88.md",
         "vendor": "gcp",
         "source_type": "blog"
@@ -1178,7 +1178,7 @@
       "https://cloud.google.com/blog/products/networking/google-global-network-principles-and-innovations": {
         "title": "Google's AI-powered next-generation global network: Built for the Gemini era",
         "url": "https://cloud.google.com/blog/products/networking/google-global-network-principles-and-innovations",
-        "crawl_time": "2025-05-09T01:33:18.388375",
+        "crawl_time": "2025-05-09T20:27:54.043840",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/gcp/blog/2025_04_10_55782b4e.md",
         "vendor": "gcp",
         "source_type": "blog"
@@ -1186,7 +1186,7 @@
       "https://cloud.google.com/blog/products/networking/networking-innovations-at-google-cloud-next25": {
         "title": "What’s new with Google Cloud networking",
         "url": "https://cloud.google.com/blog/products/networking/networking-innovations-at-google-cloud-next25",
-        "crawl_time": "2025-05-09T01:33:18.398338",
+        "crawl_time": "2025-05-09T20:27:54.051581",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/gcp/blog/2025_04_10_17e0bfea.md",
         "vendor": "gcp",
         "source_type": "blog"
@@ -1194,7 +1194,7 @@
       "https://cloud.google.com/blog/products/networking/rdma-rocev2-for-ai-workloads-on-google-cloud": {
         "title": "Using RDMA over Converged Ethernet networking for AI on Google Cloud",
         "url": "https://cloud.google.com/blog/products/networking/rdma-rocev2-for-ai-workloads-on-google-cloud",
-        "crawl_time": "2025-05-09T01:33:18.407065",
+        "crawl_time": "2025-05-09T20:27:54.059298",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/gcp/blog/2025_03_20_43702b48.md",
         "vendor": "gcp",
         "source_type": "blog"
@@ -1202,7 +1202,7 @@
       "https://cloud.google.com/blog/products/networking/introducing-network-security-integration": {
         "title": "Streamlined Security: Introducing Network Security Integration",
         "url": "https://cloud.google.com/blog/products/networking/introducing-network-security-integration",
-        "crawl_time": "2025-05-09T01:33:18.378238",
+        "crawl_time": "2025-05-09T20:27:54.036405",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/gcp/blog/2025_03_14_a0e7365b.md",
         "vendor": "gcp",
         "source_type": "blog"
@@ -1210,7 +1210,7 @@
       "https://cloud.google.com/blog/products/networking/inter-network-communication-design-with-ncc-vpc-peering": {
         "title": "Inter-VPC connectivity architecture patterns in Cross-Cloud Network",
         "url": "https://cloud.google.com/blog/products/networking/inter-network-communication-design-with-ncc-vpc-peering",
-        "crawl_time": "2025-05-09T01:33:18.335320",
+        "crawl_time": "2025-05-09T20:27:53.999319",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/gcp/blog/2025_02_27_06f1dccf.md",
         "vendor": "gcp",
         "source_type": "blog"
@@ -1218,7 +1218,7 @@
       "https://cloud.google.com/blog/topics/telecommunications/how-dynamic-5g-services-are-possible-with-ai": {
         "title": "Dynamic 5G services, made possible by AI and intent-based automation",
         "url": "https://cloud.google.com/blog/topics/telecommunications/how-dynamic-5g-services-are-possible-with-ai",
-        "crawl_time": "2025-05-09T01:33:18.328546",
+        "crawl_time": "2025-05-09T20:27:53.991552",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/gcp/blog/2025_03_01_c6bc1034.md",
         "vendor": "gcp",
         "source_type": "blog"
@@ -1226,7 +1226,7 @@
       "https://cloud.google.com/blog/topics/telecommunications/ericsson-and-google-cloud-collaborating-on-5g": {
         "title": "Rethinking 5G: The cloud imperative",
         "url": "https://cloud.google.com/blog/topics/telecommunications/ericsson-and-google-cloud-collaborating-on-5g",
-        "crawl_time": "2025-05-09T01:33:18.344106",
+        "crawl_time": "2025-05-09T20:27:54.006770",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/gcp/blog/2025_02_20_2ee2fbe2.md",
         "vendor": "gcp",
         "source_type": "blog"
@@ -1234,7 +1234,7 @@
       "https://cloud.google.com/blog/products/networking/public-ip-health-checks-in-cloud-dns-now-ga": {
         "title": "Introducing Cloud DNS public IP health checks, for more resilient multicloud deployments",
         "url": "https://cloud.google.com/blog/products/networking/public-ip-health-checks-in-cloud-dns-now-ga",
-        "crawl_time": "2025-05-09T01:33:18.353670",
+        "crawl_time": "2025-05-09T20:27:54.014048",
         "filepath": "/home/benjamin/cnetCompSpy/data/raw/gcp/blog/2025_02_22_7b599342.md",
         "vendor": "gcp",
         "source_type": "blog"
