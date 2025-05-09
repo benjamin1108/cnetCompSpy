@@ -111,3 +111,6 @@ coverage.xml
 # 敏感配置文件 - 防止意外提交真实配置
 config.secret.yaml 
 scripts/aws_whatsnew_analysis.py
+
+analysis_metadata.json
+crawler_metadata.json
