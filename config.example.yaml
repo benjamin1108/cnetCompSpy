@@ -1,0 +1,390 @@
+# -----------------------------------------------------------------------------
+# 云计算网络竞争动态分析项目 - 配置文件模板 (config.example.yaml)
+# -----------------------------------------------------------------------------
+#
+# 使用说明:
+# 1. 将此文件复制为 `config.yaml` 或 `config.secret.yaml` (推荐用于包含敏感信息)。
+# 2. 根据您的需求修改下面的配置项。
+# 3. 敏感信息 (如 API 密钥、密码、Webhook URL) 强烈建议配置在项目根目录下的
+#    `config.secret.yaml` 文件中。该文件默认已被 `.gitignore` 忽略，不会提交到版本库。
+#
+# 配置加载优先级:
+# 1. 命令行参数指定的配置文件或目录 (`--config path/to/your/config`)
+# 2. 项目根目录下的 `config/` 目录 (如果存在且包含 `main.yaml` 或其他 `.yaml` 文件)
+# 3. 项目根目录下的 `config.secret.yaml` (如果存在)
+# 4. 项目根目录下的 `config.yaml` (如果存在)
+# 5. 默认配置 (硬编码在代码中，但应尽量避免，优先使用配置文件)
+#
+# 如果您更喜欢模块化的配置方式，可以在 `config/` 目录下创建各个模块的 YAML 文件
+# (例如 `config/notification.yaml`, `config/crawler.yaml` 等)，系统会自动加载它们。
+# 这种情况下，此 `config.example.yaml` 文件可以作为参考。
+# 详见 `CONFIGURATION.MD` 文档。
+
+# -----------------------------------------------------------------------------
+# 通知配置 (Notification Configuration)
+# -----------------------------------------------------------------------------
+notification:
+  email:
+    enabled: true                      # 是否启用邮件通知功能
+    smtp_server: "smtp.example.com"    # SMTP 服务器地址 (例如: "smtp.gmail.com")
+    smtp_port: 587                     # SMTP 端口 (例如: 587 for TLS, 465 for SSL)
+    use_tls: true                      # 是否启用 TLS 加密
+    use_ssl: false                     # 是否启用 SSL 加密 (通常 TLS 和 SSL 只启用一个)
+    username: ""                       # SMTP 用户名 (如果需要认证) - 建议在 config.secret.yaml 中配置
+    password: ""                       # SMTP 密码 (如果需要认证) - 建议在 config.secret.yaml 中配置
+    sender: "your_email@example.com"   # 发件人邮箱地址
+    recipients: ["user1@example.com", "user2@example.com"] # 收件人邮箱列表
+    subject_prefix: "[竞争情报]"      # 邮件主题前缀
+
+  dingtalk:
+    enabled: true                             # 是否启用钉钉机器人通知功能
+    keyword: "竞争情报"                       # 钉钉机器人安全设置的自定义关键词 (如果您的机器人设置了关键词)
+    webhook: ""                               # 钉钉机器人的 Webhook URL - 强烈建议在 config.secret.yaml 中配置
+    secret: ""                                # 钉钉机器人加签密钥 (如果您的机器人设置了加签) - 强烈建议在 config.secret.yaml 中配置
+    weekly_push_time: "10:00"                 # 每周定时推送时间 (HH:MM, 24小时制)
+    weekly_push_day: 5                        # 每周几推送 (1=周一, ..., 7=周日)
+
+# -----------------------------------------------------------------------------
+# 爬虫配置 (Crawler Configuration)
+# -----------------------------------------------------------------------------
+crawler:
+  timeout: 30                                # 全局请求超时时间 (秒)
+  retry: 3                                   # 请求失败时的重试次数
+  interval: 2                                # 两次请求之间的基本间隔时间 (秒)
+  article_limit: 50                          # 每个数据源默认最多爬取的文章数量 (0 或 null 表示不限制)
+  max_workers: 10                            # 全局爬虫并发工作线程数
+  page_load_timeout: 45                      # 浏览器页面加载超时时间 (秒) - 用于 Selenium/Playwright
+  script_timeout: 30                         # 浏览器执行 JavaScript 脚本的超时时间 (秒)
+  implicit_wait: 10                          # 浏览器查找元素的隐式等待时间 (秒)
+  default_element_timeout: 15                # 显式等待时，等待元素出现的默认超时时间 (秒)
+  long_element_timeout: 25                   # 显式等待时，等待某些加载较慢元素的超时时间 (秒)
+  screenshot_debug: false                    # 是否在发生错误或特定步骤时保存页面截图用于调试
+  api_rate_limit: 1000                       # (未使用，似乎是AI分析器的配置，此处保留以防万一)
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36" # 默认 User-Agent
+  # headers:                                 # 可以为所有请求统一设置额外的 HTTP 头部
+  #   X-Custom-Header: "SomeValue"
+
+# -----------------------------------------------------------------------------
+# 数据源配置 (Sources Configuration)
+# -----------------------------------------------------------------------------
+# 定义各个爬取目标的数据源。
+# 每个云厂商下可以有多个来源类型 (如 blog, whatsnew, updates, docs)。
+# `type` 字段会关联到 `src/crawlers/` 目录下具体的爬虫实现。
+# `test_mode`: true 时，通常只爬取少量（例如1篇）文章，用于快速测试。
+# `max_pages`: 针对分页列表，最多爬取的页数。
+# 其他特定于某个爬虫的参数也可以在这里定义。
+sources:
+  aws:
+    blog:
+      name: "AWS Blog - Networking & Content Delivery" # 数据源可读名称
+      enabled: true
+      url: "https://aws.amazon.com/blogs/networking-and-content-delivery/"
+      type: "blog" # 对应爬虫类型，例如 GenericBlogCrawler, SpecificAWSCrawler 等
+      test_mode: false
+      article_limit: 20 # 可覆盖全局 article_limit
+      # proxy: "http://user:pass@host:port" # 特定源可使用代理
+    whatsnew:
+      name: "AWS What's New - Networking & Content Delivery"
+      enabled: true
+      url: "https://aws.amazon.com/about-aws/whats-new/networking_and_content_delivery/"
+      type: "whatsnew" # 假设有专门的 WhatsNew 类型爬虫
+      max_pages: 40
+      test_mode: false
+
+  azure:
+    blog:
+      name: "Azure Blog - Networking"
+      enabled: true
+      url: "https://azure.microsoft.com/en-us/blog/category/networking/"
+      type: "blog"
+      test_mode: false
+    tech_blog: # 注意 key 名中划线与下划线，建议统一使用下划线
+      name: "Azure Tech Community - Networking Blog"
+      enabled: true
+      url: "https://techcommunity.microsoft.com/t5/azure-networking-blog/bg-p/AzureNetworkingBlog" # URL已更新为实际地址
+      type: "tech-blog" # 可能需要特定爬虫或通用博客爬虫适配
+      test_mode: false
+    updates:
+      name: "Azure Updates"
+      enabled: true
+      # url: "https://azure.microsoft.com/en-us/updates/" # 如果有特定URL
+      type: "updates" # 对应 AzureUpdatesCrawler
+      test_mode: false
+      # api_endpoint: "..." # 如果是通过API获取
+    # docs:
+    #   name: "Azure Documentation"
+    #   enabled: false
+    #   url: "https://learn.microsoft.com/en-us/azure/"
+    #   type: "documentation" # 可能需要非常复杂的文档爬虫
+
+  gcp:
+    blog:
+      name: "GCP Blog - Networking"
+      enabled: true
+      url: "https://cloud.google.com/blog/products/networking"
+      type: "blog"
+      test_mode: false
+    # docs:
+    #   name: "GCP Documentation"
+    #   enabled: false
+    #   url: "https://cloud.google.com/docs/"
+    #   type: "documentation"
+
+  tencent:
+    blog: # 腾讯云通常是新闻或产品动态，较少纯技术博客
+      name: "Tencent Cloud News/Updates"
+      enabled: true
+      url: "https://www.tencentcloud.com/document/product/" # 这是一个文档首页，需要具体化
+      type: "blog" # 可能需要适配
+      test_mode: false
+    # docs:
+    #   name: "Tencent Cloud Documentation"
+    #   enabled: false
+    #   url: "https://www.tencentcloud.com/document/product"
+    #   type: "documentation"
+
+  huawei:
+    blog: # 华为云国际站新闻
+      name: "Huawei Cloud News"
+      enabled: true
+      url: "https://www.huaweicloud.com/intl/en-us/news/"
+      type: "blog"
+      test_mode: false
+    # docs:
+    #   name: "Huawei Cloud Documentation"
+    #   enabled: false
+    #   url: "https://support.huaweicloud.com/intl/en-us/index.html"
+    #   type: "documentation"
+
+  volcano: # 示例，假设是另一个关注的源
+    blog:
+      name: "Volcano Engine Blog" # 假设的名称
+      enabled: false # 默认不启用，如果需要请改为 true
+      url: "https://www.volcengine.com/docs/insights/blog" # 示例 URL
+      type: "blog"
+      test_mode: false
+    # docs:
+    #   name: "Volcano Engine Documentation"
+    #   enabled: false
+    #   url: "https://www.volcengine.com/docs/"
+    #   type: "documentation"
+
+# -----------------------------------------------------------------------------
+# AI 分析配置 (AI Analyzer Configuration)
+# -----------------------------------------------------------------------------
+ai_analyzer:
+  # API Keys: 强烈建议在 config.secret.yaml 中配置 AI 模型的 API Key。
+  # 例如:
+  # grok_api_key: "YOUR_GROK_X_AI_API_KEY"
+  # dashscope_api_key: "YOUR_ALIYUN_DASHSCOPE_API_KEY"
+  # openai_api_key: "YOUR_OPENAI_API_KEY"
+  #
+  # 加载逻辑会尝试从 config.secret.yaml 或环境变量中读取这些 key。
+  # 环境变量名示例: GROK_API_KEY, DASHSCOPE_API_KEY, OPENAI_API_KEY
+
+  active_model_profile: "grok"  # 指定默认使用的模型配置 profile 名称
+
+  model_profiles:
+    # 通义千问 (Qwen) 模型配置示例 (通过阿里云百炼 DashScope)
+    qwen:
+      type: "openai_compatible"  # 使用 OpenAI 兼容接口
+      config:
+        model: "qwen-max"        # 具体模型名称, e.g., qwen-max, qwen-turbo, qwen-plus
+        # api_base: "https://dashscope.aliyuncs.com/compatible-mode/v1" # DashScope 的 OpenAI 兼容 API 入口点
+                                                                    # 通常由 config_loader 自动设置或可省略
+        # api_key: "YOUR_DASHSCOPE_API_KEY" # 建议在 config.secret.yaml 中配置 dashscope_api_key
+        max_tokens: 8000         # 单次请求最大输出 token 数 (根据模型调整)
+        temperature: 0.5         # 生成文本的随机性 (0.0 - 2.0)
+        # top_p: 0.9             # 控制核心词概率，与 temperature 通常只用一个
+        # model_params: {}       # 特定于模型的额外参数, e.g., {"enable_search": true} for Qwen
+
+    # Grok 模型配置示例 (通过 x.ai)
+    grok:
+      type: "openai_compatible"
+      config:
+        model: "grok-1.5-mini" # 具体模型名称, e.g., "grok-1.5-mini", "grok-1.5-flash" (原grok-3-mini-beta可能已更新)
+        # api_base: "https://api.x.ai/v1" # Grok API 入口点
+                                          # 通常由 config_loader 自动设置或可省略
+        # api_key: "YOUR_GROK_X_AI_API_KEY" # 建议在 config.secret.yaml 中配置 grok_api_key
+        max_tokens: 8000          # (Grok max_tokens 可能很大，但实际受上下文窗口限制)
+        temperature: 0.6
+        # top_p: 0.9
+
+    # OpenAI GPT 模型配置示例
+    # openai_gpt4:
+    #   type: "openai_compatible"
+    #   config:
+    #     model: "gpt-4-turbo-preview"
+    #     # api_key: "YOUR_OPENAI_API_KEY" # 建议在 config.secret.yaml 中配置 openai_api_key
+    #     max_tokens: 4096
+    #     temperature: 0.7
+
+  max_workers: 5                           # AI 分析的并发工作线程数
+  api_rate_limit: 60                       # 每分钟允许的最大API调用次数 (用于自定义的速率限制器)
+  use_dynamic_pool: true                   # 是否为 AI 分析任务启用动态线程池
+  execution_settings:
+    thread_pool_shutdown_join_timeout: 420 # 关闭线程池时等待任务完成的超时时间 (秒)
+    api_call_burst_window_seconds: 1       # API 调用突发窗口 (秒), 用于更精细的速率控制
+
+  directory_settings:
+    raw_data_dir: "data/raw"               # 爬虫原始数据存储目录
+    analysis_output_dir: "data/analysis"   # AI 分析结果输出目录
+    metadata_file_path: "data/metadata/analysis_metadata.json" # 分析元数据文件路径
+
+  prompt_settings:
+    prompt_root_dir: "prompt"              # 存放 Prompt 文件的根目录
+    # system_prompt_filename: "system_prompt.txt" # 全局系统提示词文件名 (位于 prompt_root_dir 下)
+    task_prompt_map:                       # 定义任务类型到具体 Prompt 文件的映射
+      # Key: 任务类型字符串 (与下面 tasks.type 一致)
+      # Value: Prompt 文件名 (位于 prompt_root_dir 下，或其子目录)
+      "AI标题翻译": "title_translation.txt"
+      "AI竞争分析": "competitive_analysis.txt"
+      "AI全文翻译": "full_translation.txt"
+      # "AI摘要生成": "summary_generation.txt" # 示例：新任务
+      # "AI关键点提取": "keypoints_extraction.txt" # 示例：新任务
+
+  tasks: # 定义需要执行的 AI 分析任务列表
+    # 每个任务包含:
+    #   type: 任务类型 (必须与 prompt_settings.task_prompt_map 中的 Key 对应)
+    #   output: true/false (是否将此任务的分析结果保存到 analysis_output_dir)
+    #   # prompt: (已废弃, 请使用 prompt_settings.task_prompt_map)
+    #   # model_profile: "profile_name" # (可选)为此任务指定特定的模型配置, 否则使用 active_model_profile
+    - type: "AI标题翻译"
+      output: false # 标题翻译通常仅用于更新元数据，不单独输出文件
+    - type: "AI竞争分析"
+      output: true
+    - type: "AI全文翻译"
+      output: true
+    # - type: "AI摘要生成"
+    #   output: true
+    #   model_profile: "openai_gpt4" # 示例：此任务使用特定模型
+
+# -----------------------------------------------------------------------------
+# 定时任务配置 (Scheduler Configuration)
+# -----------------------------------------------------------------------------
+scheduler:
+  daily_task_time: "08:00"                 # 每日定时任务执行时间 (HH:MM, 24小时制)
+                                           # 例如 "03:00" 表示凌晨3点
+  check_interval: 60                       # (已废弃或用途不明，原注释：检查配置文件的时间间隔（秒）)
+                                           # 通常调度器按cron表达式或固定间隔执行任务
+  job_interval_minutes: 1440               # 主调度任务的执行间隔（分钟），例如 1440 分钟 = 24 小时
+                                           # 如果 daily_task_time 设置了，则以此为准，job_interval_minutes 可忽略
+  debug_mode: false                        # 是否在调度任务时启用调试模式 (例如传递 --debug 参数给子任务)
+  # 以下参数可能由 run.sh 的 daily 命令传递，或在此处设置默认值
+  vendor: null                             # 要处理的特定云服务提供商 (e.g., "aws", "azure")
+                                           # null 或 "" 表示处理所有已启用的厂商
+  limit: null                              # 限制每个来源处理的文章数量 (null 或 0 表示不限制)
+                                           # 会传递给爬取和分析任务
+
+# -----------------------------------------------------------------------------
+# Web 服务器配置 (Web Server Configuration)
+# -----------------------------------------------------------------------------
+webserver:
+  enabled: true                            # 是否启用 Web 服务器
+  host: "0.0.0.0"                          # Web 服务器监听的主机地址
+  port: 8080                               # Web 服务器监听的端口号
+  show_raw_data: true                      # 是否在Web界面上展示原始 Markdown 数据
+  # debug: false                           # 是否以 Flask/FastAPI 的调试模式运行 Web 服务器
+  # secret_key: "YOUR_WEBSERVER_SECRET_KEY" # Web 应用的密钥，用于 session 等 - 建议在 config.secret.yaml 中配置
+
+# -----------------------------------------------------------------------------
+# 日志配置 (Logging Configuration) - 使用 Python logging 模块标准格式
+# -----------------------------------------------------------------------------
+logging:
+  version: 1
+  disable_existing_loggers: false
+
+  formatters:
+    standard:
+      format: '%(asctime)s - %(name)s - %(levelname)s - [%(module)s.%(funcName)s:%(lineno)d] - %(message)s'
+      datefmt: '%Y-%m-%d %H:%M:%S'
+    colored: # 彩色日志格式化器 (需要 src.utils.colored_logger.ColoredFormatter 实现)
+      (): src.utils.colored_logger.ColoredFormatter # 使用自定义类
+      format: '%(asctime)s - %(name)s - %(levelname)s - [%(module)s.%(funcName)s:%(lineno)d] - %(message)s'
+      datefmt: '%Y-%m-%d %H:%M:%S'
+
+  handlers:
+    console:
+      class: logging.StreamHandler
+      formatter: colored # 控制台使用彩色输出
+      level: INFO      # 控制台日志级别 (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+      stream: ext://sys.stdout
+    file: # 文件日志处理器
+      class: logging.handlers.RotatingFileHandler
+      formatter: standard
+      filename: logs/app.log  # 日志文件路径 (确保 logs 目录存在或程序会自动创建)
+      maxBytes: 10485760      # 单个日志文件最大大小 (10MB)
+      backupCount: 5          # 保留的备份日志文件数量
+      encoding: utf8
+      level: DEBUG            # 文件日志级别 (通常文件记录更详细的 DEBUG 级别)
+    # error_file: # (可选)专门记录错误日志的文件处理器
+    #   class: logging.handlers.RotatingFileHandler
+    #   formatter: standard
+    #   filename: logs/error.log
+    #   maxBytes: 10485760
+    #   backupCount: 3
+    #   encoding: utf8
+    #   level: ERROR
+
+  loggers: # 配置特定模块的日志行为
+    werkzeug: # Flask/WSGI 服务器的日志
+      level: WARNING # 减少 werkzeug 的冗余日志输出
+      handlers: [console, file] # 让 werkzeug 的日志也输出到我们定义的 handlers
+      propagate: false # 防止 werkzeug 日志被 root logger 重复处理
+    # "some_noisy_library": # 示例：控制其他特别"吵"的库的日志级别
+    #   level: WARNING
+    #   handlers: [console, file]
+    #   propagate: false
+    src.crawlers: # 示例：为爬虫模块设置特定级别
+      level: INFO
+      handlers: [console, file]
+      propagate: false
+    src.ai_analyzer: # 示例：为AI分析模块设置特定级别
+      level: INFO
+      handlers: [console, file]
+      propagate: false
+
+  root: # 根 logger 配置 (所有未单独配置的 logger 都会继承此配置)
+    level: DEBUG # 根 logger 的全局最低级别 (建议 DEBUG，由 handler 控制实际输出级别)
+    handlers: [console, file] # 默认将所有日志输出到控制台和文件
+    # handlers: [console, file, error_file] # 如果使用了 error_file handler
+
+# -----------------------------------------------------------------------------
+# 补充: config.secret.yaml 示例
+# -----------------------------------------------------------------------------
+# 请在项目根目录创建 `config.secret.yaml` 文件，并填入以下类似内容。
+# 此文件不应提交到版本控制系统。
+#
+# notification:
+#   email:
+#     username: "your_smtp_username@example.com"
+#     password: "your_smtp_password"
+#   dingtalk:
+#     webhook: "https://oapi.dingtalk.com/robot/send?access_token=YOUR_ACCESS_TOKEN"
+#     secret: "SECxxxxxxxxxxxxxxxxxxxxxxx" # 如果启用了加签
+#
+# ai_analyzer:
+#   # 根据您启用的模型配置 API Key
+#   # Grok API Key (通常作为环境变量 X_API_KEY 或在代码中处理)
+#   grok_api_key: "YOUR_GROK_X_AI_API_KEY"
+#
+#   # 阿里云 DashScope API Key (通义千问等, 通常作为环境变量 DASHSCOPE_API_KEY 或在代码中处理)
+#   dashscope_api_key: "sk-xxxxxxxxxxxxxxxxxxxxxxx"
+#
+#   # OpenAI API Key (通常作为环境变量 OPENAI_API_KEY 或在代码中处理)
+#   # openai_api_key: "sk-xxxxxxxxxxxxxxxxxxxxxxx"
+#
+#   # 其他模型的 API Keys
+#   # some_other_model_api_key: "xxxxxxxxxxxx"
+#
+# webserver:
+#   secret_key: "a_very_secret_and_random_string_for_flask_or_fastapi"
+#
+# # 如果有其他模块需要敏感配置，也在此处添加
+# # db_connection:
+# #   username: "db_user"
+# #   password: "db_password"
+#
+# -----------------------------------------------------------------------------
+# End of config.example.yaml
+# ----------------------------------------------------------------------------- 

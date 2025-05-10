@@ -1,6 +1,6 @@
 # AI分析基础配置
 ai_analyzer:
-  active_model_profile: "qwen"  # <--- 指定默认使用的模型配置
+  active_model_profile: "grok"  # <--- 指定默认使用的模型配置
 
   model_profiles:
     qwen:
