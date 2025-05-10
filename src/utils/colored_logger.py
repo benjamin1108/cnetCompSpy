@@ -58,20 +58,21 @@ class ColoredFormatter(logging.Formatter):
         self.use_colors = use_colors
     
     def format(self, record):
-        # 保存原始的格式字符串
         original_fmt = self._style._fmt
         
-        if self.use_colors and record.levelno in self.LEVEL_COLORS:
-            # 为不同级别的日志添加不同的颜色
-            color = self.LEVEL_COLORS[record.levelno]
-            self._style._fmt = f"{color}{original_fmt}{Colors.RESET}"
+        color_override = getattr(record, 'color_override', None)
+
+        if self.use_colors:
+            if color_override:
+                self._style._fmt = f"{color_override}{original_fmt}{Colors.RESET}"
+            elif record.levelno in self.LEVEL_COLORS:
+                color = self.LEVEL_COLORS[record.levelno]
+                self._style._fmt = f"{color}{original_fmt}{Colors.RESET}"
+            # If no override and not a standard level with color, use default (no color for this part)
+            # else: pass # Or handle explicitly if needed
         
-        # 格式化日志记录
         result = logging.Formatter.format(self, record)
-        
-        # 恢复原始的格式字符串
         self._style._fmt = original_fmt
-        
         return result
 
 def setup_colored_logging(level: int = logging.INFO, 
@@ -122,83 +123,6 @@ def setup_colored_logging(level: int = logging.INFO,
         
     return root_logger
 
-class CategoryLogger:
-    """
-    分类日志记录器，支持不同分类使用不同颜色
-    """
-    # 不同类别的默认颜色
-    CATEGORY_COLORS = {
-        "crawl": Colors.BLUE,
-        "parse": Colors.CYAN,
-        "save": Colors.GREEN,
-        "network": Colors.MAGENTA,
-        "db": Colors.YELLOW,
-        "api": Colors.BRIGHT_CYAN,
-        "analysis": Colors.BRIGHT_MAGENTA,
-        "system": Colors.BRIGHT_WHITE,
-        "default": Colors.WHITE
-    }
-    
-    def __init__(self, name: str, categories: Dict[str, str] = None):
-        """
-        初始化分类日志记录器
-        
-        Args:
-            name: 日志记录器名称
-            categories: 自定义分类和颜色映射，格式为 {分类名: 颜色代码}
-                       如果为None，则使用默认分类颜色
-        """
-        self.logger = logging.getLogger(name)
-        self.categories = self.CATEGORY_COLORS.copy()
-        
-        # 更新自定义分类
-        if categories:
-            self.categories.update(categories)
-    
-    def _log(self, level: int, category: str, msg: str, *args, **kwargs):
-        """
-        记录日志的内部方法
-        
-        Args:
-            level: 日志级别
-            category: 日志分类
-            msg: 日志消息
-            args: 格式化参数
-            kwargs: 关键字参数
-        """
-        # 获取分类的颜色
-        color = self.categories.get(category, self.categories["default"])
-        
-        # 格式化分类前缀
-        category_prefix = f"{color}[{category}]{Colors.RESET} "
-        
-        # 记录带有分类前缀的日志
-        self.logger.log(level, category_prefix + msg, *args, **kwargs)
-    
-    def debug(self, category: str, msg: str, *args, **kwargs):
-        """记录调试级别的日志"""
-        self._log(logging.DEBUG, category, msg, *args, **kwargs)
-    
-    def info(self, category: str, msg: str, *args, **kwargs):
-        """记录信息级别的日志"""
-        self._log(logging.INFO, category, msg, *args, **kwargs)
-    
-    def warning(self, category: str, msg: str, *args, **kwargs):
-        """记录警告级别的日志"""
-        self._log(logging.WARNING, category, msg, *args, **kwargs)
-    
-    def error(self, category: str, msg: str, *args, **kwargs):
-        """记录错误级别的日志"""
-        self._log(logging.ERROR, category, msg, *args, **kwargs)
-    
-    def critical(self, category: str, msg: str, *args, **kwargs):
-        """记录严重错误级别的日志"""
-        self._log(logging.CRITICAL, category, msg, *args, **kwargs)
-    
-    def set_category_color(self, category: str, color: str):
-        """设置分类的颜色"""
-        self.categories[category] = color
-
 # 使用示例
 if __name__ == "__main__":
     # 设置彩色日志
@@ -212,18 +136,4 @@ if __name__ == "__main__":
     logger.info("这是一条信息日志")
     logger.warning("这是一条警告日志")
     logger.error("这是一条错误日志")
-    logger.critical("这是一条严重错误日志")
-    
-    # 创建分类日志记录器
-    category_logger = CategoryLogger("category_example")
-    
-    # 使用不同分类输出日志
-    category_logger.info("crawl", "开始爬取网页")
-    category_logger.info("parse", "解析页面内容")
-    category_logger.warning("network", "网络连接不稳定")
-    category_logger.error("db", "数据库连接失败")
-    category_logger.critical("system", "系统内存不足")
-    
-    # 自定义分类颜色
-    category_logger.set_category_color("custom", Colors.BRIGHT_GREEN)
-    category_logger.info("custom", "自定义分类的日志") 
+    logger.critical("这是一条严重错误日志") 

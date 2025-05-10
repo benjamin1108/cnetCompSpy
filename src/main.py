@@ -64,125 +64,6 @@ DEFAULT_CONFIG = {
     }
 }
 
-def merge_configs(base_config: Dict[str, Any], override_config: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    深度合并配置字典
-    
-    Args:
-        base_config: 基础配置字典
-        override_config: 覆盖配置字典
-        
-    Returns:
-        Dict: 合并后的配置字典
-    """
-    result = deepcopy(base_config)
-    
-    for key, value in override_config.items():
-        # 如果键存在且两个值都是字典，则递归合并
-        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
-            result[key] = merge_configs(result[key], value)
-        else:
-            # 否则直接覆盖或添加
-            result[key] = value
-            
-    return result
-
-def load_yaml_file(file_path: str) -> Dict[str, Any]:
-    """
-    加载YAML文件
-    
-    Args:
-        file_path: YAML文件路径
-        
-    Returns:
-        Dict: YAML文件内容
-    """
-    try:
-        with open(file_path, 'r', encoding='utf-8') as file:
-            return yaml.safe_load(file) or {}
-    except FileNotFoundError:
-        logger.warning(f"配置文件不存在: {file_path}")
-        return {}
-    except Exception as e:
-        logger.error(f"加载配置文件时出错: {e}")
-        return {}
-
-def load_config_directory(config_dir: str) -> Dict[str, Any]:
-    """
-    加载配置目录中的所有配置文件
-    
-    Args:
-        config_dir: 配置文件目录路径
-        
-    Returns:
-        Dict: 合并后的配置字典
-    """
-    # 先查找main.yaml作为主配置文件
-    main_config_path = os.path.join(config_dir, 'main.yaml')
-    if not os.path.exists(main_config_path):
-        # 如果没有main.yaml，则按字母顺序加载所有yaml文件
-        print(f"警告: 在配置目录 {config_dir} 中未找到main.yaml，将按字母顺序加载所有yaml文件")
-        return load_all_yaml_files(config_dir)
-    
-    # 加载main.yaml
-    main_config = load_yaml_file(main_config_path)
-    
-    # 检查main.yaml中是否有imports字段
-    if 'imports' not in main_config:
-        print(f"警告: main.yaml中没有imports字段，将仅使用main.yaml中的配置")
-        return main_config
-    
-    # 创建最终合并的配置
-    final_config = {}
-    
-    # 按照imports列表顺序加载配置文件
-    for import_file in main_config.get('imports', []):
-        import_path = os.path.join(config_dir, import_file)
-        if os.path.exists(import_path):
-            config_data = load_yaml_file(import_path)
-            final_config = merge_configs(final_config, config_data)
-            print(f"信息: 已加载配置文件: {import_file}")
-        else:
-            print(f"警告: 导入的配置文件不存在: {import_path}")
-    
-    # 移除imports字段，避免干扰实际配置
-    if 'imports' in main_config:
-        del main_config['imports']
-    
-    # 将main.yaml中的其他配置合并到最终配置中
-    if main_config:
-        final_config = merge_configs(final_config, main_config)
-    
-    return final_config
-
-def load_all_yaml_files(config_dir: str) -> Dict[str, Any]:
-    """
-    按字母顺序加载目录中的所有yaml文件
-    
-    Args:
-        config_dir: 配置文件目录路径
-        
-    Returns:
-        Dict: 合并后的配置字典
-    """
-    merged_config = {}
-    
-    # 获取目录中所有的yaml文件，并按字母顺序排序
-    yaml_files = sorted([f for f in os.listdir(config_dir) 
-                          if f.endswith('.yaml') or f.endswith('.yml')])
-    
-    # 依次加载每个文件
-    for yaml_file in yaml_files:
-        file_path = os.path.join(config_dir, yaml_file)
-        try:
-            config_data = load_yaml_file(file_path)
-            merged_config = merge_configs(merged_config, config_data)
-            print(f"信息: 已加载配置文件: {yaml_file}")
-        except Exception as e:
-            print(f"警告: 加载配置文件 {yaml_file} 失败: {e}")
-    
-    return merged_config
-
 def get_config(args: argparse.Namespace) -> Dict[str, Any]:
     """
     Load config from yaml file and merge with command line arguments.
@@ -383,61 +264,47 @@ def test_main(args: argparse.Namespace) -> None:
     analyze_main(args)
 
 def analyze_main(args: argparse.Namespace) -> int:
-    """
-    Main function for analyzing.
-    
-    Returns:
-        int: 0表示成功，非0表示失败
-    """
-    # 加载配置
     config = get_config(args)
+    ai_analyzer = AIAnalyzer(config=config)
+
+    specific_file_provided = args.file if args.file else None
+    # 默认的 force_analyze_all 取决于 --force 或 --debug，但会被 --file 覆盖
+    default_force_analyze_all = args.force
+
+    # 初始化 analysis_params
+    analysis_params = {
+        "specific_file": specific_file_provided,
+        "vendor_to_process": args.vendor if args.vendor else None,
+        "limit_per_vendor": args.limit if args.limit > 0 else None,
+        "force_analyze_all": default_force_analyze_all 
+    }
+
+    # 如果用户明确指定了 --file，则它具有最高优先级
+    if specific_file_provided:
+        logger.info(f"指定了特定文件 '{specific_file_provided}' 进行分析。将忽略其他筛选条件和由 '--force'/'--debug' 设置的 'force_analyze_all'。")
+        analysis_params["specific_file"] = specific_file_provided # 确保它被设置
+        analysis_params["force_analyze_all"] = False # 强制禁用 force_analyze_all 以优先处理单文件
+        analysis_params["vendor_to_process"] = None
+        analysis_params["limit_per_vendor"] = None
+    elif default_force_analyze_all: # 如果没有指定 --file，但 --force 或 --debug 为 True
+        logger.info(f"'force_analyze_all' 将为 True (因为使用了 --force 或 --debug 参数，且未指定 --file)。将分析所有符合条件的文件。")
+        analysis_params["specific_file"] = None # 确保 specific_file 在这种情况下是 None
+        # analysis_params["force_analyze_all"] 已经由 default_force_analyze_all 设置为 True
+    else:
+        # 既没有指定 --file，也没有 --force 或 --debug
+        logger.info("将根据元数据和筛选条件（如vendor, limit）分析文件。")
+        # analysis_params 中的值已经根据 args 正确设置了
+
+    # 对于非特定文件分析且非强制全部重新分析的情况，记录筛选条件
+    if not analysis_params["specific_file"] and not analysis_params["force_analyze_all"]:
+        if analysis_params["vendor_to_process"]:
+            logger.info(f"筛选厂商进行分析: {analysis_params['vendor_to_process']}")
+        if analysis_params["limit_per_vendor"]:
+            logger.info(f"每个厂商限制分析文件数: {analysis_params['limit_per_vendor']}")
+
+    success = ai_analyzer.analyze_all(**analysis_params)
     
-    # 如果指定了厂商，过滤配置
-    if args.vendor:
-        # 创建一个过滤函数，用于筛选指定厂商的文件
-        def vendor_filter(file_path):
-            return f"/{args.vendor}/" in file_path
-        
-        logger.info(f"仅分析厂商 {args.vendor} 的数据")
-        if 'ai_analyzer' not in config:
-            config['ai_analyzer'] = {}
-        config['ai_analyzer']['vendor_filter'] = vendor_filter
-    
-    # 如果设置了force参数，更新配置
-    if args.force:
-        logger.info("启用强制模式，忽略文件是否已存在")
-        if 'ai_analyzer' not in config:
-            config['ai_analyzer'] = {}
-        config['ai_analyzer']['force'] = True
-    
-    # 如果设置了文章数量限制，更新配置
-    if args.limit > 0:
-        logger.info(f"设置分析文件数量限制为: {args.limit}")
-        if 'ai_analyzer' not in config:
-            config['ai_analyzer'] = {}
-        config['ai_analyzer']['file_limit'] = args.limit
-    
-    # 如果指定了文件路径，只分析该文件
-    if args.file:
-        file_path = args.file
-        # 如果文件路径不是绝对路径，则转换为相对于当前工作目录的路径
-        if not os.path.isabs(file_path):
-            file_path = os.path.abspath(file_path)
-        
-        logger.info(f"仅分析指定文件: {file_path}")
-        if 'ai_analyzer' not in config:
-            config['ai_analyzer'] = {}
-        config['ai_analyzer']['specific_file'] = file_path
-    
-    # 创建并运行AI分析器
-    analyzer = AIAnalyzer(config)
-    success = analyzer.analyze_all()
-    
-    if not success:
-        logger.error("分析任务失败，可能是因为无法获取进程锁")
-        return 1
-    
-    return 0
+    return 0 if success else 1
 
 def main() -> int:
     """

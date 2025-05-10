@@ -1,19 +1,54 @@
 # AI分析基础配置
 ai_analyzer:
-  model: "grok-3-mini-beta" # 使用的AI模型名称
-  # model: "qwen-max"
-  max_tokens: 8192 # 最大令牌数
-  temperature: 0.5 # 温度参数
-  max_workers: 4 # 同时分析的最大文件数，设置为4个线程同时运行
-  api_rate_limit: 60 # 每分钟允许的最大API调用次数，避免API过载
-  use_dynamic_pool: true # 启用动态线程池进行分析
-  api_base: "https://api.x.ai/v1"
-  # api_base: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  active_model_profile: "qwen"  # <--- 指定默认使用的模型配置
 
+  model_profiles:
+    qwen:
+      type: "openai_compatible"      # <--- 类型，目前固定为此值
+      config:
+        model: "qwen-max"
+        api_base: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+        max_tokens: 8192
+        temperature: 0.5
+        # model_params: {} # 如果将来有特定于模型的参数，如 enable_search，放在这里
+    # 如果您有其他模型，可以像这样添加更多配置 (例如 Grok):
+    grok:
+      type: "openai_compatible"
+      config:
+        model: "grok-3-mini-beta"
+        api_base: "https://api.x.ai/v1"
+        max_tokens: 99999 
+        temperature: 0.6
+
+  # --- 以下配置项保持在 ai_analyzer 顶层不变 ---
+  max_workers: 50 # 同时分析的最大文件数，设置为4个线程同时运行
+  api_rate_limit: 100 # 每分钟允许的最大API调用次数，避免API过载
+  use_dynamic_pool: true # 启用动态线程池进行分析
+  
+  # api_key的注释可以保留，说明其来源
   # api_key在config.secret.yaml中配置
   
+  execution_settings:
+    thread_pool_shutdown_join_timeout: 420 # 线程池关闭时等待线程结束的超时时间（秒）
+    api_call_burst_window_seconds: 1 # API调用突发控制窗口（秒），用于更精细的速率限制
+  
+  # 系统提示词的注释也可以保留
   # 系统提示词已移动到 prompt/system_prompt.txt 文件
   
+  directory_settings:
+    raw_data_dir: "data/raw"
+    analysis_output_dir: "data/analysis"
+    metadata_file_path: "data/metadata/analysis_metadata.json"
+
+  prompt_settings:
+    prompt_root_dir: "prompt" # （可选）如果您想更改存放prompt文件的根目录
+    # system_prompt_filename: "global_system_prompt.txt" # （可选）
+    task_prompt_map:
+      "AI标题翻译": "title_translation.txt"  # 指向 prompt/title_translation_v1.txt
+      "AI竞争分析": "competitive_analysis.txt" # 指向 prompt/prompts_for_tasks/competitive_analysis_final.txt
+      "AI全文翻译": "full_translation.txt"
+      # 根据需要为其他任务添加映射
+
   tasks:
     - type: "AI标题翻译"
       output: false

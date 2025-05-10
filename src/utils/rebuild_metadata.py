@@ -99,20 +99,14 @@ def parse_md_file(filepath: str) -> Optional[Dict[str, Any]]:
 
 def check_analysis_file_completeness(filepath: str, required_tasks: List[str]) -> Dict[str, Any]:
     """
-    检查分析文件是否完整，包含所有必要的AI任务且任务成功完成
-    
-    Args:
-        filepath: 分析文件路径
-        required_tasks: 必要的AI任务列表
-        
-    Returns:
-        检查结果字典，包含是否完整、缺失任务列表等信息
+    检查分析文件是否完整，包含所有必要的AI任务。
+    一个任务块如果存在错误标记，则该任务失败，但文件结构仍被视为针对该任务是存在的。
     """
     result = {
-        'is_complete': True,
-        'missing_tasks': [],
-        'incomplete_tasks': [],
-        'failed_tasks': [],
+        'is_complete': True,      # 初始假设文件是完整的
+        'missing_tasks': [],    # 任务的 start_tag 或 end_tag 完全缺失
+        'incomplete_tasks': [], # 任务标记存在，但内容为空 (且非错误)
+        'failed_tasks': [],     # 任务标记存在，且内容包含 ERROR 标记
         'reason': None
     }
     
@@ -124,37 +118,49 @@ def check_analysis_file_completeness(filepath: str, required_tasks: List[str]) -
         for task in required_tasks:
             start_tag = f"<!-- AI_TASK_START: {task} -->"
             end_tag = f"<!-- AI_TASK_END: {task} -->"
-            error_tag = f"<!-- ERROR: "
+            error_tag_pattern = r"<!-- ERROR:.*?-->" # 正则表达式以匹配错误标记及其内容
             
-            if start_tag not in content:
-                result['is_complete'] = False
+            has_start_tag = start_tag in content
+            has_end_tag = end_tag in content
+
+            if not has_start_tag or not has_end_tag:
+                result['is_complete'] = False # 标记缺失，文件结构不完整
                 result['missing_tasks'].append(task)
-                continue
-                
-            if end_tag not in content:
-                result['is_complete'] = False
-                result['incomplete_tasks'].append(task)
-                continue
-                
-            # 检查任务内容是否为空
-            task_content = content.split(start_tag)[1].split(end_tag)[0].strip()
-            if not task_content:
-                result['is_complete'] = False
-                result['incomplete_tasks'].append(task)
-                continue
-                
-            # 检查任务是否失败
-            if error_tag in task_content:
-                result['is_complete'] = False
-                result['failed_tasks'].append(task)
+            else:
+                # 标记都存在，提取任务内容
+                task_content = "" # Default to empty string
+                try:
+                    task_content_full = content.split(start_tag)[1]
+                    task_content = task_content_full.split(end_tag)[0].strip()
+                except IndexError:
+                    result['is_complete'] = False
+                    result['missing_tasks'].append(f"{task} (标记存在但无法提取内容)")
+                    # This task cannot be further processed, but other tasks might still be checked.
+                    # The overall is_complete is already False.
+                    continue # Move to the next task for checking its presence
+
+                is_error_task = bool(re.search(error_tag_pattern, task_content, re.IGNORECASE))
+
+                if is_error_task:
+                    result['failed_tasks'].append(task) # 记录任务失败
+                elif not task_content:
+                    # 任务标记存在，不是错误任务，但内容为空
+                    result['is_complete'] = False # 成功任务但内容为空，视为文件不完整
+                    result['incomplete_tasks'].append(f"{task} (内容为空且非错误)")
         
-        # 设置原因
-        if result['missing_tasks']:
-            result['reason'] = f"缺少任务: {', '.join(result['missing_tasks'])}"
-        elif result['incomplete_tasks']:
-            result['reason'] = f"任务未完成: {', '.join(result['incomplete_tasks'])}"
+        # 设置最终原因
+        if not result['is_complete']:
+            reasons = []
+            if result['missing_tasks']:
+                reasons.append(f"缺少任务标记: {', '.join(result['missing_tasks'])}")
+            if result['incomplete_tasks']:
+                # Corrected f-string
+                reasons.append(f"成功任务内容为空或不完整: {', '.join(result['incomplete_tasks'])}") 
+            result['reason'] = "; ".join(reasons) if reasons else "文件结构不完整 (未知原因)" # Added a fallback for unknown reason
         elif result['failed_tasks']:
-            result['reason'] = f"任务执行失败: {', '.join(result['failed_tasks'])}"
+            result['reason'] = f"文件结构完整但包含失败任务: {', '.join(result['failed_tasks'])}"
+        else:
+            result['reason'] = "文件完整且所有定义的AI任务块均存在且非空（或标记为错误）"
             
         return result
     except Exception as e:
@@ -608,20 +614,29 @@ def rebuild_metadata(base_dir: Optional[str] = None, type: str = 'all', force_cl
         all_analysis_metadata = metadata_manager.get_all_analysis_metadata()
         
         # 找出不在处理过的文件路径中的记录
-        invalid_records = [path for path in all_analysis_metadata if path not in processed_file_paths]
+        # processed_file_paths 包含的是那些在本次运行中被成功处理的、有效的原始文件的相对路径
+        # 如果一个元数据键 (也是原始文件的相对路径) 不在这里面，说明它对应的分析文件可能已被删除，
+        # 或者原始文件不存在，或者分析文件不完整等。
+        invalid_records_to_delete = []
+        for path_key in all_analysis_metadata:
+            if path_key not in processed_file_paths:
+                invalid_records_to_delete.append(path_key)
         
         # 删除无效记录
-        if invalid_records:
-            for path in invalid_records:
+        if invalid_records_to_delete:
+            for path_key_to_delete in invalid_records_to_delete:
                 try:
                     # 从分析元数据中删除记录
-                    if path in metadata_manager.analysis_metadata:
-                        del metadata_manager.analysis_metadata[path]
+                    if path_key_to_delete in metadata_manager.analysis_metadata:
+                        del metadata_manager.analysis_metadata[path_key_to_delete]
                         deleted_analysis_metadata_count += 1
-                        logger.info(f"Removed invalid analysis metadata record: {path}")
+                        # 使用 log_error_red 并提供原因
+                        reason = "对应的分析文件未在本次扫描中被更新或确认有效 (可能已被删除，或其原始文件不存在/分析不完整)"
+                        log_error_red(f"删除了无效的分析元数据记录: '{path_key_to_delete}', 原因: {reason}")
                 except Exception as e:
-                    errors.append(f"Error removing invalid record {path}: {str(e)}")
-                    logger.error(f"Failed to remove invalid analysis metadata record {path}: {str(e)}")
+                    # 保持原有错误处理
+                    errors.append(f"Error removing invalid analysis record for {path_key_to_delete}: {str(e)}")
+                    logger.error(f"Failed to remove invalid analysis metadata record {path_key_to_delete}: {str(e)}")
             
             # 保存更改后的分析元数据
             metadata_manager.save_analysis_metadata()

@@ -112,5 +112,5 @@ coverage.xml
 config.secret.yaml 
 scripts/aws_whatsnew_analysis.py
 
-analysis_metadata.json
-crawler_metadata.json
+data/metadata/analysis_metadata.json
+data/metadata/crawler_metadata.json

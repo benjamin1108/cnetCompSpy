@@ -44,28 +44,6 @@ DEFAULT_CONFIG = {
     }
 }
 
-def merge_configs(base_config: Dict[str, Any], override_config: Dict[str, Any]) -> Dict[str, Any]:
-    """深度合并配置字典（与main.py中的版本相同）"""
-    result = deepcopy(base_config)
-    for key, value in override_config.items():
-        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
-            result[key] = merge_configs(result[key], value)
-        else:
-            result[key] = value
-    return result
-
-def load_yaml_file(file_path: str) -> Dict[str, Any]:
-    """加载YAML文件（与main.py中的版本相同，但简化日志）"""
-    try:
-        with open(file_path, 'r', encoding='utf-8') as file:
-            return yaml.safe_load(file) or {}
-    except FileNotFoundError:
-        print(f"警告: 配置文件不存在: {file_path}")
-        return {}
-    except Exception as e:
-        print(f"错误: 加载配置文件时出错: {e}")
-        return {}
-
 def setup_unified_logging(config: Dict[str, Any], log_level_override: Optional[str] = None, debug_mode: bool = False):
     """使用字典配置统一设置日志系统"""
     log_config = config.get('logging')
