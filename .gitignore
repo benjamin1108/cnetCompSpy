@@ -31,7 +31,7 @@ wheels/
 
 # 数据目录 - 避免提交爬取的数据和分析结果
 
-#data/
+data/
 access_log.json
 
 # 驱动程序 - 每个平台应该自己下载适合自己的驱动
@@ -112,5 +112,5 @@ coverage.xml
 config.secret.yaml 
 scripts/aws_whatsnew_analysis.py
 
-data/metadata/analysis_metadata.json
-data/metadata/crawler_metadata.json
+# data/metadata/analysis_metadata.json
+# data/metadata/crawler_metadata.json
