@@ -43,6 +43,7 @@ class AnalysisExecutionStage(PipelineStage):
             'title': '',
             'original_url': '',
             'crawl_time': '',
+            'publish_date': '',  # 新增发布日期字段
             'vendor': '',
             'type': ''
         }
@@ -55,13 +56,19 @@ class AnalysisExecutionStage(PipelineStage):
                 url_part = line_stripped.split(':', 1)[1].strip()
                 url_match = re.search(r'\[(.*?)\]\((.*?)\)', url_part)
                 metadata['original_url'] = url_match.group(2) if url_match else url_part
-            elif line_stripped.startswith('爬取时间:') or line_stripped.startswith('**爬取时间:**') or \
-                 line_stripped.startswith('发布时间:') or line_stripped.startswith('**发布时间:**'):
+            elif line_stripped.startswith('爬取时间:') or line_stripped.startswith('**爬取时间:**'):
                 metadata['crawl_time'] = line_stripped.split(':', 1)[1].strip()
+            elif line_stripped.startswith('发布时间:') or line_stripped.startswith('**发布时间:**'):
+                metadata['publish_date'] = line_stripped.split(':', 1)[1].strip()
             elif line_stripped.startswith('厂商:') or line_stripped.startswith('**厂商:**'):
                 metadata['vendor'] = line_stripped.split(':', 1)[1].strip()
             elif line_stripped.startswith('类型:') or line_stripped.startswith('**类型:**'):
                 metadata['type'] = line_stripped.split(':', 1)[1].strip()
+        
+        # 如果没有明确的发布时间，但有爬取时间，则使用爬取时间作为发布时间的后备
+        if not metadata['publish_date'] and metadata['crawl_time']:
+            metadata['publish_date'] = metadata['crawl_time']
+            
         for key in metadata:
             if isinstance(metadata[key], str):
                 metadata[key] = metadata[key].replace('**', '').strip()
@@ -221,6 +228,30 @@ class AnalysisExecutionStage(PipelineStage):
                 if normalized_path_key not in context.metadata:
                     context.metadata[normalized_path_key] = {'file': normalized_path_key}
                 context.metadata[normalized_path_key]['info'] = embedded_meta
+                
+                # 从分析内容中提取中文标题（如果有）
+                if analysis_content_for_file.get("AI标题翻译"):
+                    raw_chinese_title = analysis_content_for_file["AI标题翻译"].strip()
+                    
+                    # 提取方括号内的标签作为 update_type
+                    update_type_match = re.match(r'^\[(.*?)\]', raw_chinese_title)
+                    if update_type_match:
+                        update_type = update_type_match.group(1).strip()
+                        # 使用正则表达式移除标题头部的如 "[标签]" 部分作为 chinese_title
+                        pure_chinese_title = re.sub(r'^\[.*?\]\s*', '', raw_chinese_title).strip()
+                    else:
+                        update_type = "" # 如果没有匹配到标签，则 update_type 为空
+                        pure_chinese_title = raw_chinese_title # chinese_title 就是原始标题
+
+                    # 将提取的 update_type 和处理后的中文标题添加到info字段
+                    context.metadata[normalized_path_key]['info']['update_type'] = update_type
+                    context.metadata[normalized_path_key]['info']['chinese_title'] = pure_chinese_title
+                    
+                    # 记录到日志
+                    self.logger.debug(f"提取到 update_type: '{update_type}', chinese_title: '{pure_chinese_title}' (文件: {file_path})")
+                
+                if embedded_meta.get('publish_date'):
+                    context.metadata[normalized_path_key]['publish_date'] = embedded_meta['publish_date']
                 context.metadata[normalized_path_key]['tasks'] = current_file_tasks_status
                 context.metadata[normalized_path_key]['last_analyzed'] = time.strftime('%Y-%m-%d %H:%M:%S')
                 context.metadata[normalized_path_key].pop('last_error', None)
@@ -234,6 +265,18 @@ class AnalysisExecutionStage(PipelineStage):
             with context.metadata_lock:
                 if normalized_path_key not in context.metadata:
                      context.metadata[normalized_path_key] = {'file': normalized_path_key}
+                # 如果有提取到嵌入式元数据，即使出错也保存
+                if file_summary.get('embedded_metadata') and file_summary['embedded_metadata'].get('publish_date'):
+                    context.metadata[normalized_path_key]['info'] = file_summary['embedded_metadata']
+                    context.metadata[normalized_path_key]['publish_date'] = file_summary['embedded_metadata']['publish_date']
+                
+                # 如果成功生成了中文标题，即使其他任务失败也保存
+                if file_summary.get('task_results') and file_summary['task_results'].get('AI标题翻译'):
+                    if 'info' not in context.metadata[normalized_path_key]:
+                        context.metadata[normalized_path_key]['info'] = {}
+                    context.metadata[normalized_path_key]['info']['chinese_title'] = file_summary['task_results']['AI标题翻译'].strip()
+                    self.logger.debug(f"即使处理失败，也将中文标题保存到元数据 (文件: {file_path})")
+                
                 context.metadata[normalized_path_key]['last_error'] = str(e)
                 context.metadata[normalized_path_key]['last_error_time'] = time.strftime('%Y-%m-%d %H:%M:%S')
         self.logger.debug(f"完成文件处理: {file_path}, 状态: {file_summary['status']}") # REMOVED color_override
