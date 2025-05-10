@@ -163,7 +163,7 @@ class DocumentManager:
         
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
-                content = f.read(16384)  # 读取前4KB，增加获取元数据的可能性
+                content = f.read(16384)  # 读取前16KB，增加获取元数据的可能性
             
             # 尝试从内容中提取标题
             title_match = re.search(r'^#\s+(.+)$', content, re.MULTILINE)
@@ -177,18 +177,36 @@ class DocumentManager:
             if is_analysis and not meta['title'].startswith('竞争分析摘要：'):
                 meta['title'] = f"竞争分析摘要：{meta['title']}"
             
+            # 从文件名中提取日期（如果存在）
+            filename = os.path.basename(file_path)
+            filename_date_match = re.match(r'^(\d{4}-\d{2}-\d{2})_', filename)
+            if filename_date_match:
+                filename_date = filename_date_match.group(1)
+                # 将文件名中的日期作为备选，稍后决定是否使用
+                filename_date_fallback = filename_date
+            else:
+                filename_date_fallback = None
+            
             # 尝试从内容中提取日期 - 优先使用发布日期，而不是文件修改时间
-            # 尝试匹配多种可能的日期格式
+            # 尝试匹配多种可能的日期格式，同时支持中英文标点符号
             date_patterns = [
+                # 常见的显式标记日期格式 - 支持中英文冒号和其他常见变体
                 r'发表于[：:]\s*(\d{4}年\d{1,2}月\d{1,2}日)',  # 匹配爬虫注入的"发表于"时间
                 r'发布(?:日期|时间)[：:]\s*(\d{4}[-/]\d{1,2}[-/]\d{1,2})',  # 发布日期: 2025-04-10
-                r'\*\*发布时间:\*\*\s*(\d{4}[-/]\d{1,2}[-/]\d{1,2})',  # **发布时间:** 2025-04-10
-                r'\*\*发布时间:\*\*\s*(\d{4}年\d{1,2}月\d{1,2}日)',    # **发布时间:** 2025年4月10日
-                r'\*\*发布时间\*\*:\s*(\d{4}[-/]\d{1,2}[-/]\d{1,2})', # **发布时间**: 2025-04-10
-                r'\*\*发布日期:\*\*\s*(\d{4}[-/]\d{1,2}[-/]\d{1,2})',  # **发布日期:** 2025-04-10
-                r'(\d{4}年\d{1,2}月\d{1,2}日)',                       # 2025年4月10日 (仅在上面几种都没匹配到时使用)
-                r'(\d{4}[-/]\d{1,2}[-/]\d{1,2})\s+\d{1,2}:\d{1,2}'    # 2025-04-10 10:30 (包含时间的情况)
+                r'\*\*发布时间[：:]\*\*\s*(\d{4}[-/]\d{1,2}[-/]\d{1,2})',  # **发布时间:** 2025-04-10
+                r'\*\*发布时间[：:]\*\*\s*(\d{4}年\d{1,2}月\d{1,2}日)',    # **发布时间:** 2025年4月10日
+                r'\*\*发布时间\*\*[：:]\s*(\d{4}[-/]\d{1,2}[-/]\d{1,2})', # **发布时间**: 2025-04-10
+                r'\*\*发布日期[：:]\*\*\s*(\d{4}[-/]\d{1,2}[-/]\d{1,2})',  # **发布日期:** 2025-04-10
+                r'发布时间为\s*(\d{4}[-/]\d{1,2}[-/]\d{1,2})',            # 发布时间为 2025-04-01
+                r'发布日期为\s*(\d{4}[-/]\d{1,2}[-/]\d{1,2})',            # 发布日期为 2025-04-01
+                # 中文日期格式
+                r'(\d{4}年\d{1,2}月\d{1,2}日)',                         # 2025年4月10日
+                # 含时间的日期格式
+                r'(\d{4}[-/]\d{1,2}[-/]\d{1,2})\s+\d{1,2}[:：]\d{1,2}'   # 2025-04-10 10:30
             ]
+            
+            # 日期提取标志，表示是否已成功提取日期
+            date_extracted = False
             
             for pattern in date_patterns:
                 date_match = re.search(pattern, content, re.MULTILINE)
@@ -200,7 +218,14 @@ class DocumentManager:
                     # 统一分隔符为横杠
                     date_str = date_str.replace('/', '-')
                     meta['date'] = date_str
+                    date_extracted = True
+                    self.logger.info(f"从内容中提取到日期: {date_str} (使用模式: {pattern})")
                     break
+            
+            # 如果从内容中没有提取到日期，但从文件名中提取到了，使用文件名中的日期
+            if not date_extracted and filename_date_fallback:
+                meta['date'] = filename_date_fallback
+                self.logger.info(f"从文件名中提取到日期: {filename_date_fallback}")
             
             # 尝试从内容中提取作者
             author_match = re.search(r'作者[：:]\s*(.+?)[\r\n]', content, re.MULTILINE)
@@ -208,7 +233,7 @@ class DocumentManager:
                 meta['author'] = author_match.group(1).strip()
                 
             # 尝试从内容中提取source_type
-            source_type_match = re.search(r'\*\*类型:\*\*\s*([A-Za-z-]+)', content, re.MULTILINE)
+            source_type_match = re.search(r'\*\*类型[：:]\*\*\s*([A-Za-z-]+)', content, re.MULTILINE)
             if source_type_match:
                 meta['source_type'] = source_type_match.group(1).strip().upper()
         
