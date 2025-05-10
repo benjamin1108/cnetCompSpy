@@ -1,0 +1,220 @@
+# -----------------------------------------------------------------------------
+# 云计算网络竞争动态分析项目 - 配置文件模板 (config.template.yaml)
+# -----------------------------------------------------------------------------
+#
+# 使用说明:
+# 1. 将此文件复制为 `config.yaml` 或 `config.secret.yaml` (推荐用于包含敏感信息)。
+# 2. 根据您的需求修改下面的配置项。
+# 3. 敏感信息 (如 API 密钥、密码、Webhook URL) 强烈建议配置在项目根目录下的
+#    `config.secret.yaml` 文件中。该文件默认已被 `.gitignore` 忽略，不会提交到版本库。
+#
+# 配置加载优先级:
+# 1. 命令行参数指定的配置文件或目录 (`--config path/to/your/config`)
+# 2. 项目根目录下的 `config/` 目录 (如果存在且包含 `main.yaml` 或其他 `.yaml` 文件)
+# 3. 项目根目录下的 `config.secret.yaml` (如果存在)
+# 4. 项目根目录下的 `config.yaml` (如果存在)
+# 5. 默认配置 (硬编码在代码中，但应尽量避免，优先使用配置文件)
+#
+# 如果您更喜欢模块化的配置方式，可以在 `config/` 目录下创建各个模块的 YAML 文件
+# (例如 `config/notification.yaml`, `config/crawler.yaml` 等)，系统会自动加载它们。
+
+# -----------------------------------------------------------------------------
+# 通知配置 (Notification Configuration)
+# -----------------------------------------------------------------------------
+notification:
+  email:
+    enabled: true                      # 是否启用邮件通知功能
+    smtp_server: "smtp.example.com"    # SMTP 服务器地址 (例如: "smtp.gmail.com")
+    smtp_port: 587                     # SMTP 端口 (例如: 587 for TLS, 465 for SSL)
+    use_tls: true                      # 是否启用 TLS 加密
+    use_ssl: false                     # 是否启用 SSL 加密 (通常 TLS 和 SSL 只启用一个)
+    username: ""                       # SMTP 用户名 (如果需要认证) - 建议在 config.secret.yaml 中配置
+    password: ""                       # SMTP 密码 (如果需要认证) - 建议在 config.secret.yaml 中配置
+    sender: "your_email@example.com"   # 发件人邮箱地址
+    recipients: ["user1@example.com", "user2@example.com"] # 收件人邮箱列表
+    subject_prefix: "[竞争情报]"      # 邮件主题前缀
+
+  dingtalk:
+    enabled: true                             # 是否启用钉钉机器人通知功能
+    keyword: "竞争情报"                       # 钉钉机器人安全设置的自定义关键词 (如果您的机器人设置了关键词)
+    webhook: ""                               # 钉钉机器人的 Webhook URL - 强烈建议在 config.secret.yaml 中配置
+    secret: ""                                # 钉钉机器人加签密钥 (如果您的机器人设置了加签) - 强烈建议在 config.secret.yaml 中配置
+    weekly_push_time: "10:00"                 # 每周定时推送时间 (HH:MM, 24小时制)
+    weekly_push_day: 5                        # 每周几推送 (1=周一, ..., 7=周日)
+
+# -----------------------------------------------------------------------------
+# 日志配置 (Logging Configuration)
+# -----------------------------------------------------------------------------
+logging:
+  version: 1
+  disable_existing_loggers: false
+  formatters:
+    standard:
+      format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+      datefmt: "%Y-%m-%d %H:%M:%S"
+    colored:
+      (): src.utils.colored_logger.ColoredFormatter
+      format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+      datefmt: "%Y-%m-%d %H:%M:%S"
+  handlers:
+    console:
+      class: logging.StreamHandler
+      level: INFO
+      formatter: colored
+      stream: ext://sys.stdout
+    file:
+      class: logging.handlers.RotatingFileHandler
+      level: DEBUG
+      formatter: standard
+      filename: logs/app.log
+      maxBytes: 10485760  # 10MB
+      backupCount: 10
+      encoding: utf8
+  loggers:
+    # 第三方库日志级别
+    urllib3:
+      level: WARNING
+    selenium:
+      level: WARNING
+    filelock:
+      level: WARNING
+  root:
+    level: INFO
+    handlers: [console, file]
+    propagate: true
+
+# -----------------------------------------------------------------------------
+# 爬虫配置 (Crawler Configuration)
+# -----------------------------------------------------------------------------
+crawler:
+  timeout: 30                                # 全局请求超时时间 (秒)
+  retry: 3                                   # 请求失败时的重试次数
+  interval: 2                                # 两次请求之间的基本间隔时间 (秒)
+  article_limit: 50                          # 每个数据源默认最多爬取的文章数量 (0 或 null 表示不限制)
+  max_workers: 10                            # 全局爬虫并发工作线程数
+  page_load_timeout: 45                      # 浏览器页面加载超时时间 (秒) - 用于 Selenium
+  script_timeout: 30                         # 浏览器执行 JavaScript 脚本的超时时间 (秒)
+  implicit_wait: 10                          # 浏览器查找元素的隐式等待时间 (秒)
+  default_element_timeout: 15                # 显式等待时，等待元素出现的默认超时时间 (秒)
+  long_element_timeout: 25                   # 显式等待时，等待某些加载较慢元素的超时时间 (秒)
+  screenshot_debug: false                    # 是否在发生错误或特定步骤时保存页面截图用于调试
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36" # 默认 User-Agent
+
+# -----------------------------------------------------------------------------
+# 数据源配置 (Sources Configuration)
+# -----------------------------------------------------------------------------
+# 定义各个爬取目标的数据源。
+# 每个云厂商下可以有多个来源类型 (如 blog, whatsnew, updates, docs)。
+# `type` 字段会关联到 `src/crawlers/` 目录下具体的爬虫实现。
+sources:
+  aws:
+    blog:
+      name: "AWS Blog - Networking & Content Delivery" # 数据源可读名称
+      enabled: true
+      url: "https://aws.amazon.com/blogs/networking-and-content-delivery/"
+      type: "blog" # 对应爬虫类型
+      test_mode: false
+      article_limit: 20 # 可覆盖全局 article_limit
+    whatsnew:
+      name: "AWS What's New - Networking & Content Delivery"
+      enabled: true
+      url: "https://aws.amazon.com/about-aws/whats-new/networking_and_content_delivery/"
+      type: "whatsnew"
+      max_pages: 5
+      test_mode: false
+
+  azure:
+    blog:
+      name: "Azure Blog - Networking"
+      enabled: true
+      url: "https://azure.microsoft.com/en-us/blog/category/networking/"
+      type: "blog"
+      test_mode: false
+    tech_blog:
+      name: "Azure Tech Community - Networking Blog"
+      enabled: true
+      url: "https://techcommunity.microsoft.com/t5/azure-networking-blog/bg-p/AzureNetworkingBlog"
+      type: "tech-blog"
+      test_mode: false
+
+  gcp:
+    blog:
+      name: "GCP Blog - Networking"
+      enabled: true
+      url: "https://cloud.google.com/blog/products/networking"
+      type: "blog"
+      test_mode: false
+
+# -----------------------------------------------------------------------------
+# AI 分析配置 (AI Analyzer Configuration)
+# -----------------------------------------------------------------------------
+ai_analyzer:
+  # API Keys 应该配置在 config.secret.yaml 中
+  # 例如:
+  # dashscope_api_key: "YOUR_ALIYUN_DASHSCOPE_API_KEY"
+  # openai_api_key: "YOUR_OPENAI_API_KEY"
+
+  active_model_profile: "qwen"  # 指定默认使用的模型配置 profile 名称
+
+  model_profiles:
+    # 通义千问 (Qwen) 模型配置示例 (通过阿里云灵积 DashScope)
+    qwen:
+      type: "openai_compatible"  # 使用 OpenAI 兼容接口
+      config:
+        model: "qwen-max"        # 具体模型名称, e.g., qwen-max, qwen-turbo, qwen-plus
+        max_tokens: 8000         # 单次请求最大输出 token 数
+        temperature: 0.5         # 生成文本的随机性 (0.0 - 2.0)
+    
+    # OpenAI GPT 模型配置示例
+    gpt:
+      type: "openai"
+      config:
+        model: "gpt-4o"  # 或 "gpt-3.5-turbo"
+        max_tokens: 4000
+        temperature: 0.7
+
+  # 分析pipeline配置
+  pipeline:
+    summary:
+      enabled: true
+      max_length: 500  # 摘要最大长度
+    keywords:
+      enabled: true
+      max_count: 10    # 最大关键词数量
+    sentiment:
+      enabled: true    # 是否进行情感分析
+    categories:
+      enabled: true    # 是否进行分类
+      taxonomy: ["网络", "CDN", "安全", "DNS", "负载均衡", "VPC", "边缘计算"]  # 分类体系
+
+# -----------------------------------------------------------------------------
+# Web服务器配置 (Web Server Configuration)
+# -----------------------------------------------------------------------------
+webserver:
+  host: "0.0.0.0"           # 监听地址，0.0.0.0表示所有网络接口
+  port: 5000                # 监听端口
+  debug: false              # 是否启用调试模式
+  secret_key: ""            # Flask secret_key，建议在config.secret.yaml中配置
+  session_lifetime: 1800    # 会话生存时间(秒)
+  
+  # 管理员账户配置，建议在config.secret.yaml中配置
+  admin:
+    username: "admin"
+    password: ""            # 请使用强密码并在config.secret.yaml中配置
+  
+  # 静态文件配置
+  static:
+    cache_timeout: 3600     # 静态文件缓存时间(秒)
+
+# -----------------------------------------------------------------------------
+# 调度器配置 (Scheduler Configuration)
+# -----------------------------------------------------------------------------
+scheduler:
+  crawl_interval: 86400     # 爬虫任务调度间隔(秒)，默认每天运行一次
+  analyze_interval: 3600    # 分析任务调度间隔(秒)，默认每小时运行一次
+  push_interval: 604800     # 推送任务调度间隔(秒)，默认每周运行一次
+  
+  # 定时任务配置
+  crawl_schedule: "0 2 * * *"    # 每天凌晨2点运行爬虫 (cron格式)
+  analyze_schedule: "0 */3 * * *" # 每3小时运行分析
+  push_schedule: "0 10 * * 5"    # 每周五上午10点推送报告 
