@@ -624,7 +624,17 @@ class RouteManager:
         """注册错误处理器"""
         @self.app.errorhandler(404)
         def page_not_found(e):
-            return render_template('404.html', title='页面未找到'), 404
+            # 记录404访问尝试
+            if hasattr(self, 'stats_manager') and self.stats_manager:
+                # For a 404, the response object isn't readily available here before rendering the template.
+                # stats_manager.record_access will infer status 404 if response_obj is None and path_exists is False.
+                self.stats_manager.record_access(
+                    path=request.path, 
+                    document_manager=None, # No specific document context for a generic 404
+                    path_exists=False, 
+                    response_obj=None 
+                )
+            return render_template('404.html', error=e, title='页面未找到'), 404
         
         @self.app.errorhandler(500)
         def server_error(e):

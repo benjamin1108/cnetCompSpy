@@ -96,12 +96,16 @@ class BaseServer:
             if not request.path.startswith('/static/'):
                 # 记录访问详情
                 if hasattr(g, 'stats_manager'):
-                    g.stats_manager.record_access(document_manager=g.document_manager if hasattr(g, 'document_manager') else None)
+                    g.stats_manager.record_access(
+                        document_manager=g.document_manager if hasattr(g, 'document_manager') else None,
+                        response_obj=response,
+                        path_exists=True # Explicitly True for non-error handled requests
+                    )
             return response
     
     def run(self):
         """启动Web服务器"""
-        self.logger.info(f"启动Web服务器: http://{self.host}:{self.port}")
+        self.logger.debug(f"BaseServer: 启动Web服务器: http://{self.host}:{self.port}")
         self.app.run(
             host=self.host,
             port=self.port,

@@ -78,7 +78,7 @@ def setup_unified_logging(config: Dict[str, Any], log_level_override: Optional[s
                  log_config['handlers']['console']['level'] = log_level_override.upper()
 
         logging.config.dictConfig(log_config)
-        logging.getLogger(__name__).info("统一日志系统配置完成。") # 使用配置后的logger
+        logging.getLogger(__name__).debug("统一日志系统配置完成。") # 使用配置后的logger
 
     except Exception as e:
         print(f"错误：配置日志系统失败: {e}")
@@ -184,7 +184,7 @@ def main():
         sys.exit(1)
     
     # 创建并启动Web服务器
-    logger.info(f"启动Web服务器: host={args.host}, port={args.port}, debug={args.debug}")
+    logger.debug(f"准备启动Web服务器: host={args.host}, port={args.port}, debug={args.debug}")
     logger.info(f"数据目录: {data_dir}")
     
     try:

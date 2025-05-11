@@ -203,7 +203,7 @@ class StatsManager:
             self.logger.error(f"获取文档标题失败: {e}")
             return path
     
-    def record_access(self, path: str = None, document_manager = None, path_exists: bool = True):
+    def record_access(self, path: str = None, document_manager = None, path_exists: bool = True, response_obj = None):
         """
         记录访问详情
         
@@ -211,34 +211,60 @@ class StatsManager:
             path: 请求路径，如果为None则使用当前请求的路径
             document_manager: 文档管理器实例，用于获取文档标题
             path_exists: 路径是否存在，不存在的路径（扫描访问）不会记录到主统计中
+            response_obj: Flask响应对象，用于获取状态码
         """
         try:
-            if not path and request:
+            if not path and request: # Ensure request context is available
                 path = request.path
+            else:
+                path = path or 'unknown' # Fallback if request is not available and path is None
             
+            status_code_val = 'N/A'
+            if response_obj:
+                status_code_val = response_obj.status_code
+            elif not path_exists: # If path doesn't exist and no explicit response, assume 404
+                status_code_val = 404
+
             # 获取访问详情
             access_info = {
                 'time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                 'date': datetime.now().strftime('%Y-%m-%d'),
                 'ip': request.remote_addr if request else 'unknown',
-                'path': path or 'unknown',
+                'path': path,
+                'method': request.method if request else 'unknown',
+                'status_code': status_code_val,
                 'title': self._get_document_title(path, document_manager),
-                'user_agent': request.headers.get('User-Agent', 'unknown'),
-                'user_agent_info': self._parse_user_agent(request.headers.get('User-Agent', 'unknown')),
+                'user_agent': request.headers.get('User-Agent', 'unknown') if request else 'unknown',
+                'user_agent_info': self._parse_user_agent(request.headers.get('User-Agent', 'unknown') if request else 'unknown'),
                 'timestamp': int(time.time()),
                 'referer': request.referrer if request else None,
-                'path_exists': path_exists  # 添加路径是否存在的标记
+                'path_exists': path_exists
             }
             
-            # 始终记录到完整访问日志
+            # 始终记录到完整访问日志 (JSON file)
             self._record_to_all_access_log(access_info)
             
-            # 如果是静态文件或favicon，或者路径不存在，不记录到主统计中
-            if path and (path.startswith('/static/') or path == '/favicon.ico' or not path_exists):
+            # 如果路径不存在 (e.g., 404)
+            if not path_exists:
+                self.logger.warning(
+                    f"非法路径访问 - IP: {access_info['ip']}, Method: {access_info['method']}, "
+                    f"Path: {access_info['path']}, UA: {access_info['user_agent']}"
+                )
+                return # 不再继续处理主统计日志或INFO日志
+            
+            # 如果是静态文件或favicon，不记录到主统计日志或INFO日志
+            if path and (path.startswith('/static/') or path == '/favicon.ico'):
                 return
             
-            # 记录到主访问日志（用于统计分析）
+            # 对于合法的、非静态/favicon的请求，记录到主访问日志 (JSON file for stats analysis)
             self._record_to_main_access_log(access_info)
+            
+            # 为合法的、非静态/favicon的请求记录详细的INFO日志
+            self.logger.info(
+                f"合法访问 - IP: {access_info['ip']}, Method: {access_info['method']}, "
+                f"Path: {access_info['path']}, Status: {access_info['status_code']}, "
+                f"Referer: {access_info.get('referer', 'N/A')}, UA: {access_info['user_agent']}"
+            )
             
         except Exception as e:
             self.logger.error(f"记录访问详情失败: {e}")

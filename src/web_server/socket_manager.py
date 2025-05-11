@@ -51,14 +51,14 @@ class SocketManager:
         @self.socketio.on('connect')
         def handle_connect(auth):
             from flask import request
-            self.logger.info(f"客户端连接: {request.sid}")
+            self.logger.debug(f"客户端连接: {request.sid}")
         
         # 断开连接事件
         @self.socketio.on('disconnect')
         def handle_disconnect(reason):
             from flask import request
             session_id = request.sid
-            self.logger.info(f"客户端断开连接: {session_id}, 原因: {reason}")
+            self.logger.debug(f"客户端断开连接: {session_id}, 原因: {reason}")
             
             # 清理该会话的所有订阅
             self._clean_subscriptions(session_id)

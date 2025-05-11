@@ -1162,99 +1162,25 @@ run_dingpush() {
     # 激活虚拟环境
     activate_venv
     
-    # 默认参数
-    DEBUG=""
-    CONFIG=""
-    ROBOT=""
-    COMMAND=""
-    DAYS=""
-    
-    # 从参数中移除--debug（已由主函数处理）
-    local new_args=()
-    for arg in "$@"; do
-        if [[ "$arg" != "--debug" ]]; then
-            new_args+=("$arg")
-        else
-            DEBUG="--debug"
-        fi
-    done
-    
-    # 重新设置参数数组
-    set -- "${new_args[@]}"
-    
-    # 检查是否有子命令
-    if [ $# -eq 0 ]; then
-        show_error "未指定推送子命令，可用子命令: weekly, daily, recent"
-        return 1
+    # 获取传递给 run_dingpush 的所有参数
+    # 全局的 --debug 应该已经由 main 函数处理并包含在 $@ 中 (如果存在)
+    local all_args=("$@")
+
+    # 检查是否至少有一个参数 (子命令)
+    if [ ${#all_args[@]} -eq 0 ]; then
+        # 让 python 脚本内部的 argparse 来处理缺少命令的情况
+        echo -e "${YELLOW}未指定推送子命令，将由Python脚本处理...${NC}"
     fi
+
+    echo -e "${BLUE}命令: python -m src.utils.dingtalk ${all_args[*]}${NC}"
+    python -m src.utils.dingtalk "${all_args[@]}"
     
-    # 获取子命令
-    COMMAND="$1"
-    shift
-    
-    # 验证子命令
-    case "$COMMAND" in
-        weekly|daily)
-            echo -e "${BLUE}正在准备 ${COMMAND} 推送...${NC}"
-            # 有效子命令
-            ;;
-        recent)
-            # 检查是否指定了天数
-            if [ $# -eq 0 ] || [[ ! "$1" =~ ^[0-9]+$ ]]; then
-                show_error "使用recent子命令时必须指定天数，如: dingpush recent 7"
-                return 1
-            fi
-            DAYS="$1"
-            echo -e "${BLUE}正在准备 recent(${DAYS}天) 推送...${NC}"
-            shift
-            ;;
-        *)
-            show_error "未知子命令: $COMMAND。有效子命令: weekly, daily, recent"
-            return 1
-            ;;
-    esac
-    
-    # 解析其他参数
-    while [[ $# -gt 0 ]]; do
-        case "$1" in
-            --config)
-                CONFIG="--config $2"
-                echo -e "${YELLOW}使用配置文件: $2${NC}"
-                shift 2
-                ;;
-            --robot)
-                ROBOT="$ROBOT --robot $2"
-                echo -e "${YELLOW}使用机器人: $2${NC}"
-                shift 2
-                ;;
-            *)
-                echo -e "${RED}警告: 忽略未知参数: $1${NC}"
-                shift
-                ;;
-        esac
-    done
-    
-    # 如果启用了调试模式，输出提示
-    if [ -n "$DEBUG" ]; then
-        echo -e "${YELLOW}调试模式已启用${NC}"
-    fi
-    
-    # 执行推送命令
-    echo -e "${YELLOW}正在执行钉钉推送 (${COMMAND})...${NC}"
-    
-    if [ "$COMMAND" == "recent" ]; then
-        echo -e "${BLUE}命令: python -m src.dingtalk_pusher_cli $DEBUG $CONFIG $ROBOT $COMMAND $DAYS${NC}"
-        python -m src.dingtalk_pusher_cli $DEBUG $CONFIG $ROBOT $COMMAND $DAYS
-    else
-        echo -e "${BLUE}命令: python -m src.dingtalk_pusher_cli $DEBUG $CONFIG $ROBOT $COMMAND${NC}"
-        python -m src.dingtalk_pusher_cli $DEBUG $CONFIG $ROBOT $COMMAND
-    fi
-    
-    if [ $? -eq 0 ]; then
+    local exit_code=$?
+    if [ $exit_code -eq 0 ]; then
         echo -e "${GREEN}✓ 钉钉推送成功${NC}"
     else
-        echo -e "${RED}✗ 钉钉推送失败${NC}"
-        return 1
+        echo -e "${RED}✗ 钉钉推送失败 (退出码: $exit_code)${NC}"
+        return $exit_code
     fi
 }
 

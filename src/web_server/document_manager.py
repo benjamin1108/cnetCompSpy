@@ -219,13 +219,13 @@ class DocumentManager:
                     date_str = date_str.replace('/', '-')
                     meta['date'] = date_str
                     date_extracted = True
-                    self.logger.info(f"从内容中提取到日期: {date_str} (使用模式: {pattern})")
+                    self.logger.debug(f"从内容中提取到日期: {date_str} (使用模式: {pattern})")
                     break
             
             # 如果从内容中没有提取到日期，但从文件名中提取到了，使用文件名中的日期
             if not date_extracted and filename_date_fallback:
                 meta['date'] = filename_date_fallback
-                self.logger.info(f"从文件名中提取到日期: {filename_date_fallback}")
+                self.logger.debug(f"从文件名中提取到日期: {filename_date_fallback}")
             
             # 尝试从内容中提取作者
             author_match = re.search(r'作者[：:]\s*(.+?)[\r\n]', content, re.MULTILINE)
@@ -312,7 +312,7 @@ class DocumentManager:
             # 通常AI只会返回纯文本标题，但以防万一
             translated_title = translated_title.replace('#', '').strip()
             
-            self.logger.info(f"从分析文档中提取到翻译标题: {translated_title}")
+            self.logger.debug(f"从分析文档中提取到翻译标题: {translated_title}")
             return translated_title
             
         except Exception as e:
