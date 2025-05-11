@@ -13,6 +13,7 @@ import json
 import sqlite3
 import logging
 import datetime
+import argparse
 from pathlib import Path
 
 # 将项目根目录添加到系统路径
@@ -24,7 +25,6 @@ from src.utils.colored_logger import setup_colored_logging
 
 # 初始化配置和日志
 config = get_config()
-setup_colored_logging()
 logger = logging.getLogger('sqlite_backup')
 
 class SQLiteBackup:
@@ -224,7 +224,7 @@ class SQLiteBackup:
             
             for raw_filepath, item in metadata.items():
                 # 获取并修复分析文件路径
-                original_path = item.get('file', '')
+                original_path = item.get('info', {}).get('file', '')
                 analysis_filepath = self._fix_analysis_filepath(original_path)
                 
                 # 读取分析文件内容
@@ -238,12 +238,13 @@ class SQLiteBackup:
                     except Exception as e:
                         logger.warning(f"读取分析文件 {analysis_filepath} 失败: {str(e)}")
                         failed_files_count += 1
-                elif analysis_filepath != original_path:
-                    logger.debug(f"分析文件路径已修复但文件不存在: {analysis_filepath}")
+                elif analysis_filepath: # analysis_filepath存在，但os.path.exists(analysis_filepath)为False
+                    logger.debug(f"分析文件不存在: {analysis_filepath} (原始路径: {original_path})")
                     failed_files_count += 1
-                else:
-                    logger.debug(f"分析文件不存在且无法修复路径: {original_path}")
-                    failed_files_count += 1
+                else: # analysis_filepath 为空或None，意味着 original_path 可能为空或 _fix_analysis_filepath 返回了空
+                    # 如果 original_path 本身就为空，说明元数据未提供文件路径，不应算作读取失败
+                    logger.debug(f"元数据条目 {raw_filepath} 未在元数据中提供 'file' 路径 (原始路径: '{original_path}'). 未尝试读取文件内容。")
+                    # 不在此处增加 failed_files_count
                 
                 # 插入分析数据
                 cursor.execute('''
@@ -352,6 +353,18 @@ class SQLiteBackup:
 
 def main():
     """主函数"""
+    parser = argparse.ArgumentParser(description="SQLite备份脚本")
+    parser.add_argument("--debug", action="store_true", help="启用DEBUG日志级别")
+    args = parser.parse_args()
+
+    if args.debug:
+        setup_colored_logging(level=logging.DEBUG)
+        logger.setLevel(logging.DEBUG) # 确保当前logger也设置为DEBUG
+        logging.getLogger().setLevel(logging.DEBUG) # 设置根日志级别
+        logger.info("DEBUG模式已启用")
+    else:
+        setup_colored_logging(level=logging.INFO)
+
     logger.info("开始SQLite备份")
     try:
         backup = SQLiteBackup()
