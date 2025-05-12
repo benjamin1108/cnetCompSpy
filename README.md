@@ -1,7 +1,7 @@
 # 云计算网络竞争情报分析系统
 
-本系统旨在自动收集、分析和推送云计算厂商的网络产品和技术最新动态，帮助用户及时了解市场竞争情况和技术发展趋势。
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/elliotleee/HOHOHO)
+本系统旨在自动收集、分析和推送云计算厂商的网络产品和技术最新动态，帮助用户及时了解市场竞争情况和技术发展趋势。[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/benjamin1108/cnetCompSpy)
+
 ## 功能特点
 
 - **多源数据采集**：支持从AWS、Azure、GCP、腾讯云、华为云等多个云厂商的博客、产品更新、技术文档等渠道爬取数据
