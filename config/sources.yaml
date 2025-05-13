@@ -14,47 +14,53 @@ sources:
       url: "https://azure.microsoft.com/en-us/blog/category/networking/"
       type: "blog"
       test_mode: false
+    
     tech-blog:
       url: "https://techcommunity.microsoft.com/category/azure/blog/azurenetworkingblog"
       type: "tech-blog"
       test_mode: false
     
+    # infra-blog:
+    #   url: "https://techcommunity.microsoft.com/category/azure/blog/azureinfrastructureblog"
+    #   type: "infra-blog"
+    #   test_mode: false
+    
+    # arch-blog:
+    #   url: "https://techcommunity.microsoft.com/category/azure/blog/azurearchitectureblog"
+    #   type: "arch-blog"
+    #   test_mode: false
+
     updates:
       type: "updates"
       test_mode: false
-    
-    docs:
-      url: "https://learn.microsoft.com/en-us/azure/"
-      type: "documentation"
+
   gcp:
     blog:
       url: "https://cloud.google.com/blog/products/networking"
       type: "blog"
       test_mode: false
-    docs:
-      url: "https://cloud.google.com/docs/"
-      type: "documentation"
-  tencent:
-    blog:
-      url: "https://www.tencentcloud.com/document/product"
-      type: "blog"
-      test_mode: false
-    docs:
-      url: "https://www.tencentcloud.com/document/product"
-      type: "documentation"
-  huawei:
-    blog:
-      url: "https://www.huaweicloud.com/intl/en-us/news/"
-      type: "blog"
-      test_mode: false
-    docs:
-      url: "https://support.huaweicloud.com/intl/en-us/index.html"
-      type: "documentation"
-  volcano:
-    blog:
-      url: "https://volcano.sh/en/blog/"
-      type: "blog"
-      test_mode: false
-    docs:
-      url: "https://volcano.sh/en/docs/"
-      type: "documentation" 
+    
+  # tencent:
+  #   blog:
+  #     url: "https://www.tencentcloud.com/document/product"
+  #     type: "blog"
+  #     test_mode: false
+  #   docs:
+  #     url: "https://www.tencentcloud.com/document/product"
+  #     type: "documentation"
+  # huawei:
+  #   blog:
+  #     url: "https://www.huaweicloud.com/intl/en-us/news/"
+  #     type: "blog"
+  #     test_mode: false
+  #   docs:
+  #     url: "https://support.huaweicloud.com/intl/en-us/index.html"
+  #     type: "documentation"
+  # volcano:
+  #   blog:
+  #     url: "https://volcano.sh/en/blog/"
+  #     type: "blog"
+  #     test_mode: false
+  #   docs:
+  #     url: "https://volcano.sh/en/docs/"
+  #     type: "documentation" 

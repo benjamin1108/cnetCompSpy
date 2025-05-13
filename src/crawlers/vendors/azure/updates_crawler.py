@@ -56,7 +56,7 @@ class AzureUpdatesCrawler(BaseCrawler):
         }
         while True:
             url_with_params = f"{self.api_url}?{'&'.join(f'{k}={v}' for k, v in self.params.items())}"
-            logger.info(f"Fetching updates from Azure API: {url_with_params}")
+            logger.debug(f"Fetching updates from Azure API: {url_with_params}")
             response = requests.get(url_with_params, headers=headers)
             if response.status_code != 200:
                 logger.error(f"Failed to fetch updates from Azure API: {response.status_code}")
@@ -111,12 +111,12 @@ class AzureUpdatesCrawler(BaseCrawler):
             
             # 检查文件是否存在
             if os.path.exists(file_path):
-                logger.info(f"Update already exists: {title} ({created})")
+                logger.debug(f"Update already exists: {title} ({created})")
                 return True
                 
             # 检查created是否在metadata中
             if created in self.metadata:
-                logger.info(f"Update metadata exists: {title} ({created})")
+                logger.debug(f"Update metadata exists: {title} ({created})")
                 return True
                 
             return False

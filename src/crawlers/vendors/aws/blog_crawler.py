@@ -52,7 +52,7 @@ class AwsBlogCrawler(BaseCrawler):
             # 先尝试使用requests库获取页面内容(优先使用更稳定的方式)
             html = None
             try:
-                logger.info("使用requests库获取页面内容")
+                logger.debug("使用requests库获取页面内容")
                 headers = {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
                     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -64,7 +64,7 @@ class AwsBlogCrawler(BaseCrawler):
                 response = requests.get(self.start_url, headers=headers, timeout=30)
                 if response.status_code == 200:
                     html = response.text
-                    logger.info("使用requests库成功获取到页面内容")
+                    logger.debug("使用requests库成功获取到页面内容")
                 else:
                     logger.error(f"请求返回非成功状态码: {response.status_code}")
             except Exception as e:
@@ -72,7 +72,7 @@ class AwsBlogCrawler(BaseCrawler):
             
             # 只有在requests失败时才尝试使用Selenium
             if not html:
-                logger.info("requests获取失败，尝试使用Selenium")
+                logger.debug("requests获取失败，尝试使用Selenium")
                 html = self._get_selenium(self.start_url)
             
             if not html:
@@ -113,7 +113,7 @@ class AwsBlogCrawler(BaseCrawler):
                             os.path.exists(self.metadata[url]['filepath'])):
                             # 文章已爬取过且文件存在，直接添加到结果中
                             already_crawled_count += 1
-                            logger.info(f"跳过已爬取的文章: {title} ({url})")
+                            logger.debug(f"跳过已爬取的文章: {title} ({url})")
                             saved_files.append(self.metadata[url]['filepath'])
                         else:
                             # 文章未爬取过或文件不存在，添加到待爬取列表
@@ -131,12 +131,12 @@ class AwsBlogCrawler(BaseCrawler):
                     # 尝试获取文章内容 - 优先使用requests
                     article_html = None
                     try:
-                        logger.info(f"使用requests库获取文章内容: {url}")
+                        logger.debug(f"使用requests库获取文章内容: {url}")
                         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
                         response = requests.get(url, headers=headers, timeout=30)
                         if response.status_code == 200:
                             article_html = response.text
-                            logger.info("使用requests库成功获取到文章内容")
+                            logger.debug("使用requests库成功获取到文章内容")
                         else:
                             logger.error(f"请求返回非成功状态码: {response.status_code}")
                     except Exception as e:
@@ -144,7 +144,7 @@ class AwsBlogCrawler(BaseCrawler):
                     
                     # 如果requests失败，才尝试Selenium
                     if not article_html:
-                        logger.info(f"尝试使用Selenium获取文章内容: {url}")
+                        logger.debug(f"尝试使用Selenium获取文章内容: {url}")
                         article_html = self._get_selenium(url)
                     
                     if not article_html:
@@ -190,7 +190,7 @@ class AwsBlogCrawler(BaseCrawler):
         # 打印页面的标题，便于调试
         page_title = soup.find('title')
         if page_title:
-            logger.info(f"页面标题: {page_title.text.strip()}")
+            logger.debug(f"页面标题: {page_title.text.strip()}")
         
         try:
             # 新版AWS博客页面的文章选择器

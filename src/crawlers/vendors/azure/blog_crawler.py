@@ -67,7 +67,7 @@ class AzureBlogCrawler(BaseCrawler):
             # 先尝试使用requests库获取页面内容(优先使用更稳定的方式)
             html = None
             try:
-                logger.info("使用requests库获取页面内容")
+                logger.debug("使用requests库获取页面内容")
                 headers = {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
                     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -79,7 +79,7 @@ class AzureBlogCrawler(BaseCrawler):
                 response = requests.get(self.start_url, headers=headers, timeout=30)
                 if response.status_code == 200:
                     html = response.text
-                    logger.info("使用requests库成功获取到页面内容")
+                    logger.debug("使用requests库成功获取到页面内容")
                 else:
                     logger.error(f"请求返回非成功状态码: {response.status_code}")
             except Exception as e:
@@ -87,7 +87,7 @@ class AzureBlogCrawler(BaseCrawler):
             
             # 只有在requests失败时才尝试使用Selenium
             if not html:
-                logger.info("requests获取失败，尝试使用Selenium")
+                logger.debug("requests获取失败，尝试使用Selenium")
                 # 初始化WebDriver（如果未初始化）
                 if not self.driver:
                     self._init_driver()
@@ -134,7 +134,7 @@ class AzureBlogCrawler(BaseCrawler):
                             os.path.exists(self.metadata[url]['filepath'])):
                             # 文章已爬取过且文件存在，直接添加到结果中
                             already_crawled_count += 1
-                            logger.info(f"跳过已爬取的文章: {title} ({url})")
+                            logger.debug(f"跳过已爬取的文章: {title} ({url})")
                             saved_files.append(self.metadata[url]['filepath'])
                         else:
                             # 文章未爬取过或文件不存在，添加到待爬取列表
@@ -152,12 +152,12 @@ class AzureBlogCrawler(BaseCrawler):
                     # 尝试获取文章内容 - 优先使用requests
                     article_html = None
                     try:
-                        logger.info(f"使用requests库获取文章内容: {url}")
+                        logger.debug(f"使用requests库获取文章内容: {url}")
                         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
                         response = requests.get(url, headers=headers, timeout=30)
                         if response.status_code == 200:
                             article_html = response.text
-                            logger.info("使用requests库成功获取到文章内容")
+                            logger.debug("使用requests库成功获取到文章内容")
                         else:
                             logger.error(f"请求返回非成功状态码: {response.status_code}")
                     except Exception as e:
@@ -165,7 +165,7 @@ class AzureBlogCrawler(BaseCrawler):
                     
                     # 如果requests失败，才尝试Selenium
                     if not article_html and self.driver:
-                        logger.info(f"尝试使用Selenium获取文章内容: {url}")
+                        logger.debug(f"尝试使用Selenium获取文章内容: {url}")
                         article_html = self._get_azure_page(url)
                     
                     if not article_html:
@@ -211,36 +211,36 @@ class AzureBlogCrawler(BaseCrawler):
         # 打印页面的标题，便于调试
         page_title = soup.find('title')
         if page_title:
-            logger.info(f"页面标题: {page_title.text.strip()}")
+            logger.debug(f"页面标题: {page_title.text.strip()}")
         
-        logger.info("开始解析Azure博客列表页...")
+        logger.debug("开始解析Azure博客列表页...")
         
         
         # Azure博客搜索结果页面的文章通常在指定的容器内
         try:
             # 扩展结果容器选择器，覆盖更多可能的容器
             results_containers = soup.select('.search-results-content, .results-list, #main-column, main, .grid, .items, .site-main, #content, .content, .container, .row, .col, div[class*="blog"], div[class*="post"], div[class*="article"]')
-            logger.info(f"找到 {len(results_containers)} 个可能的结果容器")
+            logger.debug(f"找到 {len(results_containers)} 个可能的结果容器")
             
             # 如果找到结果容器，从中找到文章卡片
             if results_containers:
                 # 尝试所有容器，收集所有可能的文章卡片
                 all_article_cards = []
                 for container in results_containers:
-                    logger.info(f"检查容器: {container.name}{'#'+container.get('id') if container.get('id') else ''}{'.'+container.get('class')[0] if container.get('class') else ''}")
+                    logger.debug(f"检查容器: {container.name}{'#'+container.get('id') if container.get('id') else ''}{'.'+container.get('class')[0] if container.get('class') else ''}")
                     
                     # 扩展Azure卡片选择器，覆盖更多可能性
                     card_selectors = '.search-item, .card, article, .link-card, .document-card, .post-card, .text-card, .result-item, .msx-card, .blog-card, .post, .news-item, .grid-item, .item, div[class*="blog"], div[class*="post"], div[class*="article"], a[href*="/blog/"]'
                     article_cards = container.select(card_selectors)
                     
-                    logger.info(f"在当前容器中找到 {len(article_cards)} 个可能的文章卡片")
+                    logger.debug(f"在当前容器中找到 {len(article_cards)} 个可能的文章卡片")
                     all_article_cards.extend(article_cards)
                 
-                logger.info(f"总共找到 {len(all_article_cards)} 个可能的文章卡片")
+                logger.debug(f"总共找到 {len(all_article_cards)} 个可能的文章卡片")
                 
                 if all_article_cards:
                     for idx, card in enumerate(all_article_cards):
-                        logger.info(f"处理卡片 {idx+1}: {card.name}{'#'+card.get('id') if card.get('id') else ''}{'.'+card.get('class')[0] if card.get('class') else ''}")
+                        logger.debug(f"处理卡片 {idx+1}: {card.name}{'#'+card.get('id') if card.get('id') else ''}{'.'+card.get('class')[0] if card.get('class') else ''}")
                         
                         # 扩展标题元素选择器
                         title_selectors = 'h1, h2, h3, h4, .card-title, .title, .post-title, a[role="heading"], .msx-card__title, .headline, .entry-title, .heading, p, span, div'
@@ -326,9 +326,9 @@ class AzureBlogCrawler(BaseCrawler):
                                 # 避免重复
                                 if url not in [x[1] for x in articles]:
                                     articles.append((title, url, date))
-                                    logger.info(f"添加文章: {title} - {url}")
+                                    logger.debug(f"添加文章: {title} - {url}")
                         else:
-                            logger.info(f"卡片 {idx+1} 没有找到标题元素")
+                            logger.debug(f"卡片 {idx+1} 没有找到标题元素")
                 else:
                     logger.warning("未找到任何文章卡片")
             
@@ -369,7 +369,7 @@ class AzureBlogCrawler(BaseCrawler):
                     # 避免重复
                     if url not in [x[1] for x in articles]:
                         articles.append((title, url, None))
-                        logger.info(f"添加文章: {title} - {url}")
+                        logger.debug(f"添加文章: {title} - {url}")
             
             logger.info(f"找到 {len(articles)} 篇潜在的博客文章链接")
             

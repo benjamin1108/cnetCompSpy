@@ -771,7 +771,7 @@ class BaseCrawler(ABC):
                         is_url_in_metadata = url in self.metadata and 'filepath' in self.metadata[url] and os.path.exists(self.metadata[url]['filepath'])
                     
                     if is_url_in_metadata:
-                        logger.info(f"跳过已爬取的文章: {title} ({url})")
+                        logger.debug(f"跳过已爬取的文章: {title} ({url})")
                         saved_files.append(self.metadata[url]['filepath'])
                     else:
                         filtered_batch.append((title, url, list_date))

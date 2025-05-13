@@ -1143,11 +1143,11 @@ run_rebuild_metadata() {
         echo -e "${YELLOW}深度检查发现问题，详细信息已保存至: ${GREEN}$LOG_FILE${NC}"
     fi
     
-    # 调试：输出临时文件的路径和内容
-    echo -e "${PURPLE}[DEBUG SHELL] Temporary output file is at: $TEMP_OUTPUT${NC}"
-    echo -e "${PURPLE}[DEBUG SHELL] Content of temporary output file:${NC}"
-    cat "$TEMP_OUTPUT"
-    echo -e "${PURPLE}[DEBUG SHELL] End of temporary output file content.${NC}"
+    # # 调试：输出临时文件的路径和内容
+    # echo -e "${PURPLE}[DEBUG SHELL] Temporary output file is at: $TEMP_OUTPUT${NC}"
+    # echo -e "${PURPLE}[DEBUG SHELL] Content of temporary output file:${NC}"
+    # cat "$TEMP_OUTPUT"
+    # echo -e "${PURPLE}[DEBUG SHELL] End of temporary output file content.${NC}"
 
     # 删除临时文件
     rm -f "$TEMP_OUTPUT"

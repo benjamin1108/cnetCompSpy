@@ -5,7 +5,7 @@ email:
   smtp_port: 587  # Gmail SMTP端口（TLS）
   use_tls: true  # 启用TLS加密
   sender: "cloudnetworkspy@gmail.com"  # 您的Gmail邮箱地址
-  recipients: ["21586750@qq.com","tianxiang.btx@alibaba-inc.com"]  # 收件人邮箱列表
+  recipients: ["21586750@qq.com"]  # 收件人邮箱列表
   subject_prefix: "[云计算网络竞争动态分析]"  # 邮件主题前缀
 
 # 钉钉机器人通知配置

@@ -78,7 +78,6 @@ class CrawlerManager:
             module = importlib.import_module(module_name)
             crawler_class = getattr(module, class_name)
             
-            logger.debug(f"已加载爬虫类: {class_name}")
             return crawler_class
         except (ImportError, AttributeError) as e:
             logger.warning(f"加载特定爬虫类失败，将使用通用爬虫类: {e}")
@@ -91,7 +90,6 @@ class CrawlerManager:
                 module = importlib.import_module(module_name)
                 crawler_class = getattr(module, class_name)
                 
-                logger.debug(f"已加载通用爬虫类: {class_name}")
                 return crawler_class
             except (ImportError, AttributeError) as e:
                 logger.error(f"加载通用爬虫类失败: {e}")
@@ -174,6 +172,41 @@ class CrawlerManager:
                 crawl_tasks.append((vendor, source_type, source_config))
         
         logger.info(f"共有 {len(crawl_tasks)} 个爬虫任务，使用 {self.max_workers} 个线程执行")
+        
+        # --- 开始：添加模块预加载逻辑 ---
+        modules_to_preload = set()
+        logger.info("开始预加载爬虫模块...")
+        for vendor, source_type, _ in crawl_tasks:
+            try:
+                # 尝试构建特定爬虫模块名
+                module_source_type = source_type.replace('-', '_')
+                specific_module_name = f"src.crawlers.vendors.{vendor}.{module_source_type}_crawler"
+                modules_to_preload.add(specific_module_name)
+
+                # 也可以考虑预加载通用爬虫，但优先确保特定爬虫加载
+                # generic_module_name = f"src.crawlers.vendors.{vendor}.generic_crawler"
+                # modules_to_preload.add(generic_module_name)
+
+            except Exception as e:
+                # 在构建模块名时不太可能出错，但以防万一
+                logger.warning(f"构建模块名时出错 ({vendor}/{source_type}): {e}")
+
+        loaded_count = 0
+        failed_count = 0
+        for module_name in modules_to_preload:
+            try:
+                importlib.import_module(module_name)
+                loaded_count += 1
+            except ImportError:
+                # _get_crawler_class 稍后会处理加载通用爬虫的情况，这里只记录警告
+                logger.warning(f"预加载模块失败 (ImportError): {module_name} - 将在运行时尝试加载通用爬虫")
+                failed_count += 1
+            except Exception as e:
+                logger.error(f"预加载模块时发生意外错误: {module_name} - {e}")
+                failed_count += 1
+
+        logger.info(f"模块预加载完成: 成功 {loaded_count} 个, 失败/跳过 {failed_count} 个")
+        # --- 结束：添加模块预加载逻辑 ---
         
         # 使用线程池执行爬虫任务
         with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:

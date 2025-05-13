@@ -53,7 +53,7 @@ class GcpBlogCrawler(BaseCrawler):
             # 先尝试使用requests库获取页面内容(优先使用更稳定的方式)
             html = None
             try:
-                logger.info("使用requests库获取页面内容")
+                logger.debug("使用requests库获取页面内容")
                 headers = {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
                     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -65,7 +65,7 @@ class GcpBlogCrawler(BaseCrawler):
                 response = requests.get(self.start_url, headers=headers, timeout=30)
                 if response.status_code == 200:
                     html = response.text
-                    logger.info("使用requests库成功获取到页面内容")
+                    logger.debug("使用requests库成功获取到页面内容")
                 else:
                     logger.error(f"请求返回非成功状态码: {response.status_code}")
             except Exception as e:
@@ -73,7 +73,7 @@ class GcpBlogCrawler(BaseCrawler):
             
             # 只有在requests失败时才尝试使用Selenium
             if not html:
-                logger.info("requests获取失败，尝试使用Selenium")
+                logger.debug("requests获取失败，尝试使用Selenium")
                 html = self._get_selenium(self.start_url)
             
             if not html:
@@ -82,7 +82,7 @@ class GcpBlogCrawler(BaseCrawler):
             
             # 解析博客列表，获取文章链接
             article_links = self._parse_article_links(html)
-            logger.info(f"解析到 {len(article_links)} 篇文章链接")
+            logger.debug(f"解析到 {len(article_links)} 篇文章链接")
             
             # 如果是测试模式或有文章数量限制，截取所需数量的文章链接
             test_mode = self.source_config.get('test_mode', False)
@@ -114,7 +114,7 @@ class GcpBlogCrawler(BaseCrawler):
                             os.path.exists(self.metadata[url]['filepath'])):
                             # 文章已爬取过且文件存在，直接添加到结果中
                             already_crawled_count += 1
-                            logger.info(f"跳过已爬取的文章: {title} ({url})")
+                            logger.debug(f"跳过已爬取的文章: {title} ({url})")
                             saved_files.append(self.metadata[url]['filepath'])
                         else:
                             # 文章未爬取过或文件不存在，添加到待爬取列表
@@ -132,12 +132,12 @@ class GcpBlogCrawler(BaseCrawler):
                     # 尝试获取文章内容 - 优先使用requests
                     article_html = None
                     try:
-                        logger.info(f"使用requests库获取文章内容: {url}")
+                        logger.debug(f"使用requests库获取文章内容: {url}")
                         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
                         response = requests.get(url, headers=headers, timeout=30)
                         if response.status_code == 200:
                             article_html = response.text
-                            logger.info("使用requests库成功获取到文章内容")
+                            logger.debug("使用requests库成功获取到文章内容")
                         else:
                             logger.error(f"请求返回非成功状态码: {response.status_code}")
                     except Exception as e:
@@ -145,7 +145,7 @@ class GcpBlogCrawler(BaseCrawler):
                     
                     # 如果requests失败，才尝试Selenium
                     if not article_html:
-                        logger.info(f"尝试使用Selenium获取文章内容: {url}")
+                        logger.debug(f"尝试使用Selenium获取文章内容: {url}")
                         article_html = self._get_selenium(url)
                     
                     if not article_html:
@@ -191,7 +191,7 @@ class GcpBlogCrawler(BaseCrawler):
         # 打印页面的标题，便于调试
         page_title = soup.find('title')
         if page_title:
-            logger.info(f"页面标题: {page_title.text.strip()}")
+            logger.debug(f"页面标题: {page_title.text.strip()}")
         
         try:
             # 检查是否在博客页面上
@@ -199,7 +199,7 @@ class GcpBlogCrawler(BaseCrawler):
             if self._is_blog_detail_page(soup):
                 title = self._extract_page_title(soup)
                 articles.append((title, self.start_url))
-                logger.info(f"检测到博客详情页：{title}")
+                logger.debug(f"检测到博客详情页：{title}")
                 return articles
             
             # 查找所有可能包含博客文章链接的元素
@@ -225,17 +225,17 @@ class GcpBlogCrawler(BaseCrawler):
                 if title and url:
                     articles.append((title, url))
             
-            logger.info(f"从页面解析到 {len(articles)} 篇文章链接")
+            logger.debug(f"从页面解析到 {len(articles)} 篇文章链接")
             
             # 增加额外的日志记录，帮助理解爬取的内容
             if articles:
-                logger.info("前10篇文章链接:")
+                logger.debug("前10篇文章链接:")
                 for i, (title, url) in enumerate(articles[:10], 1):
-                    logger.info(f"{i}. {title} - {url}")
+                    logger.debug(f"{i}. {title} - {url}")
             
             # 如果没有找到任何文章链接，检查当前页面是否就是一篇博客文章
             if not articles and self._is_likely_blog_post(self.start_url):
-                logger.info("当前页面可能是单篇博客文章，直接处理")
+                logger.debug("当前页面可能是单篇博客文章，直接处理")
                 title = self._extract_page_title(soup)
                 articles.append((title, self.start_url))
             
@@ -244,7 +244,7 @@ class GcpBlogCrawler(BaseCrawler):
             for title, url in articles:
                 # 对每个链接再次确认是否是具体文章而非类别页面
                 if not self._is_likely_blog_post(url):
-                    logger.info(f"过滤掉可能的类别页面: {title} - {url}")
+                    logger.debug(f"过滤掉可能的类别页面: {title} - {url}")
                     continue
                 
                 filtered_articles.append((title, url))
@@ -590,7 +590,7 @@ class GcpBlogCrawler(BaseCrawler):
                     year, month = url_date_match.groups()
                     # 如果URL中只有年月，日设为1
                     parsed_date = datetime.datetime(int(year), int(month), 1)
-                    logger.info(f"从URL中提取到年月: {parsed_date.strftime(date_format)}")
+                    logger.debug(f"从URL中提取到年月: {parsed_date.strftime(date_format)}")
                     return parsed_date.strftime(date_format)
                 except ValueError as e:
                     logger.debug(f"解析URL日期出错: {e}")

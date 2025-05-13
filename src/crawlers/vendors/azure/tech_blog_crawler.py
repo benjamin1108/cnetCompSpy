@@ -69,7 +69,7 @@ class AzureTechBlogCrawler(BaseCrawler):
             # 先尝试使用requests库获取页面内容(优先使用更稳定的方式)
             html = None
             try:
-                logger.info("使用requests库获取页面内容")
+                logger.debug("使用requests库获取页面内容")
                 headers = {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
                     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -81,7 +81,7 @@ class AzureTechBlogCrawler(BaseCrawler):
                 response = requests.get(self.start_url, headers=headers, timeout=30)
                 if response.status_code == 200:
                     html = response.text
-                    logger.info("使用requests库成功获取到页面内容")
+                    logger.debug("使用requests库成功获取到页面内容")
                 else:
                     logger.error(f"请求返回非成功状态码: {response.status_code}")
             except Exception as e:
@@ -90,7 +90,7 @@ class AzureTechBlogCrawler(BaseCrawler):
             # 只有在requests失败时才尝试使用Selenium
             if not html:
                 try:
-                    logger.info("requests获取失败，尝试使用Selenium")
+                    logger.debug("requests获取失败，尝试使用Selenium")
                     # 初始化WebDriver（如果未初始化）
                     if not self.driver:
                         self._init_driver()
@@ -102,11 +102,11 @@ class AzureTechBlogCrawler(BaseCrawler):
                     try:
                         backup_url = "https://techcommunity.microsoft.com/t5/azure-networking-blog/bg-p/AzureNetworkingBlog"
                         if backup_url != self.start_url:
-                            logger.info(f"尝试使用备用URL: {backup_url}")
+                            logger.debug(f"尝试使用备用URL: {backup_url}")
                             response = requests.get(backup_url, headers=headers, timeout=30)
                             if response.status_code == 200:
                                 html = response.text
-                                logger.info("使用备用URL成功获取到页面内容")
+                                logger.debug("使用备用URL成功获取到页面内容")
                     except Exception as backup_e:
                         logger.error(f"使用备用URL获取页面失败: {backup_e}")
             
@@ -151,7 +151,7 @@ class AzureTechBlogCrawler(BaseCrawler):
                         os.path.exists(self.metadata[url]['filepath'])):
                         # 文章已爬取过且文件存在，直接添加到结果中
                         already_crawled_count += 1
-                        logger.info(f"跳过已爬取的文章: {title} ({url})")
+                        logger.debug(f"跳过已爬取的文章: {title} ({url})")
                         saved_files.append(self.metadata[url]['filepath'])
                     else:
                         # 文章未爬取过或文件不存在，添加到待爬取列表
@@ -169,12 +169,12 @@ class AzureTechBlogCrawler(BaseCrawler):
                     # 尝试获取文章内容 - 优先使用requests
                     article_html = None
                     try:
-                        logger.info(f"使用requests库获取文章内容: {url}")
+                        logger.debug(f"使用requests库获取文章内容: {url}")
                         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
                         response = requests.get(url, headers=headers, timeout=30)
                         if response.status_code == 200:
                             article_html = response.text
-                            logger.info("使用requests库成功获取到文章内容")
+                            logger.debug("使用requests库成功获取到文章内容")
                         else:
                             logger.error(f"请求返回非成功状态码: {response.status_code}")
                     except Exception as e:
@@ -225,19 +225,19 @@ class AzureTechBlogCrawler(BaseCrawler):
             页面HTML内容
         """
         try:
-            logger.info(f"使用Selenium获取页面: {url}")
+            logger.debug(f"使用Selenium获取页面: {url}")
             self.driver.get(url)
             
             # 减少等待时间，避免长时间卡住
             wait_time = 10
-            logger.info(f"等待页面加载，超时时间: {wait_time}秒")
+            logger.debug(f"等待页面加载，超时时间: {wait_time}秒")
             
             try:
                 # 等待页面主体内容加载完成
                 WebDriverWait(self.driver, wait_time).until(
                     EC.presence_of_element_located((By.TAG_NAME, "main"))
                 )
-                logger.info("找到main元素，页面基本结构已加载")
+                logger.debug("找到main元素，页面基本结构已加载")
             except Exception as e:
                 logger.warning(f"等待main元素超时: {e}")
                 try:
@@ -245,17 +245,17 @@ class AzureTechBlogCrawler(BaseCrawler):
                     WebDriverWait(self.driver, wait_time).until(
                         EC.presence_of_element_located((By.TAG_NAME, "article"))
                     )
-                    logger.info("找到article元素，页面基本结构已加载")
+                    logger.debug("找到article元素，页面基本结构已加载")
                 except Exception as e:
                     logger.warning(f"等待article元素超时: {e}")
                     # 如果找不到article标签，尝试等待body加载完成
                     WebDriverWait(self.driver, wait_time).until(
                         EC.presence_of_element_located((By.TAG_NAME, "body"))
                     )
-                    logger.info("找到body元素，继续等待内容加载")
+                    logger.debug("找到body元素，继续等待内容加载")
             
             # 简化滚动操作，减少等待时间
-            logger.info("执行简化的滚动操作")
+            logger.debug("执行简化的滚动操作")
             
             # 初始等待
             time.sleep(2)
@@ -415,7 +415,7 @@ class AzureTechBlogCrawler(BaseCrawler):
                                     "url": url
                                 })
                 
-                logger.info(f"从所有链接中提取到 {len(processed_articles)} 篇文章")
+                logger.debug(f"从所有链接中提取到 {len(processed_articles)} 篇文章")
                 debug_info["final_count"] = len(processed_articles)
 
                 return processed_articles
@@ -442,7 +442,7 @@ class AzureTechBlogCrawler(BaseCrawler):
                 message_links = card.select('a[aria-label][data-testid="MessageLink"]')
                 if message_links and message_links[0].get('aria-label'):
                     title = message_links[0].get('aria-label')
-                    logger.info(f"从aria-label中提取到标题: {title}")
+                    logger.debug(f"从aria-label中提取到标题: {title}")
                 
                 # 如果没有从aria-label获取到标题，再尝试使用标题元素
                 if not title and title_elem:
@@ -457,14 +457,14 @@ class AzureTechBlogCrawler(BaseCrawler):
                         aria_label = link.get('aria-label')
                         if aria_label and len(aria_label) > 10:
                             title = aria_label
-                            logger.info(f"从链接的aria-label中提取到标题: {title}")
+                            logger.debug(f"从链接的aria-label中提取到标题: {title}")
                             break
                         
                         # 再检查链接文本
                         link_text = link.get_text(strip=True)
                         if len(link_text) > 10 and ' ' in link_text:
                             title = link_text
-                            logger.info(f"从链接文本中提取到标题: {title}")
+                            logger.debug(f"从链接文本中提取到标题: {title}")
                             break
                 
                 # 清理标题
@@ -494,7 +494,7 @@ class AzureTechBlogCrawler(BaseCrawler):
                 message_links = card.select('a[data-testid="MessageLink"]')
                 if message_links and message_links[0].get('href'):
                     link_elem = message_links[0]
-                    logger.info(f"从MessageLink中提取到链接: {link_elem.get('href')}")
+                    logger.debug(f"从MessageLink中提取到链接: {link_elem.get('href')}")
                 
                 # 如果没有找到MessageLink，再尝试其他方法
                 if not link_elem:
@@ -591,7 +591,7 @@ class AzureTechBlogCrawler(BaseCrawler):
                     "url": url,
                     "date": date_str
                 })
-                logger.info(f"添加文章: {title} | {url}")
+                logger.debug(f"添加文章: {title} | {url}")
                 item_details.append(item_detail)
             
        
