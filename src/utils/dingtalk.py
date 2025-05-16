@@ -211,6 +211,56 @@ class DingTalkNotifier:
         md_content += f"\n\n---\n> [🔍 查看最近{days}天所有更新]({site_url})\n\n---\n*本消息由[云网络竞争分析平台]({site_home})自动发送*"
         return self._send_to_robots(title, md_content, robot_names)
 
+    def send_markdown_file(self, filepath: str, robot_names: Optional[List[str]] = None) -> bool:
+        """读取指定的Markdown文件并将其内容推送到钉钉。"""
+        if not self.config.get("enabled") or not self.robots:
+            self.logger.warning(f"钉钉文件推送条件不满足（未启用/无机器人）: {filepath}")
+            return False
+        
+        try:
+            if not os.path.exists(filepath) or not os.path.isfile(filepath):
+                self.logger.error(f"要推送的Markdown文件未找到或不是一个文件: {filepath}")
+                return False
+            
+            with open(filepath, 'r', encoding='utf-8') as f:
+                file_content = f.read()
+            
+            if not file_content.strip():
+                self.logger.warning(f"Markdown文件内容为空: {filepath}")
+                # 考虑是否要发送一个空消息的通知，或者直接返回True/False
+                # 为保持一致性，如果内容为空，不发送但认为操作"成功"完成（没有发生错误）
+                return True 
+
+            # 尝试从文件名提取标题 (移除日期和扩展名)
+            report_filename = os.path.basename(filepath)
+            title = report_filename.replace("weekly_competitor_summary_", "").replace(".md", "").replace("_to_", " 到 ")
+            # 如果文件名解析不出合适的标题，可以尝试从文件第一行H1提取，或使用固定标题
+            if not title or report_filename == title: # 简单检查是否解析成功
+                 # 尝试从文件第一行读取标题
+                first_line = file_content.splitlines()[0] if file_content.splitlines() else ""
+                if first_line.startswith("# "):
+                    title = first_line[2:].strip()
+                else:
+                    title = f"Markdown文件推送: {report_filename}" # 后备标题
+
+            # 可以在这里对 file_content 进行一些预处理，如果钉钉对总长度或格式有特殊要求
+            # 例如，确保关键字在文本中 (如果机器人有关键字限制且文件内容本身可能不包含)
+            # 目前直接发送原始内容
+            
+            # 确保消息包含关键字 (如果机器人有此设置)
+            # 这是一个简化的处理，实际可能需要更复杂的逻辑来决定如何以及是否添加关键字
+            keyword_to_check = self.config.get("keyword", "")
+            if keyword_to_check and keyword_to_check not in file_content:
+                # 对于Markdown文件推送，如果文件本身不包含关键字，可以考虑不强制添加，
+                # 或者只为某些类型的机器人添加。这里简单地不添加。
+                self.logger.debug(f"文件内容可能不包含配置的关键字 '{keyword_to_check}'。按原样发送。")
+
+            return self._send_to_robots(title, file_content, robot_names)
+            
+        except Exception as e:
+            self.logger.error(f"推送Markdown文件 {filepath} 时发生错误: {e}", exc_info=True)
+            return False
+
     def _send_to_robots(self, title: str, md_content: str, robot_names: Optional[List[str]] = None) -> bool:
         success = False
         robots_to_use = self.robots
@@ -236,14 +286,62 @@ class DingTalkNotifier:
 
 def parse_arguments_for_cli():
     parser = argparse.ArgumentParser(description="钉钉机器人推送工具")
-    parser.add_argument("--config", type=str, help="自定义配置文件路径")
-    parser.add_argument("--debug", action="store_true", help="启用调试日志")
-    parser.add_argument("--robot", action="append", dest="robots", help="指定机器人名称(可多次使用)")
-    subparsers = parser.add_subparsers(dest="command", help="推送命令", required=True)
-    subparsers.add_parser("weekly", help="推送本周更新")
-    subparsers.add_parser("daily", help="推送今日更新")
-    recent_parser = subparsers.add_parser("recent", help="推送最近n天更新")
+    
+    # 1. 创建通用参数的父解析器
+    common_options_parser = argparse.ArgumentParser(add_help=False)
+    common_options_parser.add_argument(
+        "--config", 
+        type=str, 
+        default=None, # 明确设置默认值
+        help="自定义配置文件路径 (例如: config/notification.yaml)"
+    )
+    common_options_parser.add_argument(
+        "--debug", 
+        action="store_true", 
+        help="启用调试日志"
+    )
+    common_options_parser.add_argument(
+        "--robot", 
+        action="append", 
+        dest="robots", # 保持原来的 dest
+        default=None, # 明确设置默认值
+        help="指定机器人名称(可多次使用，例如 --robot name1 --robot name2)"
+    )
+
+    subparsers = parser.add_subparsers(dest="command", help="推送命令", title="可用命令", required=True) # 添加 title
+    
+    # 2. 让所有子解析器继承通用参数
+    weekly_parser = subparsers.add_parser(
+        "weekly", 
+        help="推送本周更新", 
+        parents=[common_options_parser]
+    )
+    
+    daily_parser = subparsers.add_parser(
+        "daily", 
+        help="推送今日更新", 
+        parents=[common_options_parser]
+    )
+    
+    recent_parser = subparsers.add_parser(
+        "recent", 
+        help="推送最近n天更新", 
+        parents=[common_options_parser]
+    )
     recent_parser.add_argument("days", type=int, help="天数")
+    
+    pushfile_parser = subparsers.add_parser(
+        "pushfile", 
+        help="推送指定的Markdown文件内容", 
+        parents=[common_options_parser]
+    )
+    pushfile_parser.add_argument(
+        "--filepath", 
+        type=str, 
+        required=True, 
+        help="要推送的Markdown文件的路径"
+    )
+    
     return parser.parse_args()
 
 def cli_main():
@@ -308,6 +406,9 @@ def cli_main():
             fetched_data = vendor_manager.get_recently_updates(args.days)
             logger.info(f"准备推送近{args.days}日数据 ({sum(len(v) for v in fetched_data.values()) if fetched_data else 0} 条)")
             success = notifier.send_recently_updates(fetched_data, args.days, args.robots)
+        elif args.command == "pushfile":
+            logger.info(f"推送指定的Markdown文件内容...")
+            success = notifier.send_markdown_file(args.filepath)
         
     except ImportError as ie:
         logger.error(f"导入 web_server 组件失败: {ie}。请确保从项目根目录使用 'python -m src.utils.dingtalk' 运行，或 PYTHONPATH 配置正确。", exc_info=True)

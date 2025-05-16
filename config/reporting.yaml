@@ -1,0 +1,32 @@
+reporting:
+  # 周报生成和推送相关配置
+  site_base_url: "http://cnetspy.site" # 内部链接的基础URL
+
+  # 使用的周报提示模板的键名 (在 prompt_paths 主配置中定义，例如在 main.yaml 或单独的 prompts.yaml 中)
+  weekly_update_prompt_key: "weekly_updates" 
+  
+  # 周报摘要使用的模型配置 (profile name, 在 ai_analyzer.yaml 中定义)
+  # 如果留空或未定义，则会尝试使用 ai_analyzer.yaml 中的 active_model_profile
+  weekly_summary_model_profile: "deepseek_v2_chat" 
+
+  # 钉钉周报美化相关配置
+  beautification:
+    banner_url: "https://gw.alipayobjects.com/zos/bmw-prod/05017104-6734-4893-9526-2950e7c2f2ec.svg" # 报告顶部的图片URL (留空则不显示)
+    report_title_prefix: "【云网络竞争动态周报】"               # 报告主标题的前缀
+    intro_text: "汇集本周全球主要云厂商公开的技术产品动态，实时掌握竞争动态" # 报告引言
+    
+    # 各厂商的Emoji图标，键为大写厂商名 (AWS, AZURE, GCP等, 与 vendors_to_scan 中的名称对应)
+    vendor_emojis:
+      AWS: "🟠"
+      AZURE: "🔵"
+      GCP: "谷歌云" # 示例：也可以是中文
+      TENCENT: "🐧"
+      HUAWEI: "🌺"
+      VOLCANO: "🌋"
+      ALIBABA: "阿里云" # 示例
+      DEFAULT: "📰" # 未在上方明确列出的厂商，或作为备用的默认Emoji
+
+    no_updates_text: "本周各家云厂商在所监控的技术领域内暂无重要更新内容公开发布。" # 当没有任何厂商更新时的提示信息
+    footer_text: "本报告由 CNetSpy 云网络竞争情报分析平台自动生成。" # 报告页脚文本
+    platform_link_text: "前往平台查看原始情报和更多分析" # 指向平台的链接文本
+    platform_url: "http://cnetspy.site" # 平台URL (如果为空，则不显示平台链接) 

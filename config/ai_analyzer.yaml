@@ -1,6 +1,6 @@
 # AI分析基础配置
 ai_analyzer:
-  active_model_profile: "qwen"  # <--- 指定默认使用的模型配置
+  active_model_profile: "grok"  # <--- 指定默认使用的模型配置
 
   model_profiles:
     qwen:
@@ -10,7 +10,7 @@ ai_analyzer:
         api_base: "https://dashscope.aliyuncs.com/compatible-mode/v1"
         max_tokens: 8192
         temperature: 0.5
-        log_full_prompt: true
+        log_full_prompt: false
       # log_full_prompt: true # Removed from here
         # model_params: {} # 如果将来有特定于模型的参数，如 enable_search，放在这里
     # 如果您有其他模型，可以像这样添加更多配置 (例如 Grok):
