@@ -24,6 +24,11 @@ class OpenAICompatibleAI:
         else:
             logger.debug(f"OpenAICompatibleAI 使用的系统提示长度: {len(self.system_prompt)} 字符")
 
+        # Debug mode for logging full prompt
+        self.log_full_prompt_enabled = config.get('log_full_prompt', False)
+        if self.log_full_prompt_enabled:
+            logger.info(f"OpenAICompatibleAI: 完整提示日志功能已为模型 '{self.model_name}' 开启。实际提示将在请求构建时记录。")
+
         model_params = config.get('model_params', {})
         self.enable_search = model_params.get('enable_search', True) 
         logger.info(f"OpenAICompatibleAI 模型参数 enable_search 设置为: {self.enable_search}")
@@ -135,7 +140,7 @@ class OpenAICompatibleAI:
             return result
         except ParseError as e: 
             logger.error(f"解析API响应失败: {e}")
-            raise APIError(f"解析API响应失败: {e}") from e 
+            raise APIError(f"解析API响应失败: {e}") from e
         except Exception as e: 
             logger.error(f"调用_parse_response时发生意外错误: {e}")
             raise APIError(f"解析API响应时发生意外内部错误: {e}") from e
@@ -150,6 +155,19 @@ class OpenAICompatibleAI:
             {"role": "user", "content": prompt}
         ]
         
+        if self.log_full_prompt_enabled:
+            logger.info("--- 开始记录完整提示信息 (调试模式) ---")
+            for message_item in messages: 
+                role = message_item.get("role")
+                content = message_item.get("content", "")
+                if role == "system":
+                    logger.info(f"系统提示 (完整): {content}")
+                elif role == "user":
+                    logger.info(f"用户提示 (完整): {content}")
+                else: # 其他角色 (如果有)
+                    logger.info(f"消息 (角色: {role}, 内容完整): {content}")
+            logger.info("--- 结束记录完整提示信息 (调试模式) ---")
+
         if "compatible-mode" in self.api_base.lower() and self.api_base.endswith("chat/completions"):
             url = self.api_base
         elif "compatible-mode" in self.api_base.lower():
