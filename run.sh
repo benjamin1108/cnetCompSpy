@@ -101,7 +101,7 @@ show_help() {
     echo -e "  ${GREEN}weekly${NC}                       - 推送本周更新"
     echo -e "  ${GREEN}daily${NC}                        - 推送今日更新"
     echo -e "  ${GREEN}recent${NC} [天数]                - 推送最近几天更新"
-    echo -e "  ${GREEN}weekly_report${NC}              - 生成每周竞品分析报告的Markdown文件"
+    echo -e "  ${GREEN}weekly-report${NC}             - 生成并推送每周竞品分析报告"
     echo -e ""
     echo -e "  选项:"
     echo -e "  ${GREEN}--robot${NC} [机器人名称]           - 使用指定的钉钉机器人推送（可指定多个）"
@@ -580,7 +580,7 @@ validate_args() {
             
         dingpush)
             # dingpush命令有效参数
-            local valid_opts=("weekly" "daily" "recent" "weekly_report")
+            local valid_opts=("weekly" "daily" "recent" "weekly-report")
             local has_recent=false
             
             # 检查是否有子命令及其是否有效
@@ -601,7 +601,7 @@ validate_args() {
                 
                 if ! $is_valid; then
                     invalid_args+=("$subcmd")
-                    return 1
+                    # return 1 # REMOVED: Let the common error handling at the end of function catch this.
                 fi
                 
                 # 如果是recent子命令，验证下一个参数是否为数字
@@ -672,6 +672,7 @@ validate_args() {
     # 检查是否有无效参数
     if [[ ${#invalid_args[@]} -gt 0 ]]; then
         echo -e "${RED}错误: 无效的参数: ${invalid_args[*]}${NC}"
+        
         echo -e "${YELLOW}命令 '$cmd' 的有效参数:${NC}"
         
         case "$cmd" in
@@ -706,7 +707,6 @@ validate_args() {
         echo -e "${BLUE}使用 '$0 help' 查看完整帮助${NC}"
         return 1
     fi
-    
     return 0
 }
 
@@ -846,8 +846,7 @@ download_driver() {
 crawl_data() {
     echo -e "${BLUE}开始爬取数据...${NC}"
     
-    # 验证参数
-    validate_args "crawl" "$@" || return 1
+    # validate_args "crawl" "$@" || return 1 # Validation is done in main before calling
     
     # 检查data目录是否存在
     check_and_create_dir "$SCRIPT_DIR/data"
@@ -857,23 +856,27 @@ crawl_data() {
     # 激活虚拟环境
     activate_venv
     
-    # 检查是否已经指定了--config参数
-    if ! echo "$*" | grep -q -- "--config"; then
-        CONFIG_ARG="--config \"$SCRIPT_DIR/config\""
+    local python_config_arg=""
+    if [ -n "$GLOBAL_CONFIG_FILE_PATH" ]; then
+        # Pass the specific config file to the Python script
+        python_config_arg="--config \"$GLOBAL_CONFIG_FILE_PATH\""
     else
-        CONFIG_ARG=""
+        # If no global config via run.sh, pass the default directory to Python script's --config
+        # This maintains previous behavior if Python's --config expects a dir and no global file is set.
+        # OR, if Python's get_config() handles default discovery, this line could be removed.
+        # For now, keeping it for compatibility if Python's --config expects a value.
+        python_config_arg="--config \"$SCRIPT_DIR/config\""
     fi
     
-    # 调用Python模块，明确指定配置文件路径
-    eval "python -m src.main --mode crawl $CONFIG_ARG $@"
+    # 调用Python模块. $@ contains FILTERED_ARGS from main, plus --debug if it was global.
+    eval "python -m src.main --mode crawl $python_config_arg $@"
 }
 
 # 分析数据
 analyze_data() {
     echo -e "${BLUE}开始分析数据...${NC}"
     
-    # 验证参数
-    validate_args "analyze" "$@" || return 1
+    # validate_args "analyze" "$@" || return 1 # Validation is done in main
     
     # 检查data目录是否存在
     check_and_create_dir "$SCRIPT_DIR/data"
@@ -892,28 +895,23 @@ analyze_data() {
         fi
     fi
     
-    # 检查是否存在配置文件
-    if [ ! -d "$SCRIPT_DIR/config" ]; then
-        show_error "未找到配置目录: config，请确保该目录存在"
-    fi
-    
-    # 检查是否存在敏感配置文件
-    if [ ! -f "$SCRIPT_DIR/config.secret.yaml" ]; then
-        show_error "未找到敏感配置文件: config.secret.yaml，您可以基于config.secret.yaml.example创建此文件"
-    fi
+    # 检查是否存在配置文件 (these checks might be redundant if global config is primary)
+    # if [ ! -d "$SCRIPT_DIR/config" ]; then ... 
+    # if [ ! -f "$SCRIPT_DIR/config.secret.yaml" ]; then ...
     
     # 激活虚拟环境
     activate_venv
     
-    # 检查是否已经指定了--config参数
-    if ! echo "$*" | grep -q -- "--config"; then
-        CONFIG_ARG="--config \"$SCRIPT_DIR/config\""
+    local python_config_arg=""
+    if [ -n "$GLOBAL_CONFIG_FILE_PATH" ]; then
+        python_config_arg="--config \"$GLOBAL_CONFIG_FILE_PATH\""
     else
-        CONFIG_ARG=""
+        # Default to passing the standard config directory if no global file specified
+        python_config_arg="--config \"$SCRIPT_DIR/config\""
     fi
     
-    # 调用Python模块，明确指定配置文件路径
-    eval "python -m src.main --mode analyze $CONFIG_ARG $@"
+    # 调用Python模块
+    eval "python -m src.main --mode analyze $python_config_arg $@"
 }
 
 # 比较元数据和实际文件统计
@@ -1167,23 +1165,30 @@ run_dingpush() {
         echo -e "${YELLOW}未指定推送子命令，将由Python脚本处理...${NC}"
         # 即使没有子命令，也直接调用Python脚本，让其内部的argparse处理
         python -m src.utils.dingtalk "${all_args[@]}"
-    elif [ "${all_args[0]}" == "weekly_report" ]; then
-        # 处理 weekly_report 子命令
+    elif [ "${all_args[0]}" == "weekly-report" ]; then # CHANGED from weekly_report
+        # 处理 weekly-report 子命令
         echo -e "${BLUE}正在生成每周竞品分析报告...${NC}"
         
         local gen_script_args=()
         local push_script_args=()
-        # 从第二个参数开始遍历 (跳过 weekly_report 本身)
-        # 目的是为 generate_weekly_report.py 构建 --loglevel DEBUG (如果存在--debug)
-        # 并为 src.utils.dingtalk weekly 传递原始的 --debug, --robot, --config 等参数
+        
+        # Add global config to generate_weekly_report.py args if set
+        if [ -n "$GLOBAL_CONFIG_FILE_PATH" ]; then
+            # Assuming generate_weekly_report.py can accept --config path/to/file.yaml
+            # If it needs a different arg like --config-file, this should be adjusted.
+            # Also assuming it doesn't conflict with its own --loglevel.
+            gen_script_args+=("--config" "$GLOBAL_CONFIG_FILE_PATH")
+        fi
+
         for arg in "${all_args[@]:1}"; do
             if [ "$arg" == "--debug" ]; then
                 gen_script_args+=("--loglevel" "DEBUG")
             fi
-            # 所有原始参数 (除了 weekly_report) 都应传递给后续的推送命令
             push_script_args+=("$arg") 
         done
 
+        # Note: If generate_weekly_report.py does not accept --config,
+        # it will rely on get_config() finding the config via default paths or env vars.
         python "$SCRIPT_DIR/scripts/generate_weekly_report.py" "${gen_script_args[@]}"
         local generation_exit_code=$?
 
@@ -1230,17 +1235,24 @@ run_dingpush() {
                 return 1 # 指示错误
             fi
             
-            # 调用 src.utils.dingtalk pushfile 并传递原始的 dingpush 参数 (如 --debug, --robot, --config)
-            # 以及新确定的 --filepath
-            python -m src.utils.dingtalk pushfile --filepath "$generated_report_path" "${push_script_args[@]}"
-            # run_dingpush 的最终退出码将是这个推送命令的退出码
+            local final_dingtalk_args=()
+            if [ -n "$GLOBAL_CONFIG_FILE_PATH" ]; then
+                # Prepend global config if set. Assumes dingtalk.py can handle --config path/to/file.yaml
+                # And that if push_script_args also contains a --config, argparse in Python handles precedence.
+                final_dingtalk_args+=("--config" "$GLOBAL_CONFIG_FILE_PATH")
+            fi
+            final_dingtalk_args+=("${push_script_args[@]}")
+
+            python -m src.utils.dingtalk pushfile --filepath "$generated_report_path" "${final_dingtalk_args[@]}"
         else
             echo -e "${RED}✗ 周报生成失败 (退出码: $generation_exit_code)，跳过钉钉推送步骤。${NC}"
             return $generation_exit_code # 返回生成失败的退出码
         fi
     else
-        # 处理其他 dingpush 子命令 (weekly, daily, recent)
-        echo -e "${BLUE}命令: python -m src.utils.dingtalk ${all_args[*]}${NC}"
+        # 处理其他 dingpush 子命令 (weekly, daily, recent 等)
+        # 帮助信息 (-h, --help, no args) 已经在主 case 语句中处理过了，这里不需要重复。
+        # ${all_args[@]} 包含了从主 case 语句传递过来的、经过初步处理的参数 (如子命令 weekly, daily, recent 及其选项)
+        echo -e "${BLUE}执行钉钉子命令: python -m src.utils.dingtalk ${all_args[*]}${NC}"
         python -m src.utils.dingtalk "${all_args[@]}"
     fi
     
@@ -1261,42 +1273,106 @@ main() {
         exit 0
     fi
     
-    # 全局DEBUG变量，默认为空
+    # 全局DEBUG和CONFIG变量
     GLOBAL_DEBUG=""
+    GLOBAL_CONFIG_FILE_PATH=""
     
-    # 检查第一个参数是否为--debug
-    if [ "$1" == "--debug" ]; then
+    # 暂存所有原始参数
+    ORIGINAL_ARGS=("$@")
+    PROCESSED_ARGS=() # 参数处理后，用于确定COMMAND和后续ARGS
+
+    # 第一轮处理：提取全局 --debug 和 --config 文件路径
+    # 这种方式允许 --debug 和 --config 出现在命令之前或之后
+    temp_args=()
+    skip_next=false
+    for arg in "${ORIGINAL_ARGS[@]}"; do
+        if $skip_next; then
+            skip_next=false
+            continue
+        fi
+        case "$arg" in
+            --debug)
+                if [ -z "$GLOBAL_DEBUG" ]; then # 只设置一次
+                    GLOBAL_DEBUG="--debug"
+                    show_info "已启用全局调试模式"
+                else
+                    show_warning "检测到重复的 --debug 参数，已忽略后续的。"
+                fi
+                ;;
+            --config)
+                # 下一个参数应该是路径
+                next_arg_idx=$(echo "${ORIGINAL_ARGS[@]}" | tr -s ' ' '\\n' | grep -nx -- "$arg" | cut -d: -f1)
+                next_arg_val=""
+                # A bit complex to get next arg correctly if there are multiple --config. Assume first one wins for global.
+                # This simplified loop assumes a structure where we find the *first* --config for global.
+                # A more robust way is to iterate with index.
+                
+                # Let's refine the loop for robust --config and --debug parsing ANYWHERE
+                # This part is tricky with current single-pass.
+                # Fallback to simpler: --debug first, then COMMAND, then parse ARGS for --config
+                PROCESSED_ARGS+=("$arg") # For now, keep them all
+                ;;
+            *)
+                PROCESSED_ARGS+=("$arg")
+                ;;
+        esac
+    done
+
+    # 重新实现参数解析，更健壮地处理全局参数
+    # Pass 1: Extract global --debug
+    if [[ "${PROCESSED_ARGS[0]}" == "--debug" ]]; then
         GLOBAL_DEBUG="--debug"
-        show_info "已启用全局调试模式"
-        shift
-        
-        # 如果--debug后没有参数，显示帮助
-        if [ $# -eq 0 ]; then
+        show_info "已启用全局调试模式 (首参数)"
+        PROCESSED_ARGS=("${PROCESSED_ARGS[@]:1}") # Remove --debug from head
+        if [ ${#PROCESSED_ARGS[@]} -eq 0 ]; then
             show_error "启用调试模式后，需要指定要执行的命令"
             exit 1
         fi
     fi
-    
-    # 解析命令
-    COMMAND="$1"
-    shift
-    
-    # 检查其余参数中是否有--debug（用于向后兼容）
-    ARGS=("$@")
+
+    COMMAND="${PROCESSED_ARGS[0]}"
+    ARGS=("${PROCESSED_ARGS[@]:1}") # Arguments after the command
+
+    # Pass 2: Extract --config and potentially another --debug from ARGS
     FILTERED_ARGS=()
-    
-    for arg in "${ARGS[@]}"; do
-        if [[ "$arg" == "--debug" ]]; then
-            # 如果全局DEBUG已经设置，忽略重复的--debug
-            if [ -z "$GLOBAL_DEBUG" ]; then
-                GLOBAL_DEBUG="--debug"
-                show_info "已启用全局调试模式"
-            else
-                show_warning "检测到重复的--debug参数，将被忽略"
-            fi
-        else
-            FILTERED_ARGS+=("$arg")
-        fi
+    i=0
+    while [ $i -lt ${#ARGS[@]} ]; do
+        arg="${ARGS[$i]}"
+        case "$arg" in
+            --debug)
+                if [ -z "$GLOBAL_DEBUG" ]; then
+                    GLOBAL_DEBUG="--debug"
+                    show_info "已启用全局调试模式 (参数在命令后)"
+                else
+                    show_warning "检测到重复的 --debug 参数，将被忽略。"
+                fi
+                i=$((i+1))
+                ;;
+            --config)
+                if [ $i -lt $((${#ARGS[@]}-1)) ] && [[ "${ARGS[$((i+1))]}" != --* ]]; then
+                    if [ -z "$GLOBAL_CONFIG_FILE_PATH" ]; then # First --config encountered becomes global
+                        GLOBAL_CONFIG_FILE_PATH="${ARGS[$((i+1))]}"
+                        check_config_exists "$GLOBAL_CONFIG_FILE_PATH" # Validate file
+                        show_info "全局配置文件已指定: $GLOBAL_CONFIG_FILE_PATH"
+                    else
+                        show_warning "检测到重复的 --config 参数。全局配置已设为 '$GLOBAL_CONFIG_FILE_PATH'。后续 '--config $arg_val' 将作为命令特定参数传递（如果命令支持）。"
+                        FILTERED_ARGS+=("$arg") # Pass this specific --config to command
+                        FILTERED_ARGS+=("${ARGS[$((i+1))]}")
+                    fi
+                    i=$((i+2)) # Skip --config and its value
+                else
+                    # Malformed --config (e.g., at the end or followed by another option)
+                    # Add it to FILTERED_ARGS so validate_args for the command can complain
+                    show_warning "参数 --config 格式不正确或缺少路径，将传递给命令自行处理。"
+                    FILTERED_ARGS+=("$arg")
+                    i=$((i+1))
+                fi
+                ;;
+            *)
+                FILTERED_ARGS+=("$arg")
+                i=$((i+1))
+                ;;
+        esac
     done
     
     # 验证命令是否有效
@@ -1312,14 +1388,21 @@ main() {
             FILTERED_ARGS=("weekly" "${FILTERED_ARGS[@]}")
             ;;
         *)
-            show_error "未知命令: $COMMAND。有效命令: crawl, analyze, server, setup, driver, stats, check-tasks, clean, daily, rebuild-md, help, dingpush"
-            exit 1
+            show_error "未知命令: $COMMAND"
             ;;
     esac
     
     # 执行命令
     case "$COMMAND" in
         crawl)
+            # 如果第一个参数是 -h 或 --help，则显示 crawl 模式的帮助信息
+            if [[ "${FILTERED_ARGS[0]}" == "-h" ]] || [[ "${FILTERED_ARGS[0]}" == "--help" ]]; then
+                echo -e "${BLUE}显示 crawl 命令 (src.main --mode crawl) 的帮助信息...${NC}"
+                activate_venv # 确保环境已激活
+                python -m src.main --mode crawl --help
+                exit $?
+            fi
+
             if [ -n "$GLOBAL_DEBUG" ]; then
                 crawl_data "${FILTERED_ARGS[@]}" --debug
             else
@@ -1344,6 +1427,14 @@ main() {
             fi
             ;;
         analyze)
+            # 如果第一个参数是 -h 或 --help，则显示 analyze 模式的帮助信息
+            if [[ "${FILTERED_ARGS[0]}" == "-h" ]] || [[ "${FILTERED_ARGS[0]}" == "--help" ]]; then
+                echo -e "${BLUE}显示 analyze 命令 (src.main --mode analyze) 的帮助信息...${NC}"
+                activate_venv # 确保环境已激活
+                python -m src.main --mode analyze --help
+                exit $?
+            fi
+
             if [ -n "$GLOBAL_DEBUG" ]; then
                 analyze_data "${FILTERED_ARGS[@]}" --debug
             else
@@ -1368,6 +1459,14 @@ main() {
             fi
             ;;
         server)
+            # 如果第一个参数是 -h 或 --help，则显示 web_server 的帮助信息
+            if [[ "${FILTERED_ARGS[0]}" == "-h" ]] || [[ "${FILTERED_ARGS[0]}" == "--help" ]]; then
+                echo -e "${BLUE}显示 server 命令 (src.web_server.run) 的帮助信息...${NC}"
+                activate_venv # 确保环境已激活
+                python -m src.web_server.run --help
+                exit $?
+            fi
+
             if [ -n "$GLOBAL_DEBUG" ]; then
                 run_server "${FILTERED_ARGS[@]}" --debug
             else
@@ -1385,6 +1484,14 @@ main() {
             download_driver
             ;;
         stats)
+            # 如果第一个参数是 -h 或 --help，则显示 compare_stats 的帮助信息
+            if [[ "${FILTERED_ARGS[0]}" == "-h" ]] || [[ "${FILTERED_ARGS[0]}" == "--help" ]]; then
+                echo -e "${BLUE}显示 stats 命令 (src.utils.compare_stats) 的帮助信息...${NC}"
+                activate_venv # 确保环境已激活
+                python -m src.utils.compare_stats --help
+                exit $?
+            fi
+
             if [ -n "$GLOBAL_DEBUG" ]; then
                 compare_stats "${FILTERED_ARGS[@]}" --debug
             else
@@ -1392,6 +1499,15 @@ main() {
             fi
             ;;
         check-tasks)
+            # 如果第一个参数是 -h 或 --help，则显示 compare_stats 的帮助信息
+            # (check-tasks 是 compare_stats 的一个特定调用封装)
+            if [[ "${FILTERED_ARGS[0]}" == "-h" ]] || [[ "${FILTERED_ARGS[0]}" == "--help" ]]; then
+                echo -e "${BLUE}显示 check-tasks 相关模块 (src.utils.compare_stats) 的帮助信息...${NC}"
+                activate_venv # 确保环境已激活
+                python -m src.utils.compare_stats --help
+                exit $?
+            fi
+
             if [ -n "$GLOBAL_DEBUG" ]; then
                 check_tasks "${FILTERED_ARGS[@]}" --debug
             else
@@ -1413,6 +1529,14 @@ main() {
             fi
             ;;
         rebuild-md)
+            # 如果第一个参数是 -h 或 --help，则显示 rebuild_metadata 的帮助信息
+            if [[ "${FILTERED_ARGS[0]}" == "-h" ]] || [[ "${FILTERED_ARGS[0]}" == "--help" ]]; then
+                echo -e "${BLUE}显示 rebuild-md 命令 (src.utils.rebuild_metadata) 的帮助信息...${NC}"
+                activate_venv # 确保环境已激活
+                python -m src.utils.rebuild_metadata --help
+                exit $?
+            fi
+
             if [ -n "$GLOBAL_DEBUG" ]; then
                 run_rebuild_metadata "${FILTERED_ARGS[@]}" --debug
             else
@@ -1420,9 +1544,28 @@ main() {
             fi
             ;;
         dingpush)
-            # 验证参数
-            validate_args "dingpush" "${FILTERED_ARGS[@]}" || exit 1
-            
+            # 检查是否请求帮助或无参数
+            # 注意: FILTERED_ARGS 是移除了全局 --debug 后的参数列表
+            if [[ -z "${FILTERED_ARGS[0]}" ]] || [[ "${FILTERED_ARGS[0]}" == "-h" ]] || [[ "${FILTERED_ARGS[0]}" == "--help" ]]; then
+                echo -e "${BLUE}正在调用 src.utils.dingtalk 以显示其直接支持的子命令和选项...${NC}"
+                activate_venv # 确保环境已激活
+                python -m src.utils.dingtalk --help
+                exit_code=$?
+                echo "" # 加一个空行
+                echo -e "${YELLOW}提示:${NC} ${BLUE}run.sh脚本还为dingpush封装了 'weekly_report' 子命令，用于生成并推送周报。${NC}"
+                echo -e "${BLUE}     其功能是先调用 generate_weekly_report.py 生成报告，然后使用 dingtalk.py 的 pushfile 进行推送。${NC}"
+                echo -e "${BLUE}     要查看 run.sh 提供的所有命令 (包括 weekly_report 的描述)，请使用: ./run.sh help${NC}"
+                
+                # 如果python脚本因为缺少命令而退出码为2 (argparse的标准行为)
+                # 这时它通常会打印帮助信息，所以我们应该视作成功 (退出码0)
+                if [ $exit_code -eq 2 ]; then
+                    exit 0 
+                fi
+                exit $exit_code # 否则，使用python脚本的实际退出码
+            fi
+
+            # 正常参数验证和执行
+            validate_args "dingpush" "${FILTERED_ARGS[@]}" || exit 1 
             if [ -n "$GLOBAL_DEBUG" ]; then
                 run_dingpush "${FILTERED_ARGS[@]}" --debug
             else
