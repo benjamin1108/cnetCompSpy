@@ -41,17 +41,27 @@ class StatsManager:
         self.log_dir = os.path.join(project_root, 'logs')
         self.all_access_log_file = os.path.join(self.log_dir, 'all_access_log.json')
         
+        # 新增：使用行分隔的JSON文件来提高性能
+        self.access_log_lines_file = os.path.join(data_dir, 'access_log_lines.jsonl')
+        self.all_access_log_lines_file = os.path.join(self.log_dir, 'all_access_log_lines.jsonl')
+        
         # 确保访问日志文件存在
         self._ensure_access_log_file()
         self._ensure_all_access_log_file()
+        self._ensure_access_log_lines_files()
         
         # 记录服务器启动时间
         self.server_start_time = datetime.now()
+        
+        # 内存缓存，减少文件读取
+        self._access_cache = None
+        self._cache_last_modified = 0
         
         self.logger.info("统计管理器初始化完成")
         self.logger.info(f"日志目录: {self.log_dir}")
         self.logger.info(f"访问日志文件: {self.access_log_file}")
         self.logger.info(f"完整访问日志文件: {self.all_access_log_file}")
+        self.logger.info(f"高性能访问日志文件: {self.access_log_lines_file}")
     
     def _ensure_access_log_file(self):
         """确保访问日志文件存在"""
@@ -72,6 +82,18 @@ class StatsManager:
             with open(self.all_access_log_file, 'w', encoding='utf-8') as f:
                 json.dump([], f, ensure_ascii=False)
             self.logger.info(f"已创建完整访问日志文件: {self.all_access_log_file}")
+    
+    def _ensure_access_log_lines_files(self):
+        """确保行分隔的访问日志文件存在"""
+        if not os.path.exists(self.access_log_lines_file):
+            with open(self.access_log_lines_file, 'w', encoding='utf-8') as f:
+                pass  # 创建空文件
+            self.logger.info(f"已创建高性能访问日志文件: {self.access_log_lines_file}")
+        
+        if not os.path.exists(self.all_access_log_lines_file):
+            with open(self.all_access_log_lines_file, 'w', encoding='utf-8') as f:
+                pass  # 创建空文件
+            self.logger.info(f"已创建高性能完整访问日志文件: {self.all_access_log_lines_file}")
     
     def _parse_user_agent(self, user_agent_string: str) -> Dict[str, Any]:
         """
@@ -271,69 +293,76 @@ class StatsManager:
     
     def _record_to_all_access_log(self, access_info: Dict[str, Any]):
         """
-        记录到完整访问日志
+        记录到完整访问日志（高性能版本）
         
         Args:
             access_info: 访问信息字典
         """
         try:
-            # 加载现有完整访问日志
-            all_access_details = []
-            try:
-                with open(self.all_access_log_file, 'r', encoding='utf-8') as f:
-                    all_access_details = json.load(f)
-            except (json.JSONDecodeError, FileNotFoundError):
-                self.logger.warning(f"读取完整访问日志文件失败，将创建新文件: {self.all_access_log_file}")
-                all_access_details = []
-            
-            # 添加新的访问记录
-            all_access_details.append(access_info)
-            
-            # 限制日志大小（只保留最近的50000条记录）
-            if len(all_access_details) > 50000:
-                all_access_details = all_access_details[-50000:]
-            
-            # 保存完整访问日志
-            with open(self.all_access_log_file, 'w', encoding='utf-8') as f:
-                json.dump(all_access_details, f, ensure_ascii=False, indent=2)
+            # 使用追加模式写入行分隔的JSON文件，性能更好
+            with open(self.all_access_log_lines_file, 'a', encoding='utf-8') as f:
+                f.write(json.dumps(access_info, ensure_ascii=False) + '\n')
                 
         except Exception as e:
             self.logger.error(f"记录到完整访问日志失败: {e}")
     
     def _record_to_main_access_log(self, access_info: Dict[str, Any]):
         """
-        记录到主访问日志（用于统计分析）
+        记录到主访问日志（高性能版本）
         
         Args:
             access_info: 访问信息字典
         """
         try:
-            # 加载现有访问日志
-            access_details = []
-            try:
-                with open(self.access_log_file, 'r', encoding='utf-8') as f:
-                    access_details = json.load(f)
-            except (json.JSONDecodeError, FileNotFoundError):
-                self.logger.warning(f"读取访问日志文件失败，将创建新文件: {self.access_log_file}")
-                access_details = []
-            
-            # 添加新的访问记录
-            access_details.append(access_info)
-            
-            # 限制日志大小（只保留最近的10000条记录）
-            if len(access_details) > 10000:
-                access_details = access_details[-10000:]
-            
-            # 保存访问日志
-            with open(self.access_log_file, 'w', encoding='utf-8') as f:
-                json.dump(access_details, f, ensure_ascii=False, indent=2)
+            # 使用追加模式写入行分隔的JSON文件，性能更好
+            with open(self.access_log_lines_file, 'a', encoding='utf-8') as f:
+                f.write(json.dumps(access_info, ensure_ascii=False) + '\n')
+                
+            # 清除缓存，下次读取时重新加载
+            self._access_cache = None
                 
         except Exception as e:
             self.logger.error(f"记录到主访问日志失败: {e}")
     
+    def _load_access_details_from_lines(self, file_path: str, limit: int = 10000) -> List[Dict[str, Any]]:
+        """
+        从行分隔的JSON文件加载访问详情（高性能版本）
+        
+        Args:
+            file_path: 文件路径
+            limit: 最大记录数
+            
+        Returns:
+            访问详情列表
+        """
+        try:
+            if not os.path.exists(file_path):
+                return []
+            
+            access_details = []
+            with open(file_path, 'r', encoding='utf-8') as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        try:
+                            record = json.loads(line)
+                            access_details.append(record)
+                        except json.JSONDecodeError:
+                            continue  # 跳过损坏的行
+            
+            # 按时间戳倒序排序
+            access_details.sort(key=lambda x: x.get('timestamp', 0), reverse=True)
+            
+            # 限制记录数
+            return access_details[:limit]
+        
+        except Exception as e:
+            self.logger.error(f"从行分隔文件加载访问详情失败: {e}")
+            return []
+    
     def get_access_details(self, limit: int = 1000) -> List[Dict[str, Any]]:
         """
-        获取访问详情
+        获取访问详情（高性能版本）
         
         Args:
             limit: 最大记录数，默认1000
@@ -342,6 +371,11 @@ class StatsManager:
             访问详情列表
         """
         try:
+            # 优先使用高性能的行分隔文件
+            if os.path.exists(self.access_log_lines_file):
+                return self._load_access_details_from_lines(self.access_log_lines_file, limit)
+            
+            # 回退到传统JSON文件
             if not os.path.exists(self.access_log_file):
                 return []
             
@@ -360,7 +394,7 @@ class StatsManager:
     
     def get_all_access_details(self, limit: int = 1000, include_non_existent: bool = True) -> List[Dict[str, Any]]:
         """
-        获取完整访问详情
+        获取完整访问详情（高性能版本）
         
         Args:
             limit: 最大记录数，默认1000
@@ -370,14 +404,19 @@ class StatsManager:
             访问详情列表
         """
         try:
-            if not os.path.exists(self.all_access_log_file):
-                return []
-            
-            with open(self.all_access_log_file, 'r', encoding='utf-8') as f:
-                all_access_details = json.load(f)
-            
-            # 按时间戳倒序排序
-            all_access_details.sort(key=lambda x: x.get('timestamp', 0), reverse=True)
+            # 优先使用高性能的行分隔文件
+            if os.path.exists(self.all_access_log_lines_file):
+                all_access_details = self._load_access_details_from_lines(self.all_access_log_lines_file, limit * 2)  # 加载更多以便过滤
+            else:
+                # 回退到传统JSON文件
+                if not os.path.exists(self.all_access_log_file):
+                    return []
+                
+                with open(self.all_access_log_file, 'r', encoding='utf-8') as f:
+                    all_access_details = json.load(f)
+                
+                # 按时间戳倒序排序
+                all_access_details.sort(key=lambda x: x.get('timestamp', 0), reverse=True)
             
             # 是否过滤不存在路径的访问
             if not include_non_existent:
@@ -392,17 +431,28 @@ class StatsManager:
     
     def get_access_stats(self) -> Dict[str, Any]:
         """
-        获取访问统计数据
+        获取访问统计数据（带缓存优化）
         
         Returns:
             访问统计数据，包括PV、UV、设备类型分布等
         """
         try:
-            if not os.path.exists(self.access_log_file):
-                return self._get_empty_stats()
+            # 检查缓存是否有效
+            current_time = time.time()
+            if (self._access_cache is not None and 
+                current_time - self._cache_last_modified < 30):  # 30秒缓存
+                return self._access_cache
             
-            with open(self.access_log_file, 'r', encoding='utf-8') as f:
-                access_details = json.load(f)
+            # 优先使用高性能的行分隔文件
+            if os.path.exists(self.access_log_lines_file):
+                access_details = self._load_access_details_from_lines(self.access_log_lines_file, 50000)  # 加载更多数据用于统计
+            else:
+                # 回退到传统JSON文件
+                if not os.path.exists(self.access_log_file):
+                    return self._get_empty_stats()
+                
+                with open(self.access_log_file, 'r', encoding='utf-8') as f:
+                    access_details = json.load(f)
             
             # 如果没有访问记录，返回空统计数据
             if not access_details:
@@ -481,7 +531,8 @@ class StatsManager:
             top_pages = [{'title': title, 'views': views} 
                          for title, views in sorted(page_views.items(), key=lambda x: x[1], reverse=True)[:10]]
             
-            return {
+            # 更新缓存
+            self._access_cache = {
                 'total_pv': total_pv,
                 'total_uv': total_uv,
                 'server_start_pv': server_start_pv,
@@ -497,6 +548,9 @@ class StatsManager:
                 'top_pages': top_pages,
                 'server_start_time': self.server_start_time.strftime('%Y-%m-%d %H:%M:%S')
             }
+            self._cache_last_modified = current_time
+            
+            return self._access_cache
             
         except Exception as e:
             self.logger.error(f"获取访问统计数据失败: {e}")

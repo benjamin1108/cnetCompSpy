@@ -256,15 +256,43 @@ class DocumentManager:
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
             
-            # 使用Python-Markdown渲染
+            # 预处理markdown内容，修复列表缩进问题和斜体语法问题
+            content = self._preprocess_markdown_lists(content)
+            
+            # 使用Python-Markdown渲染，优化扩展配置以确保列表正确渲染
             html = markdown.markdown(
                 content,
                 extensions=[
-                    'markdown.extensions.tables',
-                    'markdown.extensions.fenced_code',
-                    'markdown.extensions.codehilite',
-                    'markdown.extensions.toc'
-                ]
+                    'markdown.extensions.extra',            # 包含多个常用扩展
+                    'markdown.extensions.tables',           # 表格支持
+                    'markdown.extensions.fenced_code',      # 代码块支持
+                    'markdown.extensions.codehilite',       # 代码高亮
+                    'markdown.extensions.toc',              # 目录支持
+                    'markdown.extensions.def_list',         # 定义列表
+                    'markdown.extensions.abbr',             # 缩写支持
+                    'markdown.extensions.attr_list',        # 属性列表
+                    'markdown.extensions.footnotes',        # 脚注支持
+                    'markdown.extensions.admonition',       # 警告框支持
+                    'markdown.extensions.smarty'            # 智能标点符号
+                ],
+                extension_configs={
+                    'markdown.extensions.codehilite': {
+                        'css_class': 'highlight',
+                        'use_pygments': True
+                    },
+                    'markdown.extensions.toc': {
+                        'permalink': False,                  # 禁用永久链接符号
+                        'toc_depth': 6                       # 支持所有标题级别
+                    },
+                    'markdown.extensions.smarty': {
+                        'smart_angled_quotes': True,
+                        'smart_dashes': True,
+                        'smart_ellipses': True,
+                        'smart_quotes': True
+                    }
+                },
+                # 设置tab_length为4，确保缩进正确识别
+                tab_length=4
             )
             
             return html
@@ -272,6 +300,54 @@ class DocumentManager:
         except Exception as e:
             self.logger.error(f"渲染文档时出错: {e}")
             return f"<p>无法渲染文档: {e}</p>"
+    
+    def _preprocess_markdown_lists(self, content: str) -> str:
+        """
+        预处理markdown内容，修复列表缩进问题和斜体语法问题
+        
+        Args:
+            content: 原始markdown内容
+            
+        Returns:
+            处理后的markdown内容
+        """
+        import re
+        
+        lines = content.split('\n')
+        processed_lines = []
+        
+        for line in lines:
+            # 跳过包含HTML注释的行，避免影响AI任务标记
+            if '<!--' in line and '-->' in line:
+                processed_lines.append(line)
+                continue
+            
+            # 修复下划线斜体语法问题
+            # 匹配模式：非空格字符 + 下划线 + 内容 + 下划线 + 非空格字符
+            # 在下划线前后添加空格，确保markdown能正确识别斜体语法
+            line = re.sub(r'([^\s])_([^_\s][^_]*[^_\s])_([^\s])', r'\1 _\2_ \3', line)
+            
+            # 检查是否是列表项（有序或无序）
+            # 匹配模式：开头可能有空格，然后是列表标记
+            list_match = re.match(r'^(\s*)([-*+]|\d+\.)\s+(.*)$', line)
+            
+            if list_match:
+                indent, marker, text = list_match.groups()
+                indent_len = len(indent)
+                
+                # 如果缩进是2的倍数但不是4的倍数，转换为4空格缩进
+                if indent_len > 0 and indent_len % 2 == 0 and indent_len % 4 != 0:
+                    # 将2空格缩进转换为4空格缩进
+                    new_indent_len = (indent_len // 2) * 4
+                    new_indent = ' ' * new_indent_len
+                    processed_line = f"{new_indent}{marker} {text}"
+                    processed_lines.append(processed_line)
+                else:
+                    processed_lines.append(line)
+            else:
+                processed_lines.append(line)
+        
+        return '\n'.join(processed_lines)
     
     def _extract_translated_title(self, file_path: str) -> Optional[str]:
         """
