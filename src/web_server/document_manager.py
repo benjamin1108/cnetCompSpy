@@ -244,62 +244,23 @@ class DocumentManager:
     
     def _render_document(self, file_path: str) -> str:
         """
-        渲染文档为HTML
+        渲染文档为原始markdown内容
         
         Args:
             file_path: 文档路径
             
         Returns:
-            渲染后的HTML
+            原始markdown内容
         """
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
             
-            # 预处理markdown内容，修复列表缩进问题和斜体语法问题
-            content = self._preprocess_markdown_lists(content)
-            
-            # 使用Python-Markdown渲染，优化扩展配置以确保列表正确渲染
-            html = markdown.markdown(
-                content,
-                extensions=[
-                    'markdown.extensions.extra',            # 包含多个常用扩展
-                    'markdown.extensions.tables',           # 表格支持
-                    'markdown.extensions.fenced_code',      # 代码块支持
-                    'markdown.extensions.codehilite',       # 代码高亮
-                    'markdown.extensions.toc',              # 目录支持
-                    'markdown.extensions.def_list',         # 定义列表
-                    'markdown.extensions.abbr',             # 缩写支持
-                    'markdown.extensions.attr_list',        # 属性列表
-                    'markdown.extensions.footnotes',        # 脚注支持
-                    'markdown.extensions.admonition',       # 警告框支持
-                    'markdown.extensions.smarty'            # 智能标点符号
-                ],
-                extension_configs={
-                    'markdown.extensions.codehilite': {
-                        'css_class': 'highlight',
-                        'use_pygments': True
-                    },
-                    'markdown.extensions.toc': {
-                        'permalink': False,                  # 禁用永久链接符号
-                        'toc_depth': 6                       # 支持所有标题级别
-                    },
-                    'markdown.extensions.smarty': {
-                        'smart_angled_quotes': True,
-                        'smart_dashes': True,
-                        'smart_ellipses': True,
-                        'smart_quotes': True
-                    }
-                },
-                # 设置tab_length为4，确保缩进正确识别
-                tab_length=4
-            )
-            
-            return html
+            return content
         
         except Exception as e:
-            self.logger.error(f"渲染文档时出错: {e}")
-            return f"<p>无法渲染文档: {e}</p>"
+            self.logger.error(f"读取文档时出错: {e}")
+            return f"无法读取文档: {e}"
     
     def _preprocess_markdown_lists(self, content: str) -> str:
         """

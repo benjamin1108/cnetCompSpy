@@ -3,6 +3,8 @@
 {% block title %}{{ title|default('文档') }}{% endblock %}
 
 {% block head %}
+<!-- 添加marked.js库用于前端markdown渲染 -->
+<script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
 <style>
     /* 文档页面特定样式 */
     .document-header {
@@ -563,17 +565,196 @@
 <article class="document-content">
     {% if view_type == 'analysis' %}
         <div id="ai-content-wrapper" class="doc-tabs">
-            {{ content|safe }}
+            <!-- 原始markdown内容，将由JavaScript处理 -->
+            <div id="raw-markdown-content" style="display: none;">{{ content }}</div>
             <!-- TAB navigation and content will be populated by JavaScript -->
         </div>
     {% else %}
-        {{ content|safe }}
+        <!-- 原始文档的markdown内容，将由JavaScript渲染 -->
+        <div id="raw-markdown-content" style="display: none;">{{ content }}</div>
+        <div id="rendered-content"></div>
     {% endif %}
 </article>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const rawContent = document.getElementById('raw-markdown-content').textContent;
+    
+    {% if view_type == 'analysis' %}
+        // 对于分析文档，保持原有的TAB处理逻辑
+        const contentWrapper = document.getElementById('ai-content-wrapper');
+        
+        // 动态检测文档中包含的任务类型
+        const taskTypes = detectTaskTypes(rawContent);
+        console.log("检测到的任务类型: ", taskTypes);
+        
+        // 如果没有检测到任何任务类型，则渲染原始markdown并显示提示信息
+        if (taskTypes.length === 0) {
+            const renderedHtml = marked.parse(rawContent);
+            contentWrapper.innerHTML = '<div class="warning-message">未检测到任何AI分析任务内容</div>' + renderedHtml;
+            return;
+        }
+        
+        // 通过标记精确提取任务内容
+        const tasks = extractTasksByMarkers(rawContent, taskTypes);
+        
+        // 清空原始内容，准备重新填充
+        contentWrapper.innerHTML = '';
+        
+        // 重命名任务类型
+        const renameTask = (taskType) => {
+            if (taskType === "AI竞争分析") {
+                return "AI摘要分析";
+            }
+            return taskType;
+        };
+        
+        // 定义任务的优先级顺序
+        const taskPriority = {
+            "AI摘要分析": 1,
+            "AI全文翻译": 2,
+            "AI技术要点": 3,
+            "AI市场影响": 4
+        };
+        
+        // 按照优先级排序任务类型
+        const sortedTaskTypes = [...taskTypes].sort((a, b) => {
+            const taskA = a === "AI竞争分析" ? "AI摘要分析" : a;
+            const taskB = b === "AI竞争分析" ? "AI摘要分析" : b;
+            
+            const priorityA = taskPriority[taskA] || 999;
+            const priorityB = taskPriority[taskB] || 999;
+            return priorityA - priorityB;
+        });
+        
+        // 创建TAB导航
+        const tabNav = document.createElement('div');
+        tabNav.className = 'tab-nav';
+        
+        // 创建TAB内容容器
+        const tabContents = {};
+        
+        // 按照排序后的任务顺序创建TAB
+        sortedTaskTypes.forEach((taskType, index) => {
+            const content = tasks[taskType] || '';
+            const displayName = renameTask(taskType);
+            const tabId = 'tab-' + index;
+            
+            // 创建TAB按钮
+            const tabButton = document.createElement('button');
+            tabButton.className = 'tab-button';
+            tabButton.textContent = displayName;
+            tabButton.setAttribute('data-tab', tabId);
+            if (index === 0) {
+                tabButton.classList.add('active');
+            }
+            tabNav.appendChild(tabButton);
+            
+            // 创建TAB内容，渲染markdown
+            const tabContent = document.createElement('div');
+            tabContent.className = 'tab-content';
+            tabContent.id = tabId;
+            if (index === 0) {
+                tabContent.classList.add('active');
+            }
+            
+            // 渲染markdown内容
+            const renderedContent = content ? marked.parse(content) : '<p>此部分暂无内容</p>';
+            tabContent.innerHTML = renderedContent;
+            tabContents[tabId] = tabContent;
+        });
+        
+        // 将TAB导航添加到容器
+        contentWrapper.appendChild(tabNav);
+        
+        // 将TAB内容添加到容器
+        Object.values(tabContents).forEach(content => {
+            contentWrapper.appendChild(content);
+        });
+        
+        // 添加TAB切换逻辑
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', function() {
+                const tabId = this.getAttribute('data-tab');
+                
+                // 更新按钮状态
+                document.querySelectorAll('.tab-button').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                this.classList.add('active');
+                
+                // 更新内容显示
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+    {% else %}
+        // 对于原始文档，直接渲染markdown
+        const renderedContent = document.getElementById('rendered-content');
+        const renderedHtml = marked.parse(rawContent);
+        renderedContent.innerHTML = renderedHtml;
+    {% endif %}
+});
+
+/**
+ * 动态检测文档中包含的任务类型
+ */
+function detectTaskTypes(content) {
+    const taskTypes = [];
+    let currentPos = 0;
+    const startToken = "<!-- AI_TASK_START: ";
+    const endToken = " -->";
+    
+    while (true) {
+        const startIndex = content.indexOf(startToken, currentPos);
+        if (startIndex === -1) break;
+        
+        const typeStartIndex = startIndex + startToken.length;
+        const typeEndIndex = content.indexOf(endToken, typeStartIndex);
+        
+        if (typeEndIndex !== -1) {
+            const taskType = content.substring(typeStartIndex, typeEndIndex);
+            if (taskType !== "AI标题翻译" && !taskTypes.includes(taskType)) {
+                taskTypes.push(taskType);
+            }
+            currentPos = typeEndIndex + endToken.length;
+        } else {
+            break;
+        }
+    }
+    
+    return taskTypes;
+}
+
+/**
+ * 通过标记提取任务内容
+ */
+function extractTasksByMarkers(content, taskTypes) {
+    const tasks = {};
+    
+    taskTypes.forEach(taskType => {
+        const startMarker = '<!-- AI_TASK_START: ' + taskType + ' -->';
+        const endMarker = '<!-- AI_TASK_END: ' + taskType + ' -->';
+        
+        const startIndex = content.indexOf(startMarker);
+        if (startIndex !== -1) {
+            const contentStart = startIndex + startMarker.length;
+            const endIndex = content.indexOf(endMarker, contentStart);
+            
+            if (endIndex !== -1) {
+                const taskContent = content.substring(contentStart, endIndex).trim();
+                tasks[taskType] = taskContent;
+            }
+        }
+    });
+    
+    return tasks;
+}
+</script>
 {% endblock %}
 
 {% block scripts %}
-{% if view_type == 'analysis' %}
-<script src="{{ url_for('static', filename='js/document.js') }}"></script>
-{% endif %}
+<!-- 移除原有的document.js，因为逻辑已经内联到模板中 -->
 {% endblock %}
