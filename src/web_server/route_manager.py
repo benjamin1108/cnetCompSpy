@@ -363,6 +363,38 @@ class RouteManager:
                 limit=limit
             )
         
+        # 数据库管理页面 - 需要登录
+        @self.app.route('/admin/database')
+        def admin_database():
+            if not self.admin_manager.is_logged_in():
+                return redirect(url_for('login', next=request.url))
+            
+            # 获取数据库信息
+            db_info = self.stats_manager.get_database_info()
+            
+            return render_template(
+                'admin/database.html',
+                title='数据库管理',
+                db_info=db_info
+            )
+        
+        # 清理旧记录 - 需要登录
+        @self.app.route('/admin/cleanup-records', methods=['POST'])
+        def admin_cleanup_records():
+            if not self.admin_manager.is_logged_in():
+                return jsonify({'error': '用户未登录或权限不足'}), 401
+            
+            try:
+                days = int(request.form.get('days', 90))
+                if days < 7:
+                    return jsonify({'error': '保留天数不能少于7天'}), 400
+                
+                self.stats_manager.cleanup_old_records(days)
+                return jsonify({'success': True, 'message': f'已清理超过 {days} 天的访问记录'})
+            except Exception as e:
+                self.logger.error(f"清理旧记录失败: {e}")
+                return jsonify({'error': f'清理失败: {e}'}), 500
+        
         # 兼容旧路径，重定向到新路径
         @self.app.route('/stats')
         def stats_page():

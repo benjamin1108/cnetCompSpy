@@ -206,11 +206,15 @@ def main():
         logger.info("收到退出信号，服务器正在关闭...")
         if 'scheduler' in locals(): # 确保scheduler已成功初始化
             scheduler.stop()
+        if 'server' in locals(): # 确保server已成功初始化
+            server.shutdown()
     
     except Exception as e:
         logger.error(f"服务器运行时出错: {e}", exc_info=True)
         if 'scheduler' in locals(): # 确保scheduler已成功初始化
             scheduler.stop()
+        if 'server' in locals(): # 确保server已成功初始化
+            server.shutdown()
         sys.exit(1)
 
 

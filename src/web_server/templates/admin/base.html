@@ -210,6 +210,11 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link {% if request.path == '/admin/database' %}active{% endif %}" href="{{ url_for('admin_database') }}">
+                        <i class="bi bi-database"></i> 数据库管理
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link {% if request.path == '/admin/process-locks' %}active{% endif %}" href="{{ url_for('admin_process_locks') }}">
                         <i class="bi bi-lock"></i> 进程锁管理
                     </a>

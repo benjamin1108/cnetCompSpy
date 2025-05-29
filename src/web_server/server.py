@@ -103,6 +103,25 @@ class WebServer(BaseServer):
             self.process_lock_manager.release_lock()
             self.logger.info("已释放Web服务器进程锁")
     
+    def shutdown(self):
+        """
+        关闭Web服务器，确保所有资源被正确释放
+        """
+        try:
+            self.logger.info("正在关闭Web服务器...")
+            
+            # 关闭统计管理器
+            if hasattr(self, 'stats_manager') and self.stats_manager:
+                self.stats_manager.shutdown()
+            
+            # 释放进程锁
+            self._release_lock()
+            
+            self.logger.info("Web服务器已关闭")
+            
+        except Exception as e:
+            self.logger.error(f"关闭Web服务器时出错: {e}")
+    
     def run(self, host: str = None, port: int = None, debug: bool = None):
         """
         运行Web服务器
