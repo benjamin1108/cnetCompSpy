@@ -23,16 +23,29 @@ from src.utils.access_log_db import AccessLogDB
 class StatsManager:
     """统计管理类"""
     
-    def __init__(self, data_dir: str):
+    def __init__(self, data_dir: str, enable_access_log: bool = True):
         """
         初始化统计管理器
         
         Args:
             data_dir: 数据目录路径
+            enable_access_log: 是否启用访问日志记录，默认True
         """
         self.logger = logging.getLogger(__name__)
         
         self.data_dir = data_dir
+        self.enable_access_log = enable_access_log
+        
+        # 如果禁用访问日志，跳过数据库初始化
+        if not enable_access_log:
+            self.logger.info("访问日志记录已禁用，跳过数据库初始化")
+            self.main_access_db = None
+            self.all_access_db = None
+            self.server_start_time = datetime.now()
+            self._user_agent_cache = {}
+            self._user_agent_cache_lock = threading.RLock()
+            self._max_cache_size = 1000
+            return
         
         # 获取项目根目录
         current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -275,6 +288,10 @@ class StatsManager:
             path_exists: 路径是否存在，不存在的路径（扫描访问）不会记录到主统计中
             response_obj: Flask响应对象，用于获取状态码
         """
+        # 如果访问日志被禁用，直接返回
+        if not self.enable_access_log or not self.main_access_db or not self.all_access_db:
+            return
+            
         try:
             if not path and request:
                 path = request.path
@@ -349,6 +366,10 @@ class StatsManager:
         Returns:
             访问详情列表
         """
+        # 如果访问日志被禁用，返回空列表
+        if not self.enable_access_log or not self.main_access_db:
+            return []
+            
         try:
             return self.main_access_db.get_access_details(limit=limit, include_non_existent=False)
         except Exception as e:
@@ -366,6 +387,10 @@ class StatsManager:
         Returns:
             访问详情列表
         """
+        # 如果访问日志被禁用，返回空列表
+        if not self.enable_access_log or not self.all_access_db:
+            return []
+            
         try:
             return self.all_access_db.get_access_details(limit=limit, include_non_existent=include_non_existent)
         except Exception as e:
@@ -379,6 +404,10 @@ class StatsManager:
         Returns:
             访问统计数据，包括PV、UV、设备类型分布等
         """
+        # 如果访问日志被禁用，返回空统计数据
+        if not self.enable_access_log or not self.main_access_db:
+            return self._get_empty_stats()
+            
         try:
             stats = self.main_access_db.get_access_stats()
             # 添加服务器启动时间
@@ -535,6 +564,11 @@ class StatsManager:
         """
         关闭统计管理器，确保所有待写入的记录都被保存
         """
+        # 如果访问日志被禁用，无需关闭数据库
+        if not self.enable_access_log or not self.main_access_db or not self.all_access_db:
+            self.logger.info("访问日志已禁用，跳过关闭操作")
+            return
+            
         try:
             self.logger.info("正在关闭统计管理器...")
             

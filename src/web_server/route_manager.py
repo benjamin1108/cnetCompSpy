@@ -14,6 +14,7 @@ from flask import redirect, url_for, session, flash
 from datetime import datetime, timedelta
 import json
 import os
+from src.utils.config_loader import get_config
 
 class RouteManager:
     """路由管理器类"""
@@ -36,6 +37,10 @@ class RouteManager:
         self.vendor_manager = vendor_manager
         self.admin_manager = admin_manager
         self.stats_manager = stats_manager
+        
+        # 从配置中读取是否启用访问日志
+        config = get_config()
+        self.enable_access_log = config.get('webserver', {}).get('enable_access_log', True)
         
         # 注册所有路由
         self._register_routes()
@@ -656,8 +661,8 @@ class RouteManager:
         """注册错误处理器"""
         @self.app.errorhandler(404)
         def page_not_found(e):
-            # 记录404访问尝试
-            if hasattr(self, 'stats_manager') and self.stats_manager:
+            # 只有在启用访问日志时才记录404访问尝试
+            if self.enable_access_log and hasattr(self, 'stats_manager') and self.stats_manager:
                 # For a 404, the response object isn't readily available here before rendering the template.
                 # stats_manager.record_access will infer status 404 if response_obj is None and path_exists is False.
                 self.stats_manager.record_access(

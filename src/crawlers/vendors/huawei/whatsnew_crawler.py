@@ -372,24 +372,9 @@ class HuaweiWhatsnewCrawler(BaseCrawler):
                         continue
                     
                     # 构建更新条目
-                    # 根据time_prefix生成具体的发布日期
-                    try:
-                        year, month = time_prefix.split('-')
-                        # 使用月份的最后一天作为发布日期
-                        if month in ['04', '06', '09', '11']:
-                            last_day = '30'
-                        elif month == '02':
-                            # 检查是否为闰年
-                            year_int = int(year)
-                            if year_int % 4 == 0 and (year_int % 100 != 0 or year_int % 400 == 0):
-                                last_day = '29'
-                            else:
-                                last_day = '28'
-                        else:
-                            last_day = '31'
-                        publish_date = f"{year}-{month}-{last_day}"
-                    except:
-                        publish_date = datetime.date.today().strftime('%Y-%m-%d')
+                    # 华为云没有具体的发布日期，只有年月信息
+                    # 直接使用time_prefix作为发布日期（格式：2025-05）
+                    publish_date = time_prefix
                     
                     # 组合详细内容
                     content_parts = [function_name]

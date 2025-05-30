@@ -20,6 +20,7 @@ from src.web_server.stats_manager import StatsManager
 from src.web_server.route_manager import RouteManager
 from src.utils.process_lock_manager import ProcessLockManager, ProcessType
 from src.web_server.socket_manager import SocketManager
+from src.utils.config_loader import get_config
 
 class WebServer(BaseServer):
     """竞争分析Web服务器类"""
@@ -58,10 +59,10 @@ class WebServer(BaseServer):
             self.logger.warning("调试模式已启用，进程锁检查被禁用")
         
         # 初始化各个管理器
-        self._init_managers()
+        enable_access_log = self._init_managers()
         
         # 注册访问记录中间件
-        self.register_access_logger(self.stats_manager, self.document_manager)
+        self.register_access_logger(self.stats_manager, self.document_manager, enable_access_log)
         
         # 初始化WebSocket管理器
         self.socket_manager = SocketManager(self.app)
@@ -82,8 +83,14 @@ class WebServer(BaseServer):
         # 初始化管理员管理器
         self.admin_manager = AdminManager(self.base_dir)
         
+        # 从配置中读取是否启用访问日志
+        config = get_config()
+        enable_access_log = config.get('webserver', {}).get('enable_access_log', True)
+        
         # 初始化统计管理器
-        self.stats_manager = StatsManager(self.data_dir)
+        self.stats_manager = StatsManager(self.data_dir, enable_access_log)
+        
+        return enable_access_log
     
     def _register_routes(self):
         """注册路由"""

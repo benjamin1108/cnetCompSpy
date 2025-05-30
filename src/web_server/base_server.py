@@ -75,14 +75,19 @@ class BaseServer:
         def inject_now():
             return {'now': datetime.now()}
     
-    def register_access_logger(self, stats_manager, document_manager=None):
+    def register_access_logger(self, stats_manager, document_manager=None, enable_access_log=True):
         """
         注册访问记录中间件
         
         Args:
             stats_manager: 统计管理器实例
             document_manager: 文档管理器实例，用于获取文档标题
+            enable_access_log: 是否启用访问日志记录，默认True
         """
+        if not enable_access_log:
+            self.logger.info("访问日志记录已禁用")
+            return
+            
         @self.app.before_request
         def before_request():
             # 忽略静态文件请求
