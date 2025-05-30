@@ -38,6 +38,54 @@ class FileDiscoveryStage(PipelineStage):
             # Fallback to a cleaned absolute path if relpath fails (e.g., different drives on Windows)
             return abs_file_path.replace('\\', '/')
 
+    def _should_analyze_file(self, file_path: str, context: AnalysisContext) -> bool:
+        """
+        检查文件是否应该被分析，基于源配置中的analyze字段。
+        
+        Args:
+            file_path: 文件的完整路径
+            context: 分析上下文
+            
+        Returns:
+            bool: 如果该文件对应的数据源配置中analyze为true，则返回True
+        """
+        try:
+            # 从文件路径中提取厂商和来源类型
+            # 文件路径格式：data/raw/vendor/source_type/file.md
+            if not context.raw_data_dir:
+                self.logger.warning(f"Raw data directory not configured, cannot determine source config for file: {file_path}")
+                return True  # 如果无法确定，默认分析
+            
+            # 获取相对于raw_data_dir的路径
+            try:
+                relative_path = os.path.relpath(file_path, context.raw_data_dir)
+                path_parts = relative_path.split(os.sep)
+                
+                if len(path_parts) >= 2:
+                    vendor = path_parts[0]
+                    source_type = path_parts[1]
+                    
+                    # 从配置中检查该数据源的analyze字段
+                    sources_config = context.config.get('sources', {})
+                    if vendor in sources_config and source_type in sources_config[vendor]:
+                        analyze_flag = sources_config[vendor][source_type].get('analyze', False)
+                        self.logger.debug(f"文件 {file_path} 对应的数据源 {vendor}/{source_type} analyze配置: {analyze_flag}")
+                        return analyze_flag
+                    else:
+                        self.logger.warning(f"未找到文件 {file_path} 对应的数据源配置 {vendor}/{source_type}")
+                        return True  # 如果找不到配置，默认分析
+                else:
+                    self.logger.warning(f"无法从文件路径 {file_path} 中提取厂商和来源类型")
+                    return True  # 如果无法提取，默认分析
+                    
+            except ValueError as e:
+                self.logger.warning(f"计算文件 {file_path} 相对路径时出错: {e}")
+                return True  # 如果出错，默认分析
+                
+        except Exception as e:
+            self.logger.error(f"检查文件 {file_path} 是否应该分析时出错: {e}")
+            return True  # 如果出错，默认分析
+
     def _is_file_analyzed(self, 
                             normalized_path_for_meta: str, # This is now relative to project_root
                             full_file_path: str, 
@@ -144,6 +192,11 @@ class FileDiscoveryStage(PipelineStage):
                 self.logger.error(f"指定的 specific_file '{current_file_full_path}' 类型不受支持 (支持: {supported_extensions})。")
                 return context
 
+            # 检查文件是否应该被分析（基于analyze配置）
+            if not self._should_analyze_file(current_file_full_path, context):
+                self.logger.info(f"指定文件 '{current_file_full_path}' 对应的数据源配置中 analyze=false，跳过分析。")
+                return context
+
             normalized_path_for_meta = self._normalize_path_for_metadata(current_file_full_path, context)
             if force_mode or not self._is_file_analyzed(normalized_path_for_meta, current_file_full_path, context):
                 discovered_files_full_paths.append(current_file_full_path)
@@ -156,6 +209,8 @@ class FileDiscoveryStage(PipelineStage):
 
             # 用于按厂商筛选的计数器 (如果 limit_per_vendor > 0)
             vendor_counts: Dict[str, int] = {}
+            # 统计因analyze=false而跳过的文件数
+            skipped_analyze_false = 0
 
             for root, _, found_in_dir_files in os.walk(raw_data_dir):
                 # 如果指定了 vendor_to_process，并且当前 root 不属于该 vendor，则跳过此目录
@@ -169,11 +224,17 @@ class FileDiscoveryStage(PipelineStage):
                             continue # 跳过不匹配的厂商目录
                     except ValueError:
                         # 如果无法确定相对路径或厂商，保守起见继续处理
-                        pass 
+                        pass
                 
                 for file_name in found_in_dir_files:
                     if any(file_name.lower().endswith(ext) for ext in supported_extensions):
                         current_file_full_path = os.path.join(root, file_name)
+                        
+                        # 检查文件是否应该被分析（基于analyze配置）
+                        if not self._should_analyze_file(current_file_full_path, context):
+                            skipped_analyze_false += 1
+                            continue
+                        
                         normalized_path_for_meta = self._normalize_path_for_metadata(current_file_full_path, context)
                         
                         # 应用 limit_per_vendor (如果开启且未达到限制)
@@ -194,6 +255,9 @@ class FileDiscoveryStage(PipelineStage):
             
             scan_type_msg = ", ".join(log_msg_parts) if log_msg_parts else "标准扫描"
             self.logger.info(f"{scan_type_msg}: 扫描找到 {len(discovered_files_full_paths)} {'个文件需要分析' if not force_mode else '个符合条件的文件'}")
+            
+            if skipped_analyze_false > 0:
+                self.logger.info(f"跳过了 {skipped_analyze_false} 个文件（数据源配置中 analyze=false）")
 
         # 全局 file_limit 应用 (如果 specific_file_input 为空，且 limit_per_vendor 未生效或全局限制更严格)
         # 注意：如果 limit_per_vendor 已应用，这里的全局 file_limit 逻辑可能需要调整或明确其行为

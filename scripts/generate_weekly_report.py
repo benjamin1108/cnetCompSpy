@@ -46,7 +46,7 @@ def get_all_raw_content_for_week(config: dict) -> List[Dict[str, str]]:
     logger = logging.getLogger(__name__)
     raw_data_config = config.get("data_paths", {})
     base_path = raw_data_config.get("raw_articles_base", "data/raw")
-    vendors = config.get("vendors_to_scan", ["aws", "azure", "gcp"])
+    vendors = config.get("vendors_to_scan", ["aws", "azure", "gcp", "huawei"])
 
     if not os.path.isdir(base_path):
         logger.error(f"原始数据基础路径未找到或不是一个目录: {base_path}")

@@ -3,5 +3,5 @@ scheduler:
   daily_task_time: "08:00"  # 每日定时任务执行时间，格式为 HH:MM（24小时制）
   check_interval: 10  # 检查配置文件的时间间隔（秒） 
   debug_mode: false  # 是否在调度任务时启用调试模式，设置为true时自动为所有任务添加--debug参数
-  vendor: null  # 指定要处理的云服务提供商，设置为null时处理所有厂商，可选值: aws, azure, gcp, null
+  vendor: null  # 指定要处理的云服务提供商，设置为null时处理所有厂商，可选值: aws, azure, gcp, huawei, null
   limit: null  # 限制每个来源处理的文章数量，设置为null时不限制 

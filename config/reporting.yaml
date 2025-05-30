@@ -18,10 +18,10 @@ reporting:
     # 各厂商的Emoji图标，键为大写厂商名 (AWS, AZURE, GCP等, 与 vendors_to_scan 中的名称对应)
     vendor_emojis:
       AWS: "AWS"
-      AZURE: "AZURE
+      AZURE: "AZURE"
       GCP: "GCP" # 示例：也可以是中文
-      TENCENT: "🐧"
       HUAWEI: "🌺"
+      TENCENT: "🐧"
       VOLCANO: "🌋"
       ALIBABA: "阿里云" # 示例
       DEFAULT: "📰" # 未在上方明确列出的厂商，或作为备用的默认Emoji

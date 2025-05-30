@@ -4,63 +4,108 @@ sources:
     blog:
       url: "https://aws.amazon.com/blogs/networking-and-content-delivery/"
       type: "blog"
-      test_mode: false # 测试模式开关，true时只爬取1篇文章
+      analyze: true # 是否需要经过AI分析
     whatsnew:
       url: "https://aws.amazon.com/about-aws/whats-new/networking_and_content_delivery"
       type: "what's new"
       max_pages: 40  # 最大爬取页数
+      analyze: true
   azure:
     blog:
       url: "https://azure.microsoft.com/en-us/blog/category/networking/"
       type: "blog"
-      test_mode: false
+      analyze: true
     
     tech-blog:
       url: "https://techcommunity.microsoft.com/category/azure/blog/azurenetworkingblog"
       type: "tech-blog"
-      test_mode: false
+      analyze: true
     
     # infra-blog:
     #   url: "https://techcommunity.microsoft.com/category/azure/blog/azureinfrastructureblog"
     #   type: "infra-blog"
-    #   test_mode: false
+    #   analyze: false
     
     # arch-blog:
     #   url: "https://techcommunity.microsoft.com/category/azure/blog/azurearchitectureblog"
     #   type: "arch-blog"
-    #   test_mode: false
+    #   analyze: false
 
     updates:
       type: "updates"
-      test_mode: false
+      analyze: true
 
   gcp:
     blog:
       url: "https://cloud.google.com/blog/products/networking"
       type: "blog"
-      test_mode: false
+      analyze: true
     
   # tencent:
   #   blog:
   #     url: "https://www.tencentcloud.com/document/product"
   #     type: "blog"
-  #     test_mode: false
+  #     analyze: false
   #   docs:
   #     url: "https://www.tencentcloud.com/document/product"
   #     type: "documentation"
-  # huawei:
-  #   blog:
-  #     url: "https://www.huaweicloud.com/intl/en-us/news/"
-  #     type: "blog"
-  #     test_mode: false
-  #   docs:
-  #     url: "https://support.huaweicloud.com/intl/en-us/index.html"
-  #     type: "documentation"
+  huawei:
+    whatsnew:
+      # VPC相关更新
+      vpc-whatsnew:
+        url: "https://support.huaweicloud.com/wtsnew-vpc/index.html"
+        type: "documentation"
+        analyze: false
+      # EIP相关更新
+      eip-whatsnew:
+        url: "https://support.huaweicloud.com/wtsnew-eip/index.html"
+        type: "documentation"
+        analyze: false
+      # ELB相关更新
+      elb-whatsnew:
+        url: "https://support.huaweicloud.com/wtsnew-elb/index.html"
+        type: "documentation"
+        analyze: false
+      # NAT Gateway相关更新
+      natgateway:
+        url: "https://support.huaweicloud.com/natgateway/index.html"
+        type: "documentation"
+        analyze: false
+      # DC相关更新
+      dc-whatsnew:
+        url: "https://support.huaweicloud.com/wtsnew-dc/index.html"
+        type: "documentation"
+        analyze: false
+      # VPN相关更新
+      vpn-whatsnew:
+        url: "https://support.huaweicloud.com/wtsnew-vpn/index.html"
+        type: "documentation"
+        analyze: false
+      # CC相关更新
+      cc-whatsnew:
+        url: "https://support.huaweicloud.com/wtsnew-cc/index.html"
+        type: "documentation"
+        analyze: false
+      # VPCEP相关更新
+      vpcep-whatsnew:
+        url: "https://support.huaweicloud.com/wtsnew-vpcep/index.html"
+        type: "documentation"
+        analyze: false
+      # ER相关更新
+      er-whatsnew:
+        url: "https://support.huaweicloud.com/wtsnew-er/index.html"
+        type: "documentation"
+        analyze: false
+      # GA相关更新
+      ga-whatsnew:
+        url: "https://support.huaweicloud.com/wtsnew-ga/index.html"
+        type: "documentation"
+        analyze: false
   # volcano:
   #   blog:
   #     url: "https://volcano.sh/en/blog/"
   #     type: "blog"
-  #     test_mode: false
+  #     analyze: false
   #   docs:
   #     url: "https://volcano.sh/en/docs/"
   #     type: "documentation" 
