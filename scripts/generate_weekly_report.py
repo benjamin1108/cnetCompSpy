@@ -81,92 +81,119 @@ def get_all_raw_content_for_week(config: dict) -> List[Dict[str, str]]:
                 for filename in os.listdir(subcategory_path):
                     if filename.endswith(".md"):
                         try:
-                            date_part_str = filename.split('_', 3)
-                            if len(date_part_str) >= 3:
-                                file_date_str = f"{date_part_str[0]}-{date_part_str[1]}-{date_part_str[2]}"
-                                file_date_obj = datetime.datetime.strptime(file_date_str, "%Y-%m-%d").date()
-                                
-                                if start_of_week <= file_date_obj <= today:
-                                    is_target_day_for_week = False
-                                    for i in range(today.weekday() + 1):
-                                        current_iter_day = start_of_week + datetime.timedelta(days=i)
-                                        if file_date_obj == current_iter_day:
-                                            is_target_day_for_week = True
-                                            break
-                                    
-                                    if is_target_day_for_week:
-                                        file_path = os.path.join(subcategory_path, filename)
+                            # 支持两种文件名格式：
+                            # 1. AWS格式: YYYY_MM_DD_*.md (下划线分割)
+                            # 2. Azure格式: YYYY-MM-DD_*.md (连字符分割日期，下划线分割其他部分)
+                            file_date_obj = None
+                            
+                            # 先尝试AWS格式 (YYYY_MM_DD_*.md)
+                            if '_' in filename:
+                                date_part_str = filename.split('_', 3)
+                                if len(date_part_str) >= 3:
+                                    try:
+                                        file_date_str = f"{date_part_str[0]}-{date_part_str[1]}-{date_part_str[2]}"
+                                        file_date_obj = datetime.datetime.strptime(file_date_str, "%Y-%m-%d").date()
+                                        logger.debug(f"文件 {filename}: 使用AWS格式解析日期 {file_date_obj}")
+                                    except ValueError:
+                                        # 如果AWS格式解析失败，尝试Azure格式
+                                        pass
+                            
+                            # 如果AWS格式失败，尝试Azure格式 (YYYY-MM-DD_*.md)
+                            if file_date_obj is None and '-' in filename:
+                                # 查找第一个下划线的位置，日期部分在下划线之前
+                                underscore_pos = filename.find('_')
+                                if underscore_pos > 0:
+                                    date_part = filename[:underscore_pos]
+                                    # 检查是否是YYYY-MM-DD格式
+                                    if len(date_part) == 10 and date_part.count('-') == 2:
                                         try:
-                                            with open(file_path, 'r', encoding='utf-8') as f_article:
-                                                lines = f_article.readlines()
-                                            
-                                            original_url = ""
-                                            raw_content_for_llm_lines = []
-                                            # metadata_header_ended = False # Not strictly needed with new logic
+                                            file_date_obj = datetime.datetime.strptime(date_part, "%Y-%m-%d").date()
+                                            logger.debug(f"文件 {filename}: 使用Azure格式解析日期 {file_date_obj}")
+                                        except ValueError:
+                                            pass
+                            
+                            # 如果两种格式都解析失败，跳过这个文件
+                            if file_date_obj is None:
+                                logger.debug(f"文件 {filename} 不匹配任何已知的日期格式 (AWS: YYYY_MM_DD_*, Azure: YYYY-MM-DD_*)")
+                                continue
+                                
+                            if start_of_week <= file_date_obj <= today:
+                                file_path = os.path.join(subcategory_path, filename)
+                                try:
+                                    with open(file_path, 'r', encoding='utf-8') as f_article:
+                                        lines = f_article.readlines()
+                                    
+                                    original_url = ""
+                                    raw_content_for_llm_lines = []
+                                    # metadata_header_ended = False # Not strictly needed with new logic
 
-                                            in_metadata_section = True 
-                                            
-                                            for line_idx, line_content in enumerate(lines):
-                                                stripped_line = line_content.strip()
-                                                
-                                                if original_url == "" and stripped_line.startswith("**原始链接:**"):
-                                                    match = re.search(r'\((https?://[^\)]+)\)', stripped_line) # Corrected regex escaping for ( and )
-                                                    if match:
-                                                        original_url = match.group(1)
-                                                        logger.debug(f"文件 {filename}: 从'**原始链接:**'行通过正则找到URL: {original_url}")
-                                                    else:
-                                                        potential_url = stripped_line.replace("**原始链接:**", "").strip()
-                                                        if potential_url.startswith("http://") or potential_url.startswith("https://"):
-                                                            original_url = potential_url # This case is less likely if markdown link is used
-                                                            logger.debug(f"文件 {filename}: 从'**原始链接:**'行直接提取URL (非正则匹配): {original_url}")
-                                                
-                                                if stripped_line == "---" and in_metadata_section:
-                                                    in_metadata_section = False
-                                                    continue 
-                                                
-                                                if not in_metadata_section:
-                                                    raw_content_for_llm_lines.append(line_content)
+                                    in_metadata_section = True 
+                                    
+                                    for line_idx, line_content in enumerate(lines):
+                                        stripped_line = line_content.strip()
+                                        
+                                        if original_url == "" and stripped_line.startswith("**原始链接:**"):
+                                            match = re.search(r'\((https?://[^\)]+)\)', stripped_line) # Corrected regex escaping for ( and )
+                                            if match:
+                                                original_url = match.group(1)
+                                                logger.debug(f"文件 {filename}: 从'**原始链接:**'行通过正则找到URL: {original_url}")
+                                            else:
+                                                potential_url = stripped_line.replace("**原始链接:**", "").strip()
+                                                if potential_url.startswith("http://") or potential_url.startswith("https://"):
+                                                    original_url = potential_url # This case is less likely if markdown link is used
+                                                    logger.debug(f"文件 {filename}: 从'**原始链接:**'行直接提取URL (非正则匹配): {original_url}")
+                                        
+                                        if stripped_line == "---" and in_metadata_section:
+                                            in_metadata_section = False
+                                            continue 
+                                        
+                                        if not in_metadata_section:
+                                            raw_content_for_llm_lines.append(line_content)
 
-                                            raw_content_for_llm = "".join(raw_content_for_llm_lines)
+                                    raw_content_for_llm = "".join(raw_content_for_llm_lines)
 
-                                            # Fallback logic if new parsing fails or "---" delimiter is missing
-                                            if not original_url and lines: 
-                                                first_line_stripped = lines[0].strip()
-                                                if first_line_stripped.startswith("http://") or first_line_stripped.startswith("https://"):
-                                                    original_url = first_line_stripped
-                                                    logger.debug(f"文件 {filename}: 后备逻辑 - 从第一行提取到URL: {original_url}")
-                                                    if not raw_content_for_llm.strip(): 
-                                                       raw_content_for_llm = "".join(lines[1:])
-                                                # If raw_content_for_llm is still empty (meaning "---" was not found and first line wasn't URL)
-                                                # then the whole file is content, and URL remains empty (or as found by first line check)
-                                                elif not raw_content_for_llm.strip(): 
-                                                    logger.debug(f"文件 {filename}: 后备逻辑 - 第一行不是URL，且未找到'---'分隔符。将整个文件视为原始内容。URL保持为: '{original_url if original_url else '未找到'}'")
-                                                    raw_content_for_llm = "".join(lines)
+                                    # Fallback logic if new parsing fails or "---" delimiter is missing
+                                    if not original_url and lines: 
+                                        first_line_stripped = lines[0].strip()
+                                        if first_line_stripped.startswith("http://") or first_line_stripped.startswith("https://"):
+                                            original_url = first_line_stripped
+                                            logger.debug(f"文件 {filename}: 后备逻辑 - 从第一行提取到URL: {original_url}")
+                                            if not raw_content_for_llm.strip(): 
+                                               raw_content_for_llm = "".join(lines[1:])
+                                        # If raw_content_for_llm is still empty (meaning "---" was not found and first line wasn't URL)
+                                        # then the whole file is content, and URL remains empty (or as found by first line check)
+                                        elif not raw_content_for_llm.strip(): 
+                                            logger.debug(f"文件 {filename}: 后备逻辑 - 第一行不是URL，且未找到'---'分隔符。将整个文件视为原始内容。URL保持为: '{original_url if original_url else '未找到'}'")
+                                            raw_content_for_llm = "".join(lines)
 
+                                    # 为没有原始URL的文章生成占位符URL（特别是Azure文章）
+                                    if not original_url:
+                                        # 生成一个占位符URL，格式为 PLACEHOLDER_{vendor}_{subcategory}_{filename}
+                                        placeholder_url = f"PLACEHOLDER_{vendor}_{subcategory}_{filename}"
+                                        original_url = placeholder_url
+                                        logger.debug(f"文件 {filename}: 生成占位符URL: {original_url}")
 
-                                            if not raw_content_for_llm.strip():
-                                                logger.warning(f"文件 {filename} 的有效原始内容为空（可能在元数据提取后），跳过。URL找到情况: '{original_url if original_url else '未找到'}'")
-                                                continue
+                                    if not raw_content_for_llm.strip():
+                                        logger.warning(f"文件 {filename} 的有效原始内容为空（可能在元数据提取后），跳过。URL找到情况: '{original_url if original_url else '未找到'}'")
+                                        continue
 
-                                            source_info = f"来源: {vendor}/{subcategory}/{file_date_obj.isoformat()}/{filename}"
-                                            
-                                            article_data = {
-                                                "raw_content": raw_content_for_llm,
-                                                "vendor": vendor,
-                                                "subcategory": subcategory,
-                                                "original_filename": filename,
-                                                "source_info_for_llm": source_info,
-                                                "original_url": original_url, # 可能为空
-                                                "date_published": file_date_obj.isoformat() # 添加发布日期
-                                            }
-                                            all_articles_data.append(article_data)
-                                            logger.debug(f"已收集文章数据: {filename} (URL: {original_url if original_url else '未找到'})")
-                                        except Exception as e_read:
-                                            logger.warning(f"无法读取或处理文件 {file_path}: {e_read}")
-                            else:
-                                logger.debug(f"文件 {filename} (在 {subcategory_path} 中) 与 YYYY_MM_DD_* 格式不匹配。")
+                                    source_info = f"来源: {vendor}/{subcategory}/{file_date_obj.isoformat()}/{filename}"
+                                    
+                                    article_data = {
+                                        "raw_content": raw_content_for_llm,
+                                        "vendor": vendor,
+                                        "subcategory": subcategory,
+                                        "original_filename": filename,
+                                        "source_info_for_llm": source_info,
+                                        "original_url": original_url, # 可能为空
+                                        "date_published": file_date_obj.isoformat() # 添加发布日期
+                                    }
+                                    all_articles_data.append(article_data)
+                                    logger.debug(f"已收集文章数据: {filename} (URL: {original_url if original_url else '未找到'})")
+                                except Exception as e_read:
+                                    logger.warning(f"无法读取或处理文件 {file_path}: {e_read}")
                         except ValueError:
-                            logger.debug(f"无法从文件 {filename} (在 {subcategory_path} 中) 解析日期。期望格式 YYYY_MM_DD_*.md。")
+                            logger.debug(f"无法从文件 {filename} (在 {subcategory_path} 中) 解析日期。期望格式 YYYY_MM_DD_*.md 或 YYYY-MM-DD_*.md。")
                         except Exception as e_parse:
                             logger.warning(f"解析文件名 {filename} (在 {subcategory_path} 中) 时出错: {e_parse}")
             except OSError as e_list_files:
@@ -282,10 +309,21 @@ def generate_report_markdown_from_articles(
                 f"从元数据获取的 Original URL: '{original_url}' (类型: {type(original_url)})"
             )
 
-            if not original_url or not isinstance(original_url, str) or not original_url.strip().startswith("http"):
+            if not original_url or not isinstance(original_url, str) or not original_url.strip():
                 logger.warning(
                     f"URL_REPLACE_SKIP: 跳过文章 '{source_info_log}' 的URL替换. "
                     f"原因: 元数据中的 Original URL 无效或缺失 (值: '{original_url}')."
+                )
+                continue
+            
+            # 检查是否是有效的URL或占位符URL
+            is_placeholder_url = original_url.startswith("PLACEHOLDER_")
+            is_valid_http_url = original_url.strip().startswith("http")
+            
+            if not is_placeholder_url and not is_valid_http_url:
+                logger.warning(
+                    f"URL_REPLACE_SKIP: 跳过文章 '{source_info_log}' 的URL替换. "
+                    f"原因: URL既不是有效的HTTP URL也不是占位符URL (值: '{original_url}')."
                 )
                 continue
 
