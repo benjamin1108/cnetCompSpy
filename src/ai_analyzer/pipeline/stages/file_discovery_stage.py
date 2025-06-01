@@ -68,8 +68,18 @@ class FileDiscoveryStage(PipelineStage):
                     # 从配置中检查该数据源的analyze字段
                     sources_config = context.config.get('sources', {})
                     if vendor in sources_config and source_type in sources_config[vendor]:
-                        analyze_flag = sources_config[vendor][source_type].get('analyze', False)
-                        self.logger.debug(f"文件 {file_path} 对应的数据源 {vendor}/{source_type} analyze配置: {analyze_flag}")
+                        source_config = sources_config[vendor][source_type]
+                        
+                        # 特殊处理华为厂商的配置结构
+                        if vendor.lower() == 'huawei' and source_type == 'whatsnew':
+                            # 华为的analyze配置在whatsnew层级，而不是子URL层级
+                            analyze_flag = source_config.get('analyze', False)
+                            self.logger.debug(f"华为厂商 {vendor}/{source_type} 特殊处理: analyze配置={analyze_flag}")
+                        else:
+                            # 其他厂商的标准配置结构
+                            analyze_flag = source_config.get('analyze', False)
+                            self.logger.debug(f"文件 {file_path} 对应的数据源 {vendor}/{source_type} analyze配置: {analyze_flag}")
+                        
                         return analyze_flag
                     else:
                         self.logger.warning(f"未找到文件 {file_path} 对应的数据源配置 {vendor}/{source_type}")
