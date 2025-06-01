@@ -1,12 +1,12 @@
 # AI分析基础配置
 ai_analyzer:
-  active_model_profile: "grok"  # <--- 指定默认使用的模型配置
+  # active_model_profile配置已迁移到config.secret.yaml中
 
   model_profiles:
     qwen:
       type: "openai_compatible"      # <--- 类型，目前固定为此值
       config:
-        model: "qwen-max"
+        model: "qwen-max-latest"
         api_base: "https://dashscope.aliyuncs.com/compatible-mode/v1"
         max_tokens: 8192
         temperature: 0.5
