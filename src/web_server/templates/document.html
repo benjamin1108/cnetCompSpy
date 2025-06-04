@@ -5,6 +5,76 @@
 {% block head %}
 <!-- 添加marked.js库用于前端markdown渲染 -->
 <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
+
+<style>
+/* 标签页样式 - 与vendor.html页面完全一致 */
+.doc-tabs {
+    margin-top: 20px;
+    background-color: #d1dbe8;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    border: 1px solid #bccad8;
+}
+
+.tab-nav {
+    display: flex;
+    border-bottom: 1px solid #e6e9ed;
+    overflow-x: auto;
+    background: linear-gradient(90deg, rgba(0, 120, 212, 0.05), rgba(43, 87, 154, 0.05));
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+    padding-bottom: 5px;
+}
+
+.tab-nav::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+}
+
+.tab-button {
+    padding: 12px 20px;
+    background-color: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #5b6b7c;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    position: relative;
+    touch-action: manipulation;
+}
+
+.tab-button:hover {
+    color: #0078d4;
+    background-color: rgba(0, 120, 212, 0.1);
+}
+
+.tab-button.active {
+    color: #0078d4;
+    border-bottom: 3px solid #0078d4;
+}
+
+.tab-button.active::after {
+    content: "";
+    position: absolute;
+    bottom: -3px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #0078d4, #00b294);
+}
+
+.tab-content {
+    display: none;
+    padding: 20px;
+}
+
+.tab-content.active {
+    display: block;
+}
+</style>
 {% endblock %}
 
 {% block content %}
