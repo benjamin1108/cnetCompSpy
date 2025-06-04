@@ -777,3 +777,43 @@ tbody tr:hover {
     margin: 20px 0;
     border: 1px dashed var(--border-color);
 }
+
+/* Tab导航样式 */
+.tab-nav {
+    display: flex;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.tab-button {
+    padding: 10px 16px;
+    background-color: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-light);
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.tab-button:hover {
+    color: var(--text-primary);
+    text-decoration: none;
+    background-color: rgba(0, 102, 204, 0.05);
+}
+
+.tab-button.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+    font-weight: 600;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}

@@ -5,532 +5,6 @@
 {% block head %}
 <!-- 添加marked.js库用于前端markdown渲染 -->
 <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
-<style>
-    /* 文档页面特定样式 */
-    .document-header {
-        background: linear-gradient(135deg, #004c99, #1a3a6c);
-        border-radius: 12px;
-        padding: 25px;
-        margin-bottom: 20px;
-        color: white;
-        position: relative;
-        overflow: hidden;
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-        border: 1px solid rgba(0, 76, 153, 0.3);
-    }
-    
-    .document-header::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-image: 
-            radial-gradient(circle at 20% 30%, rgba(0, 178, 148, 0.15) 0%, transparent 50%),
-            radial-gradient(circle at 80% 70%, rgba(0, 120, 212, 0.1) 0%, transparent 50%),
-            linear-gradient(45deg, transparent 48%, rgba(255, 255, 255, 0.03) 50%, transparent 52%),
-            linear-gradient(-45deg, transparent 48%, rgba(255, 255, 255, 0.03) 50%, transparent 52%);
-        background-size: auto, auto, 20px 20px, 20px 20px;
-        z-index: 0;
-    }
-    
-    .document-header::after {
-        content: "";
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        height: 3px;
-        background: linear-gradient(90deg, #0078d4, #00b294);
-    }
-    
-    .document-title {
-        font-size: 1.8rem;
-        font-weight: 700;
-        margin-bottom: 10px;
-        position: relative;
-        z-index: 1;
-        line-height: 1.3;
-    }
-    
-    .ai-label {
-        display: inline-block;
-        background: linear-gradient(135deg, #0078d4, #00b294);
-        color: white;
-        padding: 3px 12px;
-        border-radius: 20px;
-        font-size: 14px;
-        margin-left: 10px;
-        font-weight: 500;
-        box-shadow: 0 2px 6px rgba(0, 120, 212, 0.2);
-    }
-    
-    .doc-meta {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin: 15px 0;
-        position: relative;
-        z-index: 1;
-        justify-content: center;
-    }
-    
-    .doc-meta span {
-        display: inline-block;
-        padding: 5px 12px;
-        border-radius: 20px;
-        font-size: 0.85rem;
-        font-weight: 500;
-        background-color: rgba(255, 255, 255, 0.25);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-    
-    .doc-meta .date::before {
-        content: "📅";
-        margin-right: 8px;
-        opacity: 0.8;
-    }
-    
-    .doc-meta .source-type::before {
-        content: "📄";
-        margin-right: 8px;
-        opacity: 0.8;
-    }
-    
-    .doc-meta .author::before {
-        content: "👤";
-        margin-right: 8px;
-        opacity: 0.8;
-    }
-    
-    .view-options {
-        display: flex;
-        justify-content: center;
-        margin: 15px 0 0;
-        position: relative;
-        z-index: 1;
-    }
-    
-    .view-option {
-        display: inline-block;
-        padding: 8px 16px;
-        margin: 0 5px;
-        background-color: rgba(255, 255, 255, 0.15);
-        border-radius: 30px;
-        color: white;
-        text-decoration: none;
-        font-weight: 500;
-        transition: all 0.3s ease;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-    
-    .view-option.active {
-        background-color: rgba(255, 255, 255, 0.25);
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        transform: translateY(-2px);
-    }
-    
-    .view-option:hover:not(.active) {
-        background-color: rgba(255, 255, 255, 0.2);
-        transform: translateY(-1px);
-    }
-    
-    .nav-links {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-top: 15px;
-        position: relative;
-        z-index: 1;
-    }
-    
-    .nav-links a {
-        display: inline-block;
-        padding: 8px 16px;
-        background-color: rgba(255, 255, 255, 0.15);
-        border-radius: 6px;
-        color: white;
-        text-decoration: none;
-        font-weight: 500;
-        transition: all 0.3s ease;
-        font-size: 0.9rem;
-    }
-    
-    .nav-links a:hover {
-        background-color: rgba(255, 255, 255, 0.25);
-        transform: translateY(-2px);
-    }
-    
-    .back-link::before {
-        content: "←";
-        margin-right: 8px;
-    }
-    
-    .download-link::before {
-        content: "↓";
-        margin-right: 8px;
-    }
-    
-    .document-content {
-        background-color: #d1dbe8;
-        border-radius: 12px;
-        padding: 40px;
-        margin-bottom: 30px;
-        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
-        border: 1px solid #e6e9ed;
-        line-height: 1.8;
-        position: relative;
-        overflow: hidden;
-        animation: fadeIn 0.5s ease-out;
-    }
-    
-    .document-content::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        right: 0;
-        width: 100px;
-        height: 100px;
-        background: linear-gradient(135deg, transparent 50%, rgba(0, 120, 212, 0.03) 50%);
-        border-radius: 0 12px 0 100px;
-        z-index: 0;
-        pointer-events: none;
-    }
-    
-    .document-content h1,
-    .document-content h2,
-    .document-content h3,
-    .document-content h4,
-    .document-content h5,
-    .document-content h6 {
-        margin-top: 1.8em;
-        margin-bottom: 0.8em;
-        color: #2c3e50;
-        font-weight: 600;
-        letter-spacing: -0.3px;
-        position: relative;
-    }
-    
-    .document-content h1 {
-        font-size: 28px;
-        border-bottom: 1px solid #e6e9ed;
-        padding-bottom: 12px;
-    }
-    
-    .document-content h2 {
-        font-size: 24px;
-    }
-    
-    .document-content h2::before {
-        content: "";
-        position: absolute;
-        left: -20px;
-        top: 50%;
-        width: 10px;
-        height: 10px;
-        background: linear-gradient(135deg, #0078d4, #00b294);
-        border-radius: 50%;
-        transform: translateY(-50%);
-        opacity: 0.7;
-    }
-    
-    .document-content h3 {
-        font-size: 20px;
-    }
-    
-    .document-content p,
-    .document-content ul,
-    .document-content ol {
-        margin-bottom: 1.2em;
-    }
-    
-    .document-content ul,
-    .document-content ol {
-        padding-left: 2em;
-    }
-    
-    /* 增强的列表样式 */
-    .document-content ul {
-        list-style-type: disc;
-    }
-    
-    .document-content ol {
-        list-style-type: decimal;
-    }
-    
-    .document-content ul ul {
-        list-style-type: circle;
-        margin-top: 0.5em;
-        margin-bottom: 0.5em;
-    }
-    
-    .document-content ul ul ul {
-        list-style-type: square;
-    }
-    
-    .document-content ol ol {
-        list-style-type: lower-alpha;
-        margin-top: 0.5em;
-        margin-bottom: 0.5em;
-    }
-    
-    .document-content ol ol ol {
-        list-style-type: lower-roman;
-    }
-    
-    .document-content li {
-        margin-bottom: 0.5em;
-        line-height: 1.6;
-        position: relative;
-    }
-    
-    .document-content li p {
-        margin-bottom: 0.5em;
-    }
-    
-    .document-content li:last-child {
-        margin-bottom: 0;
-    }
-    
-    /* 定义列表样式 */
-    .document-content dl {
-        margin: 1.5em 0;
-    }
-    
-    .document-content dt {
-        font-weight: 600;
-        color: #2c3e50;
-        margin-top: 1em;
-        margin-bottom: 0.5em;
-    }
-    
-    .document-content dd {
-        margin-left: 2em;
-        margin-bottom: 1em;
-        color: #5b6b7c;
-    }
-    
-    .document-content code {
-        background-color: #f5f7fa;
-        padding: 3px 6px;
-        border-radius: 3px;
-        font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
-        font-size: 0.9em;
-        color: #e83e8c;
-    }
-    
-    .document-content pre {
-        background-color: #f5f7fa;
-        border-radius: 8px;
-        padding: 15px;
-        overflow-x: auto;
-        margin: 1.5em 0;
-        border: 1px solid #eef1f6;
-    }
-    
-    .document-content pre code {
-        background-color: transparent;
-        padding: 0;
-        color: inherit;
-    }
-    
-    .document-content blockquote {
-        border-left: 4px solid #0078d4;
-        padding: 12px 20px;
-        margin: 1.5em 0;
-        background-color: #f9fafb;
-        border-radius: 0 8px 8px 0;
-    }
-    
-    .document-content img {
-        max-width: 100%;
-        height: auto;
-        display: block;
-        margin: 1.5em auto;
-        border-radius: 8px;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        transition: all 0.3s ease;
-    }
-    
-    .document-content img:hover {
-        transform: scale(1.01);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-    }
-    
-    .document-content table {
-        width: 100%;
-        border-collapse: separate;
-        border-spacing: 0;
-        border-radius: 8px;
-        overflow: hidden;
-        margin: 1.5em 0;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
-        border: 1px solid #e6e9ed;
-    }
-    
-    .document-content th,
-    .document-content td {
-        padding: 12px 15px;
-        text-align: left;
-        border: 1px solid #e6e9ed;
-    }
-    
-    .document-content th {
-        background-color: #f5f7fa;
-        font-weight: 600;
-        color: #2c3e50;
-    }
-    
-    .document-content tr:nth-child(even) {
-        background-color: #f9fafd;
-    }
-    
-    /* 折叠面板样式 */
-    .collapsible-section {
-        border: 1px solid #e6e9ed;
-        border-radius: 12px;
-        margin-bottom: 20px;
-        overflow: hidden;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-        transition: all 0.3s ease;
-    }
-    
-    .collapsible-section:hover {
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
-    }
-    
-    .collapsible-header {
-        background-color: #f5f7fa;
-        padding: 15px 20px;
-        font-weight: 600;
-        cursor: pointer;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        transition: all 0.3s ease;
-        color: #2c3e50;
-        border-bottom: 1px solid transparent;
-    }
-    
-    .collapsible-header:hover {
-        background-color: rgba(0, 120, 212, 0.05);
-    }
-    
-    .collapsible-header::after {
-        content: "▼";
-        font-size: 12px;
-        transition: transform 0.3s;
-        opacity: 0.7;
-    }
-    
-    .collapsible-header.collapsed::after {
-        transform: rotate(-90deg);
-    }
-    
-    .collapsible-content {
-        padding: 20px;
-        max-height: 100000px;
-        overflow: hidden;
-        transition: max-height 0.8s cubic-bezier(0,1,0,1), padding 0.3s;
-    }
-    
-    .collapsible-content.collapsed {
-        max-height: 0;
-        padding-top: 0;
-        padding-bottom: 0;
-        transition: max-height 0.4s cubic-bezier(1,0,1,0), padding 0.3s;
-    }
-    
-    /* Tab 样式 */
-    .tab-nav {
-        display: flex;
-        border-bottom: 1px solid #e6e9ed;
-        overflow-x: auto;
-        background: linear-gradient(90deg, rgba(0, 120, 212, 0.05), rgba(43, 87, 154, 0.05));
-        margin-bottom: 20px;
-    }
-    
-    .tab-button {
-        padding: 14px 24px;
-        background-color: transparent;
-        border: none;
-        border-bottom: 3px solid transparent;
-        cursor: pointer;
-        font-weight: 600;
-        font-size: 1.1rem;
-        color: #5b6b7c;
-        transition: all 0.3s ease;
-        white-space: nowrap;
-        position: relative;
-    }
-    
-    .tab-button:hover {
-        color: #0078d4;
-        background-color: rgba(0, 120, 212, 0.1);
-    }
-    
-    .tab-button.active {
-        color: #0078d4;
-        border-bottom: 3px solid #0078d4;
-    }
-    
-    .tab-button.active::after {
-        content: "";
-        position: absolute;
-        bottom: -3px;
-        left: 0;
-        right: 0;
-        height: 3px;
-        background: linear-gradient(90deg, #0078d4, #00b294);
-    }
-    
-    .tab-content {
-        display: none;
-    }
-    
-    .tab-content.active {
-        display: block;
-    }
-    
-    /* 响应式调整 */
-    @media (max-width: 768px) {
-        .document-title {
-            font-size: 1.6rem;
-        }
-        
-        .document-header {
-            padding: 20px;
-        }
-        
-        .document-content {
-            padding: 20px;
-        }
-        
-        .view-option {
-            padding: 8px 15px;
-            font-size: 0.9rem;
-        }
-        
-        .nav-links {
-            flex-direction: column;
-        }
-        
-        .doc-meta {
-            flex-direction: column;
-            gap: 10px;
-        }
-        
-        .tab-nav {
-            flex-wrap: wrap;
-        }
-        
-        .tab-button {
-            padding: 8px 12px;
-            font-size: 0.9rem;
-        }
-    }
-</style>
 {% endblock %}
 
 {% block content %}
@@ -576,11 +50,20 @@
     {% endif %}
 </article>
 
+<!-- 将Jinja2变量传递给JavaScript -->
+<script type="application/json" id="page-config">
+{
+    "viewType": "{{ view_type|default('') }}",
+    "activeTab": "{{ active_tab|default('') }}"
+}
+</script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const rawContent = document.getElementById('raw-markdown-content').textContent;
+    const pageConfig = JSON.parse(document.getElementById('page-config').textContent);
     
-    {% if view_type == 'analysis' %}
+    if (pageConfig.viewType === 'analysis') {
         // 对于分析文档，保持原有的TAB处理逻辑
         const contentWrapper = document.getElementById('ai-content-wrapper');
         
@@ -634,18 +117,48 @@ document.addEventListener('DOMContentLoaded', function() {
         // 创建TAB内容容器
         const tabContents = {};
         
+        // 定义tab名称到URL路径的映射
+        const tabUrlMap = {
+            "AI摘要分析": "summary",
+            "AI全文翻译": "translation"
+        };
+        
+        // 获取当前活动的tab
+        const currentActiveTab = pageConfig.activeTab;
+        let activeIndex = 0;
+        
         // 按照排序后的任务顺序创建TAB
         sortedTaskTypes.forEach((taskType, index) => {
             const content = tasks[taskType] || '';
             const displayName = renameTask(taskType);
             const tabId = 'tab-' + index;
+            const tabUrlPath = tabUrlMap[displayName] || '';
             
-            // 创建TAB按钮
-            const tabButton = document.createElement('button');
+            // 确定是否为活动tab
+            const isActive = (currentActiveTab && currentActiveTab === tabUrlPath) || 
+                            (!currentActiveTab && index === 0);
+            if (isActive) {
+                activeIndex = index;
+            }
+            
+            // 创建TAB链接按钮
+            const tabButton = document.createElement('a');
             tabButton.className = 'tab-button';
             tabButton.textContent = displayName;
             tabButton.setAttribute('data-tab', tabId);
-            if (index === 0) {
+            
+            // 设置链接URL - 只为支持的tab类型创建路由链接
+            if (tabUrlPath) {
+                let currentUrl = window.location.pathname;
+                // 移除现有的tab路径
+                currentUrl = currentUrl.replace(/\/(summary|translation)$/, '');
+                tabButton.href = currentUrl + '/' + tabUrlPath;
+            } else {
+                tabButton.href = '#';
+                tabButton.setAttribute('data-no-route', 'true');
+            }
+            
+            if (isActive) {
                 tabButton.classList.add('active');
             }
             tabNav.appendChild(tabButton);
@@ -654,7 +167,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const tabContent = document.createElement('div');
             tabContent.className = 'tab-content';
             tabContent.id = tabId;
-            if (index === 0) {
+            if (isActive) {
                 tabContent.classList.add('active');
             }
             
@@ -674,7 +187,14 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 添加TAB切换逻辑
         document.querySelectorAll('.tab-button').forEach(button => {
-            button.addEventListener('click', function() {
+            button.addEventListener('click', function(e) {
+                // 如果是路由链接，允许页面跳转
+                if (!this.hasAttribute('data-no-route')) {
+                    return; // 让链接正常跳转
+                }
+                
+                // 如果是非路由tab，执行客户端切换
+                e.preventDefault();
                 const tabId = this.getAttribute('data-tab');
                 
                 // 更新按钮状态
@@ -690,12 +210,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById(tabId).classList.add('active');
             });
         });
-    {% else %}
+    } else {
         // 对于原始文档，直接渲染markdown
         const renderedContent = document.getElementById('rendered-content');
         const renderedHtml = marked.parse(rawContent);
         renderedContent.innerHTML = renderedHtml;
-    {% endif %}
+    }
 });
 
 /**

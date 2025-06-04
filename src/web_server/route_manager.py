@@ -295,6 +295,31 @@ class RouteManager:
                 referrer=referrer
             )
         
+        # 带tab参数的分析文档页面路由
+        @self.app.route('/analysis/document/<vendor>/<doc_type>/<path:filename>/<tab>')
+        def analysis_document_page_with_tab(vendor, doc_type, filename, tab):
+            analysis_info = self.document_manager.get_analysis_document(vendor, doc_type, filename)
+            if not analysis_info:
+                self.logger.warning(f"请求的分析文档不存在: {vendor}/{doc_type}/{filename}")
+                # 如果没有分析文档，重定向到原始文档页面
+                return redirect(url_for('document_page', vendor=vendor, doc_type=doc_type, filename=filename))
+            
+            referrer = request.referrer if request.referrer else url_for('analysis_page', vendor=vendor)
+            
+            return render_template(
+                'document.html',
+                title=analysis_info['title'],
+                vendor=vendor,
+                doc_type=doc_type,
+                filename=filename,
+                content=analysis_info['content'],
+                meta=analysis_info['meta'],
+                has_raw=analysis_info['has_raw'],
+                view_type='analysis',
+                referrer=referrer,
+                active_tab=tab
+            )
+        
         # 原始文件 - 提供原始Markdown文件下载
         @self.app.route('/raw/<vendor>/<doc_type>/<path:filename>')
         def raw_file(vendor, doc_type, filename):
