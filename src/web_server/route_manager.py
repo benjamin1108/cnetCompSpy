@@ -58,7 +58,7 @@ class RouteManager:
     def _register_public_routes(self):
         """注册公共路由"""
         # 首页 - 显示所有厂商列表
-        @self.app.route('/')
+        @self.app.route('/', endpoint='index')
         def index():
             vendors = self.vendor_manager.get_vendors()
             
@@ -209,7 +209,7 @@ class RouteManager:
             )
         
         # 厂商页面 - 显示特定厂商的所有文档
-        @self.app.route('/vendor/<vendor>')
+        @self.app.route('/vendor/<vendor>', endpoint='vendor_page')
         def vendor_page(vendor):
             if not self.vendor_manager.vendor_exists(vendor):
                 abort(404)
@@ -227,7 +227,7 @@ class RouteManager:
             )
         
         # AI分析厂商页面 - 显示特定厂商的所有AI分析文档
-        @self.app.route('/analysis/<vendor>')
+        @self.app.route('/analysis/<vendor>', endpoint='analysis_page')
         def analysis_page(vendor):
             if not self.vendor_manager.vendor_exists(vendor):
                 abort(404)
@@ -250,7 +250,7 @@ class RouteManager:
     def _register_document_routes(self):
         """注册文档相关路由"""
         # 文档页面 - 显示特定文档内容
-        @self.app.route('/document/<vendor>/<doc_type>/<path:filename>')
+        @self.app.route('/document/<vendor>/<doc_type>/<path:filename>', endpoint='document_page')
         def document_page(vendor, doc_type, filename):
             document_info = self.document_manager.get_document(vendor, doc_type, filename)
             if not document_info:
@@ -272,7 +272,7 @@ class RouteManager:
             )
         
         # AI分析文档页面 - 显示特定文档的AI分析内容
-        @self.app.route('/analysis/document/<vendor>/<doc_type>/<path:filename>')
+        @self.app.route('/analysis/document/<vendor>/<doc_type>/<path:filename>', endpoint='analysis_document_page')
         def analysis_document_page(vendor, doc_type, filename):
             analysis_info = self.document_manager.get_analysis_document(vendor, doc_type, filename)
             if not analysis_info:
@@ -296,7 +296,7 @@ class RouteManager:
             )
         
         # 带tab参数的分析文档页面路由
-        @self.app.route('/analysis/document/<vendor>/<doc_type>/<path:filename>/<tab>')
+        @self.app.route('/analysis/document/<vendor>/<doc_type>/<path:filename>/<tab>', endpoint='analysis_document_page_with_tab')
         def analysis_document_page_with_tab(vendor, doc_type, filename, tab):
             analysis_info = self.document_manager.get_analysis_document(vendor, doc_type, filename)
             if not analysis_info:
