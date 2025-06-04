@@ -9,6 +9,7 @@
 
 import os
 import logging
+import re
 from typing import Dict, List, Any
 from datetime import datetime
 
@@ -30,6 +31,45 @@ class VendorManager:
         self.document_manager = document_manager
         
         self.logger.info("厂商管理器初始化完成")
+    
+    def _smart_date_sort_key(self, doc_item: Dict[str, Any]) -> str:
+        """
+        智能日期排序键生成函数，处理不同的日期格式
+        
+        Args:
+            doc_item: 文档项目字典
+            
+        Returns:
+            标准化的日期字符串，用于排序
+        """
+        date_str = doc_item.get('date', '')
+        if not date_str:
+            return '1970-01-01'  # 默认最早日期
+        
+        try:
+            # 处理华为月度格式：YYYY-MM -> YYYY-MM-01
+            if re.match(r'^\d{4}-\d{1,2}$', date_str):
+                parts = date_str.split('-')
+                year = parts[0]
+                month = parts[1].zfill(2)  # 确保月份是两位数
+                normalized_date = f"{year}-{month}-01"
+                self.logger.debug(f"华为月度日期排序标准化: {date_str} -> {normalized_date}")
+                return normalized_date
+            
+            # 处理下划线格式：YYYY_MM_DD -> YYYY-MM-DD
+            if re.match(r'^\d{4}_\d{1,2}_\d{1,2}$', date_str):
+                return date_str.replace('_', '-')
+            
+            # 标准格式直接返回
+            if re.match(r'^\d{4}-\d{1,2}-\d{1,2}$', date_str):
+                return date_str
+            
+            # 其他格式尝试解析
+            return date_str
+            
+        except Exception as e:
+            self.logger.debug(f"日期排序键生成出错: {date_str}, {e}")
+            return '1970-01-01'
     
     def get_vendors(self) -> List[Dict[str, Any]]:
         """
@@ -199,7 +239,7 @@ class VendorManager:
                         })
                 
                 # 按日期排序，最新的在前面
-                docs[doc_type].sort(key=lambda x: x.get('date', ''), reverse=True)
+                docs[doc_type].sort(key=self._smart_date_sort_key, reverse=True)
         
         return docs
     
@@ -253,7 +293,7 @@ class VendorManager:
                         })
                 
                 # 按日期排序，最新的在前面
-                docs[doc_type].sort(key=lambda x: x.get('date', ''), reverse=True)
+                docs[doc_type].sort(key=self._smart_date_sort_key, reverse=True)
         
         return docs
         
@@ -337,7 +377,7 @@ class VendorManager:
                     
                     # 如果有更新，按日期排序并添加到结果中
                     if vendor_updates:
-                        vendor_updates.sort(key=lambda x: x.get('date', ''), reverse=True)
+                        vendor_updates.sort(key=self._smart_date_sort_key, reverse=True)
                         weekly_updates[vendor] = vendor_updates
         
         return weekly_updates
@@ -420,7 +460,7 @@ class VendorManager:
                     
                     # 如果有更新，按日期排序并添加到结果中
                     if vendor_updates:
-                        vendor_updates.sort(key=lambda x: x.get('date', ''), reverse=True)
+                        vendor_updates.sort(key=self._smart_date_sort_key, reverse=True)
                         daily_updates[vendor] = vendor_updates
         
         return daily_updates
@@ -508,7 +548,7 @@ class VendorManager:
                     
                     # 如果有更新，按日期排序并添加到结果中
                     if vendor_updates:
-                        vendor_updates.sort(key=lambda x: x.get('date', ''), reverse=True)
+                        vendor_updates.sort(key=self._smart_date_sort_key, reverse=True)
                         recently_updates[vendor] = vendor_updates
         
         return recently_updates

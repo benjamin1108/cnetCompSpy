@@ -810,7 +810,7 @@ class HuaweiWhatsnewCrawler(BaseCrawler):
         markdown_lines = [
             f"# 华为云网络服务月度更新 - {month_key}",
             "",
-            f"**发布时间:** {month_key}",
+            f"**发布时间:** {month_key}-01",  # 修改：添加具体日期用于排序
             "",
             f"**厂商:** 华为云",
             "",

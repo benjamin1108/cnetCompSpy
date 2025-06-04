@@ -154,6 +154,22 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (dateA.includes('_')) dateA = dateA.replace(/_/g, '-');
                     if (dateB.includes('_')) dateB = dateB.replace(/_/g, '-');
                     
+                    // 处理华为月度格式：如果只有YYYY-MM格式，补全为YYYY-MM-01
+                    const normalizeDate = (dateStr) => {
+                        // 检查是否是YYYY-MM格式（华为月度文档）
+                        if (/^\d{4}-\d{1,2}$/.test(dateStr)) {
+                            // 补全为YYYY-MM-01格式，确保月份是两位数
+                            const parts = dateStr.split('-');
+                            const year = parts[0];
+                            const month = parts[1].padStart(2, '0');
+                            return `${year}-${month}-01`;
+                        }
+                        return dateStr;
+                    };
+                    
+                    dateA = normalizeDate(dateA);
+                    dateB = normalizeDate(dateB);
+                    
                     // 处理可能的日期格式问题
                     const parseDate = (dateStr) => {
                         try {
@@ -173,6 +189,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     const parsedDateA = parseDate(dateA);
                     const parsedDateB = parseDate(dateB);
+                    
+                    console.log(`Comparing dates: ${dateA} (${parsedDateA.toISOString()}) vs ${dateB} (${parsedDateB.toISOString()})`);
                     
                     // 根据排序选项返回比较结果
                     return option === 'date-desc' 
