@@ -343,41 +343,12 @@ class TaskManager:
     
     def _run_task_thread(self, task: Task):
         """
-        任务线程
+        任务线程 - 修复：Web服务器不应该获取爬虫/分析器进程锁
         
         Args:
             task: 任务实例
         """
-        # 确定任务类型，用于进程锁
-        process_type = None
-        if 'crawl' in task.command:
-            process_type = ProcessType.CRAWLER
-        elif 'analyze' in task.command:
-            process_type = ProcessType.ANALYZER
-        
-        # 获取进程锁管理器
-        process_lock_manager = None
-        lock_acquired = False
-        
-        if process_type:
-            process_lock_manager = ProcessLockManager.get_instance(process_type)
-        
         try:
-            # 如果需要进程锁，先获取锁
-            if process_lock_manager:
-                self.logger.info(f"尝试获取{process_type.name}进程锁，任务: {task.task_id}")
-                if not process_lock_manager.acquire_lock():
-                    task.status = TaskStatus.FAILED
-                    task.error = f"无法获取{process_type.name}进程锁，可能有其他{process_type.name}进程正在运行"
-                    task.completed_at = time.time()
-                    task.return_code = 1  # 设置非零返回码表示失败
-                    self._save_task(task)
-                    self.logger.error(f"任务失败: {task.task_id} - {task.error}")
-                    return
-                
-                lock_acquired = True
-                self.logger.info(f"已成功获取{process_type.name}进程锁，开始执行任务: {task.task_id}")
-            
             # 更新任务状态
             task.status = TaskStatus.RUNNING
             task.started_at = time.time()
@@ -396,11 +367,10 @@ class TaskManager:
                         else:
                             command += f" --{param_name} {param_value}"
             
-            # 执行命令
+            # 执行命令 - 重要：让子进程自己管理进程锁，而不是在Web服务器进程中管理
             self.logger.info(f"执行命令: {command}")
             
-            # 创建进程
-            # 使用bash执行命令，确保环境变量和别名可用
+            # 创建进程 - 优化输出捕获
             task.process = subprocess.Popen(
                 command,
                 shell=True,
@@ -408,17 +378,43 @@ class TaskManager:
                 stderr=subprocess.STDOUT,
                 cwd=self.base_dir,
                 text=True,
-                bufsize=1,  # 行缓冲
+                bufsize=0,  # 无缓冲，实时输出
+                universal_newlines=True,
                 executable='/bin/bash'  # 明确指定使用bash
             )
             
-            # 读取输出
-            for line in task.process.stdout:
-                line = line.rstrip()
-                task.add_output(line)
-                self._save_task(task)
+            # 实时读取输出 - 优化输出处理
+            output_buffer = []
+            while True:
+                # 使用poll()检查进程是否还在运行
+                if task.process.poll() is not None:
+                    # 进程已结束，读取剩余输出
+                    remaining_output = task.process.stdout.read()
+                    if remaining_output:
+                        for line in remaining_output.splitlines():
+                            if line.strip():  # 只添加非空行
+                                line = line.rstrip()
+                                task.add_output(line)
+                                output_buffer.append(line)
+                    break
+                
+                # 读取一行输出
+                line = task.process.stdout.readline()
+                if line:
+                    line = line.rstrip()
+                    if line.strip():  # 只添加非空行
+                        task.add_output(line)
+                        output_buffer.append(line)
+                        
+                        # 每10行输出或每5秒保存一次任务状态
+                        if len(output_buffer) >= 10:
+                            self._save_task(task)
+                            output_buffer = []
+                else:
+                    # 如果没有输出，稍作等待避免CPU占用过高
+                    time.sleep(0.1)
             
-            # 等待进程结束
+            # 等待进程结束并获取返回码
             return_code = task.process.wait()
             task.return_code = return_code
             
@@ -432,7 +428,7 @@ class TaskManager:
                 task.error = f"命令返回非零状态码: {return_code}"
                 self.logger.error(f"任务失败: {task.task_id} - {task.error}")
             
-            # 保存任务
+            # 最终保存任务
             self._save_task(task)
             
         except Exception as e:
@@ -446,10 +442,9 @@ class TaskManager:
             
             self.logger.error(f"执行任务异常: {task.task_id} - {e}")
         finally:
-            # 释放进程锁
-            if process_lock_manager and lock_acquired:
-                process_lock_manager.release_lock()
-                self.logger.info(f"已释放{process_type.name}进程锁，任务: {task.task_id}")
+            # 注意：不在Web服务器进程中释放CRAWLER/ANALYZER锁
+            # 因为锁应该由子进程自己管理
+            pass
     
     def cancel_task(self, task_id: str) -> bool:
         """
@@ -491,18 +486,8 @@ class TaskManager:
                 # 保存任务
                 self._save_task(task)
                 
-                # 确定任务类型，用于进程锁
-                process_type = None
-                if 'crawl' in task.command:
-                    process_type = ProcessType.CRAWLER
-                elif 'analyze' in task.command:
-                    process_type = ProcessType.ANALYZER
-                
-                # 释放进程锁
-                if process_type:
-                    process_lock_manager = ProcessLockManager.get_instance(process_type)
-                    process_lock_manager.release_lock()
-                    self.logger.info(f"已释放{process_type.name}进程锁，任务: {task_id}")
+                # 注意：不在Web服务器进程中释放CRAWLER/ANALYZER锁
+                # 子进程被终止时会自动释放锁，或者需要手动清理僵尸锁
                 
                 self.logger.info(f"取消任务: {task_id}")
                 return True

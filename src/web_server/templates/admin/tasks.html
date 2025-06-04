@@ -44,7 +44,7 @@
                 <div class="mb-3">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <span class="fw-bold">任务状态: <span id="taskStatusBadge" class="badge bg-secondary">等待中</span></span>
-                        <span class="small text-muted" id="taskElapsedTime"></span>
+                        <span class="small text-muted" id="taskElapsedTime">00:00</span>
                     </div>
                     <div class="progress mb-3" style="height: 5px;">
                         <div id="taskProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
@@ -54,6 +54,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-danger d-none" id="cancelTaskBtn">取消任务</button>
             </div>
         </div>
     </div>
@@ -63,6 +64,11 @@
 {% block admin_scripts %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        let currentTaskId = null;
+        let pollInterval = null;
+        let startTime = null;
+        let timerInterval = null;
+        
         // 任务执行按钮点击事件
         document.querySelectorAll('.btn-run-task').forEach(button => {
             button.addEventListener('click', function() {
@@ -70,101 +76,250 @@
                 const taskCard = document.querySelector(`.task-card[data-task-id="${taskId}"]`);
                 const taskName = taskCard.querySelector('.task-card-header span').textContent;
                 
-                // 更新模态框标题
-                document.getElementById('taskOutputModalLabel').textContent = `任务输出: ${taskName}`;
-                
-                // 重置模态框内容
-                document.getElementById('taskOutput').textContent = '正在准备执行任务...';
-                document.getElementById('taskStatusBadge').textContent = '执行中';
-                document.getElementById('taskStatusBadge').className = 'badge bg-primary';
-                document.getElementById('taskProgressBar').style.width = '10%';
-                document.getElementById('taskElapsedTime').textContent = '00:00';
-                
-                // 显示模态框
-                const modal = new bootstrap.Modal(document.getElementById('taskOutputModal'));
-                modal.show();
-                
-                // 开始计时
-                const startTime = new Date();
-                const timerInterval = setInterval(function() {
-                    const elapsedTime = new Date() - startTime;
-                    const minutes = Math.floor(elapsedTime / 60000);
-                    const seconds = Math.floor((elapsedTime % 60000) / 1000);
-                    document.getElementById('taskElapsedTime').textContent = 
-                        `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                }, 1000);
-                
-                // 执行任务
-                fetch('/api/admin/run-task', {
+                executeTask(taskId, taskName, taskCard);
+            });
+        });
+        
+        function executeTask(taskId, taskName, taskCard) {
+            // 更新模态框标题
+            document.getElementById('taskOutputModalLabel').textContent = `任务输出: ${taskName}`;
+            
+            // 重置模态框内容
+            resetModalContent();
+            
+            // 显示模态框
+            const modal = new bootstrap.Modal(document.getElementById('taskOutputModal'));
+            modal.show();
+            
+            // 开始计时
+            startTimer();
+            
+            // 执行任务
+            fetch('/api/admin/run-task', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    task: taskId,
+                    params: {}
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.result && data.result.success) {
+                    // 任务启动成功，开始轮询状态
+                    currentTaskId = data.result.task_id;
+                    document.getElementById('cancelTaskBtn').classList.remove('d-none');
+                    startPolling(taskCard);
+                } else {
+                    // 任务启动失败
+                    handleTaskError(data, taskCard);
+                }
+            })
+            .catch(error => {
+                handleRequestError(error, taskCard);
+            });
+        }
+        
+        function resetModalContent() {
+            document.getElementById('taskOutput').textContent = '正在准备执行任务...';
+            document.getElementById('taskStatusBadge').textContent = '准备中';
+            document.getElementById('taskStatusBadge').className = 'badge bg-secondary';
+            document.getElementById('taskProgressBar').style.width = '10%';
+            document.getElementById('taskElapsedTime').textContent = '00:00';
+            document.getElementById('cancelTaskBtn').classList.add('d-none');
+        }
+        
+        function startTimer() {
+            startTime = new Date();
+            if (timerInterval) clearInterval(timerInterval);
+            
+            timerInterval = setInterval(function() {
+                const elapsedTime = new Date() - startTime;
+                const minutes = Math.floor(elapsedTime / 60000);
+                const seconds = Math.floor((elapsedTime % 60000) / 1000);
+                document.getElementById('taskElapsedTime').textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+        
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+        
+        function startPolling(taskCard) {
+            if (pollInterval) clearInterval(pollInterval);
+            
+            // 立即获取一次状态
+            pollTaskStatus(taskCard);
+            
+            // 每秒轮询一次
+            pollInterval = setInterval(() => {
+                pollTaskStatus(taskCard);
+            }, 1000);
+        }
+        
+        function stopPolling() {
+            if (pollInterval) {
+                clearInterval(pollInterval);
+                pollInterval = null;
+            }
+        }
+        
+        function pollTaskStatus(taskCard) {
+            if (!currentTaskId) return;
+            
+            fetch(`/api/admin/task/${currentTaskId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.task) {
+                        updateTaskStatus(data.task, taskCard);
+                        
+                        // 如果任务已完成，停止轮询
+                        if (['COMPLETED', 'FAILED', 'CANCELED'].includes(data.task.status)) {
+                            stopPolling();
+                            stopTimer();
+                            document.getElementById('cancelTaskBtn').classList.add('d-none');
+                        }
+                    } else {
+                        console.error('获取任务状态失败:', data);
+                    }
+                })
+                .catch(error => {
+                    console.error('轮询任务状态出错:', error);
+                });
+        }
+        
+        function updateTaskStatus(task, taskCard) {
+            const statusBadge = document.getElementById('taskStatusBadge');
+            const progressBar = document.getElementById('taskProgressBar');
+            const outputElement = document.getElementById('taskOutput');
+            
+            // 更新状态显示
+            switch (task.status) {
+                case 'PENDING':
+                    statusBadge.textContent = '等待中';
+                    statusBadge.className = 'badge bg-secondary';
+                    progressBar.style.width = '10%';
+                    break;
+                case 'RUNNING':
+                    statusBadge.textContent = '执行中';
+                    statusBadge.className = 'badge bg-primary';
+                    progressBar.style.width = '50%';
+                    break;
+                case 'COMPLETED':
+                    statusBadge.textContent = '完成';
+                    statusBadge.className = 'badge bg-success';
+                    progressBar.style.width = '100%';
+                    progressBar.classList.remove('progress-bar-animated');
+                    // 更新任务卡片状态
+                    const statusElement = taskCard.querySelector('.task-status');
+                    statusElement.innerHTML = '<i class="bi bi-check-circle-fill text-success"></i>';
+                    break;
+                case 'FAILED':
+                    statusBadge.textContent = '失败';
+                    statusBadge.className = 'badge bg-danger';
+                    progressBar.style.width = '100%';
+                    progressBar.classList.remove('progress-bar-animated');
+                    // 更新任务卡片状态
+                    const failedStatusElement = taskCard.querySelector('.task-status');
+                    failedStatusElement.innerHTML = '<i class="bi bi-x-circle-fill text-danger"></i>';
+                    break;
+                case 'CANCELED':
+                    statusBadge.textContent = '已取消';
+                    statusBadge.className = 'badge bg-warning';
+                    progressBar.style.width = '100%';
+                    progressBar.classList.remove('progress-bar-animated');
+                    break;
+            }
+            
+            // 更新输出内容
+            if (task.output && task.output.length > 0) {
+                outputElement.textContent = task.output.join('\n');
+                // 自动滚动到底部
+                outputElement.scrollTop = outputElement.scrollHeight;
+            } else if (task.status === 'COMPLETED') {
+                outputElement.textContent = '任务执行成功，但没有输出。';
+            } else if (task.status === 'FAILED' && task.error) {
+                outputElement.textContent = `错误: ${task.error}`;
+            } else if (task.status === 'CANCELED') {
+                outputElement.textContent = '任务已被取消。';
+            }
+        }
+        
+        function handleTaskError(data, taskCard) {
+            stopTimer();
+            
+            document.getElementById('taskStatusBadge').textContent = '失败';
+            document.getElementById('taskStatusBadge').className = 'badge bg-danger';
+            document.getElementById('taskProgressBar').style.width = '100%';
+            
+            // 更新任务卡片状态
+            const statusElement = taskCard.querySelector('.task-status');
+            statusElement.innerHTML = '<i class="bi bi-x-circle-fill text-danger"></i>';
+            
+            // 显示错误
+            if (data.error) {
+                document.getElementById('taskOutput').textContent = `错误: ${data.error}`;
+            } else if (data.result && data.result.error) {
+                document.getElementById('taskOutput').textContent = `错误: ${data.result.error}`;
+            } else {
+                document.getElementById('taskOutput').textContent = '任务启动失败，但没有错误信息。';
+            }
+        }
+        
+        function handleRequestError(error, taskCard) {
+            stopTimer();
+            
+            document.getElementById('taskStatusBadge').textContent = '错误';
+            document.getElementById('taskStatusBadge').className = 'badge bg-danger';
+            document.getElementById('taskProgressBar').style.width = '100%';
+            
+            // 更新任务卡片状态
+            const statusElement = taskCard.querySelector('.task-status');
+            statusElement.innerHTML = '<i class="bi bi-x-circle-fill text-danger"></i>';
+            
+            // 显示错误
+            document.getElementById('taskOutput').textContent = `请求错误: ${error.message}`;
+        }
+        
+        // 取消任务按钮事件
+        document.getElementById('cancelTaskBtn').addEventListener('click', function() {
+            if (!currentTaskId) return;
+            
+            if (confirm('确定要取消当前任务吗？')) {
+                fetch(`/api/admin/cancel-task`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        task: taskId,
-                        params: {}
+                        task_id: currentTaskId
                     })
                 })
                 .then(response => response.json())
                 .then(data => {
-                    // 停止计时
-                    clearInterval(timerInterval);
-                    
-                    // 更新进度条
-                    document.getElementById('taskProgressBar').style.width = '100%';
-                    
-                    // 更新状态
                     if (data.success) {
-                        document.getElementById('taskStatusBadge').textContent = '完成';
-                        document.getElementById('taskStatusBadge').className = 'badge bg-success';
-                        
-                        // 更新任务卡片状态
-                        const statusElement = taskCard.querySelector('.task-status');
-                        statusElement.innerHTML = '<i class="bi bi-check-circle-fill text-success"></i>';
-                        
-                        // 显示输出
-                        if (data.result && data.result.output) {
-                            document.getElementById('taskOutput').textContent = data.result.output;
-                        } else {
-                            document.getElementById('taskOutput').textContent = '任务执行成功，但没有输出。';
-                        }
+                        console.log('任务取消成功');
                     } else {
-                        document.getElementById('taskStatusBadge').textContent = '失败';
-                        document.getElementById('taskStatusBadge').className = 'badge bg-danger';
-                        
-                        // 更新任务卡片状态
-                        const statusElement = taskCard.querySelector('.task-status');
-                        statusElement.innerHTML = '<i class="bi bi-x-circle-fill text-danger"></i>';
-                        
-                        // 显示错误
-                        if (data.error) {
-                            document.getElementById('taskOutput').textContent = `错误: ${data.error}`;
-                        } else if (data.result && data.result.error) {
-                            document.getElementById('taskOutput').textContent = `错误: ${data.result.error}`;
-                        } else if (data.result && data.result.output) {
-                            document.getElementById('taskOutput').textContent = data.result.output;
-                        } else {
-                            document.getElementById('taskOutput').textContent = '任务执行失败，但没有错误信息。';
-                        }
+                        console.error('任务取消失败:', data.error);
                     }
                 })
                 .catch(error => {
-                    // 停止计时
-                    clearInterval(timerInterval);
-                    
-                    // 更新状态
-                    document.getElementById('taskStatusBadge').textContent = '错误';
-                    document.getElementById('taskStatusBadge').className = 'badge bg-danger';
-                    document.getElementById('taskProgressBar').style.width = '100%';
-                    
-                    // 更新任务卡片状态
-                    const statusElement = taskCard.querySelector('.task-status');
-                    statusElement.innerHTML = '<i class="bi bi-x-circle-fill text-danger"></i>';
-                    
-                    // 显示错误
-                    document.getElementById('taskOutput').textContent = `请求错误: ${error.message}`;
+                    console.error('取消任务请求出错:', error);
                 });
-            });
+            }
+        });
+        
+        // 模态框关闭时清理资源
+        document.getElementById('taskOutputModal').addEventListener('hidden.bs.modal', function () {
+            stopPolling();
+            stopTimer();
+            currentTaskId = null;
         });
     });
 </script>

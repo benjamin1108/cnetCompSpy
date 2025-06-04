@@ -105,25 +105,45 @@ class ProcessLockManager:
                 logger.warning(f"互斥进程正在运行: {mutex_type.name}，无法获取锁: {self.process_type.name}")
                 return False
         
-        # 即使没有进程持有排他锁，也检查锁文件是否存在且有效
+        # 检查并清理过期的锁文件
         if os.path.exists(self.lock_file_path):
             try:
-                with open(self.lock_file_path, 'r') as f:
-                    content = f.read().strip()
-                    if content:
-                        lock_info = json.loads(content)
-                        timestamp = lock_info.get("timestamp", 0)
-                        pid = lock_info.get("pid", 0)
-                        if pid > 0 and (time.time() - timestamp) <= self._lock_timeout:
+                # 检查文件大小，如果为0则直接清理
+                if os.path.getsize(self.lock_file_path) == 0:
+                    logger.warning(f"发现空的锁文件，清理: {self.process_type.name}")
+                    os.remove(self.lock_file_path)
+                else:
+                    # 尝试读取锁文件内容
+                    with open(self.lock_file_path, 'r') as f:
+                        content = f.read().strip()
+                        if not content:
+                            logger.warning(f"锁文件内容为空，清理: {self.process_type.name}")
+                            os.remove(self.lock_file_path)
+                        else:
                             try:
-                                process = psutil.Process(pid)
-                                if process.is_running() and process.status() != psutil.STATUS_ZOMBIE:
-                                    logger.warning(f"锁文件存在且进程仍在运行，无法获取锁: {self.process_type.name}")
-                                    return False
-                            except psutil.NoSuchProcess:
-                                pass
+                                lock_info = json.loads(content)
+                                timestamp = lock_info.get("timestamp", 0)
+                                pid = lock_info.get("pid", 0)
+                                
+                                # 检查锁是否过期
+                                if (time.time() - timestamp) > self._lock_timeout:
+                                    logger.warning(f"发现过期的锁文件，清理: {self.process_type.name}")
+                                    os.remove(self.lock_file_path)
+                                elif pid > 0:
+                                    # 检查进程是否仍然存在
+                                    try:
+                                        process = psutil.Process(pid)
+                                        if not process.is_running() or process.status() == psutil.STATUS_ZOMBIE:
+                                            logger.warning(f"持有锁的进程已结束或为僵尸进程，清理锁文件: pid={pid}")
+                                            os.remove(self.lock_file_path)
+                                    except psutil.NoSuchProcess:
+                                        logger.warning(f"持有锁的进程不存在，清理锁文件: pid={pid}")
+                                        os.remove(self.lock_file_path)
+                            except json.JSONDecodeError:
+                                logger.warning(f"锁文件内容格式错误，清理: {self.process_type.name}")
+                                os.remove(self.lock_file_path)
             except Exception as e:
-                logger.warning(f"检查锁文件内容时发生错误: {e}")
+                logger.warning(f"检查和清理锁文件时发生错误: {e}")
         
         try:
             # 创建锁文件目录（如果不存在）
@@ -146,48 +166,40 @@ class ProcessLockManager:
                 "command": self.command,
                 "start_method": "web" if "web_server" in self.command else "shell"
             }
+            
+            # 使用更可靠的写入方式
             max_retries = 3
-            temp_file_path = self.lock_file_path + ".tmp"
             for attempt in range(max_retries):
                 try:
-                    # 使用临时文件写入锁信息
-                    with open(temp_file_path, 'w') as temp_file:
-                        json.dump(lock_info, temp_file, ensure_ascii=False, indent=2)
-                        temp_file.flush()
-                        os.fsync(temp_file.fileno())
-                        logger.debug(f"成功写入临时锁文件内容: {lock_info}")
-                    
-                    # 原子性地替换目标文件
-                    os.rename(temp_file_path, self.lock_file_path)
-                    logger.debug(f"成功将临时文件替换为锁文件: {self.lock_file_path}")
+                    # 清空文件内容并写入新信息
+                    self.lock_file.seek(0)
+                    self.lock_file.truncate()
+                    json.dump(lock_info, self.lock_file, ensure_ascii=False, indent=2)
+                    self.lock_file.flush()
+                    os.fsync(self.lock_file.fileno())
                     
                     # 验证写入内容
-                    with open(self.lock_file_path, 'r') as verify_file:
-                        content = verify_file.read().strip()
-                        if content:
-                            try:
-                                loaded_info = json.loads(content)
-                                if loaded_info.get("pid") == self.pid:
-                                    logger.debug(f"成功验证锁文件内容: {loaded_info}")
-                                    break
-                            except json.JSONDecodeError:
-                                logger.warning(f"锁文件内容无法解析为JSON，重试写入 ({attempt+1}/{max_retries})")
-                        else:
-                            logger.warning(f"锁文件内容为空，重试写入 ({attempt+1}/{max_retries})")
+                    self.lock_file.seek(0)
+                    content = self.lock_file.read().strip()
+                    if content:
+                        try:
+                            loaded_info = json.loads(content)
+                            if loaded_info.get("pid") == self.pid:
+                                logger.debug(f"成功验证锁文件内容: {loaded_info}")
+                                break
+                        except json.JSONDecodeError:
+                            logger.warning(f"锁文件内容无法解析为JSON，重试写入 ({attempt+1}/{max_retries})")
+                    else:
+                        logger.warning(f"锁文件内容为空，重试写入 ({attempt+1}/{max_retries})")
                     
                     if attempt == max_retries - 1:
                         raise Exception("锁文件内容写入后为空或无法解析，达到最大重试次数")
+                        
                 except Exception as e:
                     logger.error(f"写入锁文件内容时发生错误 ({attempt+1}/{max_retries}): {e}")
                     if attempt == max_retries - 1:
                         raise
                     time.sleep(0.5)  # 短暂等待后重试
-                    # 清理临时文件（如果存在）
-                    if os.path.exists(temp_file_path):
-                        try:
-                            os.remove(temp_file_path)
-                        except Exception:
-                            pass
             
             self.locked = True
             logger.info(f"成功获取进程锁: {self.process_type.name}")
@@ -197,8 +209,8 @@ class ProcessLockManager:
             # 如果是因为文件被锁定而失败
             if e.errno == errno.EAGAIN or e.errno == errno.EACCES:
                 logger.warning(f"无法获取进程锁: {self.process_type.name}，锁已被其他进程持有")
-                
-                logger.warning(f"无法获取进程锁: {self.process_type.name}，锁已被其他进程持有")
+            else:
+                logger.error(f"获取进程锁时发生IO错误: {e}")
             
             # 关闭文件（如果已打开）
             if self.lock_file:

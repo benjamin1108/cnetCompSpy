@@ -560,6 +560,37 @@ class RouteManager:
                 self.logger.error(f"执行任务失败: {e}")
                 return jsonify({'success': False, 'error': str(e)}), 500
         
+        # 获取任务状态API
+        @self.app.route('/api/admin/task/<task_id>')
+        def api_get_task(task_id):
+            if not self.admin_manager.is_logged_in():
+                return jsonify({'success': False, 'error': '未登录'}), 401
+            
+            try:
+                result = self.admin_manager.get_task(task_id)
+                return jsonify(result)
+            except Exception as e:
+                self.logger.error(f"获取任务状态失败: {e}")
+                return jsonify({'success': False, 'error': str(e)}), 500
+        
+        # 取消任务API
+        @self.app.route('/api/admin/cancel-task', methods=['POST'])
+        def api_cancel_task():
+            if not self.admin_manager.is_logged_in():
+                return jsonify({'success': False, 'error': '未登录'}), 401
+            
+            task_id = request.json.get('task_id')
+            
+            if not task_id:
+                return jsonify({'success': False, 'error': '未指定任务ID'}), 400
+            
+            try:
+                result = self.admin_manager.cancel_task(task_id)
+                return jsonify(result)
+            except Exception as e:
+                self.logger.error(f"取消任务失败: {e}")
+                return jsonify({'success': False, 'error': str(e)}), 500
+        
         # 获取进程锁状态API
         @self.app.route('/api/admin/process-locks')
         def api_process_locks():
