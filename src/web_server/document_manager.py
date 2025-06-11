@@ -180,12 +180,16 @@ class DocumentManager:
             # 从文件名中提取日期（如果存在）
             filename = os.path.basename(file_path)
             filename_date_match = re.match(r'^(\d{4}-\d{2}-\d{2})_', filename)
+            filename_month_match = re.match(r'^(\d{4}-\d{2})\.md$', filename)  # 华为月度格式
+            
+            filename_date_fallback = None
             if filename_date_match:
-                filename_date = filename_date_match.group(1)
-                # 将文件名中的日期作为备选，稍后决定是否使用
-                filename_date_fallback = filename_date
-            else:
-                filename_date_fallback = None
+                filename_date_fallback = filename_date_match.group(1)
+            elif filename_month_match:
+                # 华为月度文档：2025-05.md -> 2025-05-01 (添加默认日期)
+                year_month = filename_month_match.group(1)
+                filename_date_fallback = f"{year_month}-01"
+                self.logger.debug(f"华为月度文档日期标准化: {filename} -> {filename_date_fallback}")
             
             # 尝试从内容中提取日期 - 优先使用发布日期，而不是文件修改时间
             # 尝试匹配多种可能的日期格式，同时支持中英文标点符号
@@ -197,6 +201,8 @@ class DocumentManager:
                 r'\*\*发布时间[：:]\*\*\s*(\d{4}年\d{1,2}月\d{1,2}日)',    # **发布时间:** 2025年4月10日
                 r'\*\*发布时间\*\*[：:]\s*(\d{4}[-/]\d{1,2}[-/]\d{1,2})', # **发布时间**: 2025-04-10
                 r'\*\*发布日期[：:]\*\*\s*(\d{4}[-/]\d{1,2}[-/]\d{1,2})',  # **发布日期:** 2025-04-10
+                # 华为月度格式 - 新增专门处理
+                r'\*\*发布时间[：:]\*\*\s*(\d{4}-\d{1,2})',               # **发布时间:** 2025-05
                 r'发布时间为\s*(\d{4}[-/]\d{1,2}[-/]\d{1,2})',            # 发布时间为 2025-04-01
                 r'发布日期为\s*(\d{4}[-/]\d{1,2}[-/]\d{1,2})',            # 发布日期为 2025-04-01
                 # 中文日期格式
@@ -217,6 +223,12 @@ class DocumentManager:
                         date_str = date_str.replace('年', '-').replace('月', '-').replace('日', '')
                     # 统一分隔符为横杠
                     date_str = date_str.replace('/', '-')
+                    
+                    # 华为月度格式处理：如果只有年月，添加默认日期
+                    if re.match(r'^\d{4}-\d{1,2}$', date_str):
+                        date_str = f"{date_str}-01"
+                        self.logger.debug(f"华为月度日期标准化: {date_match.group(1)} -> {date_str}")
+                    
                     meta['date'] = date_str
                     date_extracted = True
                     self.logger.debug(f"从内容中提取到日期: {date_str} (使用模式: {pattern})")

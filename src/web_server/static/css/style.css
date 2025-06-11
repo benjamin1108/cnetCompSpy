@@ -276,6 +276,7 @@ tbody tr:hover {
     line-height: 1.9;
     border: 1px solid var(--border-color);
     font-size: 1.05rem;
+    font-family: "SimSun", "宋体", "NSimSun", "新宋体", serif;
 }
 
 .document-content h1,
@@ -289,6 +290,7 @@ tbody tr:hover {
     color: var(--text-dark);
     font-weight: 600;
     letter-spacing: -0.3px;
+    font-family: "SimSun", "宋体", "NSimSun", "新宋体", serif;
 }
 
 .document-content h1 {
@@ -309,6 +311,7 @@ tbody tr:hover {
 .document-content ul,
 .document-content ol {
     margin-bottom: 1.2em;
+    font-family: "SimSun", "宋体", "NSimSun", "新宋体", serif;
 }
 
 .document-content ul,
@@ -346,6 +349,7 @@ tbody tr:hover {
     margin: 1.5em 0;
     background-color: #f9fafb;
     border-radius: 0 8px 8px 0;
+    font-family: "SimSun", "宋体", "NSimSun", "新宋体", serif;
 }
 
 .document-content img {
@@ -372,6 +376,7 @@ tbody tr:hover {
 .document-content td {
     padding: 10px;
     border: 1px solid var(--border-color);
+    font-family: "SimSun", "宋体", "NSimSun", "新宋体", serif;
 }
 
 .doc-meta {
@@ -454,6 +459,7 @@ tbody tr:hover {
     padding: 20px;
     margin: 1.5em 0;
     border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    font-family: "SimSun", "宋体", "NSimSun", "新宋体", serif;
 }
 
 .ai-summary {
@@ -463,6 +469,7 @@ tbody tr:hover {
     padding: 30px;
     margin-bottom: 30px;
     position: relative;
+    font-family: "SimSun", "宋体", "NSimSun", "新宋体", serif;
 }
 
 .ai-summary::before {
@@ -545,6 +552,7 @@ tbody tr:hover {
     max-height: 100000px;
     overflow: hidden;
     transition: max-height 0.8s cubic-bezier(0,1,0,1), padding 0.3s;
+    font-family: "SimSun", "宋体", "NSimSun", "新宋体", serif;
 }
 
 .collapsible-content.collapsed {
@@ -812,6 +820,7 @@ tbody tr:hover {
 
 .tab-content {
     display: none;
+    font-family: "SimSun", "宋体", "NSimSun", "新宋体", serif;
 }
 
 .tab-content.active {
