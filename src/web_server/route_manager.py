@@ -49,11 +49,22 @@ class RouteManager:
     
     def _register_routes(self):
         """注册所有路由"""
+        self._register_template_context()
         self._register_public_routes()
         self._register_document_routes()
         self._register_admin_routes()
         self._register_api_routes()
+        self._register_subscription_routes()
         self._register_error_handlers()
+    
+    def _register_template_context(self):
+        """注册模板上下文处理器"""
+        @self.app.context_processor
+        def inject_admin_status():
+            """向所有模板注入管理员状态"""
+            return {
+                'is_admin_logged_in': self.admin_manager.is_logged_in()
+            }
     
     def _register_public_routes(self):
         """注册公共路由"""
@@ -682,6 +693,276 @@ class RouteManager:
                 self.logger.error(f"搜索失败: {e}")
                 return jsonify({'error': str(e)}), 500
     
+    def _register_subscription_routes(self):
+        """注册订阅相关路由"""
+        # 钉钉机器人订阅页面
+        @self.app.route('/subscribe', endpoint='subscribe_page')
+        def subscribe_page():
+            return render_template(
+                'subscribe.html',
+                title='订阅钉钉推送'
+            )
+        
+        # 钉钉机器人订阅管理页面（需要管理员权限）
+        @self.app.route('/subscribe/manage', endpoint='subscription_manage')
+        def subscription_manage():
+            # 检查管理员权限
+            if not self.admin_manager.is_logged_in():
+                return redirect(url_for('login', next=request.url))
+            
+            # 获取当前已注册的机器人列表
+            robots = self._get_registered_robots()
+            return render_template(
+                'subscription_manage.html',
+                title='订阅管理',
+                robots=robots
+            )
+        
+        # 钉钉机器人注册API
+        @self.app.route('/api/subscribe/dingtalk', methods=['POST'], endpoint='api_subscribe_dingtalk')
+        def api_subscribe_dingtalk():
+            try:
+                data = request.get_json()
+                
+                # 验证必需字段
+                required_fields = ['name', 'webhook_url']
+                missing_fields = [field for field in required_fields if not data.get(field)]
+                if missing_fields:
+                    return jsonify({
+                        'success': False,
+                        'error': f'缺少必需字段: {", ".join(missing_fields)}'
+                    }), 400
+                
+                robot_name = data['name'].strip()
+                webhook_url = data['webhook_url'].strip()
+                secret = data.get('secret', '').strip()
+                
+                # 验证输入
+                if not robot_name or not webhook_url:
+                    return jsonify({
+                        'success': False,
+                        'error': '机器人名称和Webhook URL不能为空'
+                    }), 400
+                
+                # 验证webhook URL格式
+                if not webhook_url.startswith('https://oapi.dingtalk.com/robot/send?access_token='):
+                    return jsonify({
+                        'success': False,
+                        'error': 'Webhook URL格式不正确，应为钉钉机器人的完整webhook地址'
+                    }), 400
+                
+                # 注册机器人
+                success, message = self._register_dingtalk_robot(robot_name, webhook_url, secret)
+                
+                if success:
+                    self.logger.info(f"新的钉钉机器人已注册: {robot_name}")
+                    return jsonify({
+                        'success': True,
+                        'message': message
+                    })
+                else:
+                    return jsonify({
+                        'success': False,
+                        'error': message
+                    }), 400
+                    
+            except Exception as e:
+                self.logger.error(f"注册钉钉机器人时发生错误: {e}")
+                return jsonify({
+                    'success': False,
+                    'error': '服务器内部错误，请稍后重试'
+                }), 500
+        
+        # 删除钉钉机器人API（需要管理员权限）
+        @self.app.route('/api/subscribe/dingtalk/<robot_id>', methods=['DELETE'], endpoint='api_delete_dingtalk_robot')
+        def api_delete_dingtalk_robot(robot_id):
+            # 检查管理员权限
+            if not self.admin_manager.is_logged_in():
+                return jsonify({
+                    'success': False,
+                    'error': '需要管理员权限才能执行删除操作'
+                }), 401
+            
+            try:
+                robot_id = int(robot_id)
+                success, message = self._delete_dingtalk_robot(robot_id)
+                
+                if success:
+                    self.logger.info(f"钉钉机器人已删除: ID {robot_id}")
+                    return jsonify({
+                        'success': True,
+                        'message': message
+                    })
+                else:
+                    return jsonify({
+                        'success': False,
+                        'error': message
+                    }), 400
+                    
+            except ValueError:
+                return jsonify({
+                    'success': False,
+                    'error': '无效的机器人ID'
+                }), 400
+            except Exception as e:
+                self.logger.error(f"删除钉钉机器人时发生错误: {e}")
+                return jsonify({
+                    'success': False,
+                    'error': '服务器内部错误，请稍后重试'
+                }), 500
+
+    def _get_registered_robots(self):
+        """获取已注册的钉钉机器人列表"""
+        try:
+            from src.utils.config_loader import load_yaml_file
+            import os
+            
+            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            secret_config_path = os.path.join(base_dir, 'config.secret.yaml')
+            
+            if os.path.exists(secret_config_path):
+                config = load_yaml_file(secret_config_path)
+                robots = config.get('dingtalk', {}).get('robots', [])
+                
+                # 为每个机器人添加索引，用于删除操作
+                for i, robot in enumerate(robots):
+                    robot['id'] = i
+                    # 隐藏webhook URL的敏感部分
+                    if 'webhook_url' in robot:
+                        url = robot['webhook_url']
+                        if 'access_token=' in url:
+                            token_part = url.split('access_token=')[1]
+                            if len(token_part) > 8:
+                                masked_token = token_part[:4] + '*' * (len(token_part) - 8) + token_part[-4:]
+                                robot['masked_webhook_url'] = url.replace(token_part, masked_token)
+                            else:
+                                robot['masked_webhook_url'] = url
+                        else:
+                            robot['masked_webhook_url'] = url
+                    
+                    # 隐藏secret的敏感部分
+                    if robot.get('secret'):
+                        secret = robot['secret']
+                        if len(secret) > 8:
+                            robot['masked_secret'] = secret[:4] + '*' * (len(secret) - 8) + secret[-4:]
+                        else:
+                            robot['masked_secret'] = '*' * len(secret)
+                    else:
+                        robot['masked_secret'] = ''
+                
+                return robots
+            
+            return []
+            
+        except Exception as e:
+            self.logger.error(f"获取钉钉机器人列表时发生错误: {e}")
+            return []
+    
+    def _register_dingtalk_robot(self, name, webhook_url, secret=''):
+        """注册新的钉钉机器人到配置文件"""
+        try:
+            import os
+            import yaml
+            from src.utils.config_loader import load_yaml_file
+            
+            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            secret_config_path = os.path.join(base_dir, 'config.secret.yaml')
+            
+            # 加载现有配置
+            if os.path.exists(secret_config_path):
+                config = load_yaml_file(secret_config_path)
+            else:
+                config = {}
+            
+            # 确保dingtalk和robots结构存在
+            if 'dingtalk' not in config:
+                config['dingtalk'] = {}
+            if 'robots' not in config['dingtalk']:
+                config['dingtalk']['robots'] = []
+            
+            # 检查是否已存在相同名称或webhook URL的机器人
+            existing_robots = config['dingtalk']['robots']
+            for robot in existing_robots:
+                if robot.get('name') == name:
+                    return False, f'已存在名为"{name}"的机器人，请使用不同的名称'
+                if robot.get('webhook_url') == webhook_url:
+                    return False, '此Webhook URL已被注册，请检查是否重复添加'
+            
+            # 添加新机器人
+            new_robot = {
+                'name': name,
+                'webhook_url': webhook_url,
+                'secret': secret
+            }
+            config['dingtalk']['robots'].append(new_robot)
+            
+            # 保存配置文件
+            self._save_secret_config(config, secret_config_path)
+            
+            return True, f'钉钉机器人"{name}"注册成功！'
+            
+        except Exception as e:
+            self.logger.error(f"注册钉钉机器人时发生错误: {e}")
+            return False, f'注册失败: {str(e)}'
+    
+    def _delete_dingtalk_robot(self, robot_id):
+        """删除指定的钉钉机器人"""
+        try:
+            import os
+            from src.utils.config_loader import load_yaml_file
+            
+            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            secret_config_path = os.path.join(base_dir, 'config.secret.yaml')
+            
+            if not os.path.exists(secret_config_path):
+                return False, '配置文件不存在'
+            
+            config = load_yaml_file(secret_config_path)
+            robots = config.get('dingtalk', {}).get('robots', [])
+            
+            if robot_id < 0 or robot_id >= len(robots):
+                return False, '无效的机器人ID'
+            
+            # 获取要删除的机器人名称
+            robot_name = robots[robot_id].get('name', f'ID {robot_id}')
+            
+            # 删除机器人
+            del robots[robot_id]
+            
+            # 保存配置文件
+            self._save_secret_config(config, secret_config_path)
+            
+            return True, f'钉钉机器人"{robot_name}"已删除'
+            
+        except Exception as e:
+            self.logger.error(f"删除钉钉机器人时发生错误: {e}")
+            return False, f'删除失败: {str(e)}'
+    
+    def _save_secret_config(self, config, file_path):
+        """安全地保存配置文件"""
+        import yaml
+        import os
+        import tempfile
+        import shutil
+        
+        # 使用临时文件确保原子性写入
+        temp_dir = os.path.dirname(file_path)
+        with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', 
+                                       suffix='.yaml', dir=temp_dir, 
+                                       delete=False) as temp_file:
+            yaml.dump(config, temp_file, 
+                     default_flow_style=False, 
+                     allow_unicode=True, 
+                     indent=2,
+                     sort_keys=False)
+            temp_file_path = temp_file.name
+        
+        # 原子性替换原文件
+        shutil.move(temp_file_path, file_path)
+        
+        # 设置文件权限（仅所有者可读写）
+        os.chmod(file_path, 0o600)
+
     def _register_error_handlers(self):
         """注册错误处理器"""
         @self.app.errorhandler(404)

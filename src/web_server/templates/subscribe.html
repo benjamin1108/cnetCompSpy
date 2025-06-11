@@ -1,0 +1,420 @@
+{% extends "base.html" %}
+
+{% block title %}订阅钉钉推送{% endblock %}
+
+{% block head %}
+<style>
+/* 订阅页面特定样式 */
+.subscribe-header {
+    background: linear-gradient(135deg, #004c99, #1a3a6c);
+    border-radius: 12px;
+    padding: 25px;
+    margin-bottom: 30px;
+    color: white;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(0, 76, 153, 0.3);
+}
+
+.subscribe-header::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+        radial-gradient(circle at 20% 30%, rgba(0, 178, 148, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(0, 120, 212, 0.1) 0%, transparent 50%);
+    z-index: 0;
+}
+
+.subscribe-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    position: relative;
+    z-index: 1;
+}
+
+.subscribe-subtitle {
+    font-size: 1rem;
+    opacity: 0.9;
+    margin-bottom: 15px;
+    position: relative;
+    z-index: 1;
+}
+
+.subscribe-form {
+    background-color: white;
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e6e9ed;
+    margin-bottom: 30px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 0.95rem;
+}
+
+.form-control {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #e6e9ed;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    background-color: #fff;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #0078d4;
+    box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.1);
+}
+
+.form-control.error {
+    border-color: #e74c3c;
+    box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+}
+
+.form-help {
+    font-size: 0.85rem;
+    color: #5b6b7c;
+    margin-top: 5px;
+    line-height: 1.4;
+}
+
+.btn-primary {
+    background-color: #0078d4;
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 100%;
+}
+
+.btn-primary:hover {
+    background-color: #005a9e;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 120, 212, 0.3);
+}
+
+.btn-primary:disabled {
+    background-color: #bcc1c7;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.alert {
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-weight: 500;
+}
+
+.alert-success {
+    background-color: rgba(46, 204, 113, 0.1);
+    color: #27ae60;
+    border-left: 4px solid #27ae60;
+}
+
+.alert-error {
+    background-color: rgba(231, 76, 60, 0.1);
+    color: #e74c3c;
+    border-left: 4px solid #e74c3c;
+}
+
+.instructions {
+    background-color: #f8f9fa;
+    border-radius: 12px;
+    padding: 25px;
+    margin-bottom: 30px;
+    border-left: 4px solid #0078d4;
+}
+
+.instructions h3 {
+    color: #0078d4;
+    margin-bottom: 15px;
+    font-size: 1.2rem;
+}
+
+.instructions ol {
+    margin-bottom: 15px;
+    padding-left: 20px;
+}
+
+.instructions li {
+    margin-bottom: 8px;
+    line-height: 1.5;
+}
+
+.instructions code {
+    background-color: rgba(0, 120, 212, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+}
+
+.nav-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.btn-secondary {
+    background-color: #e6e9ed;
+    color: #5b6b7c;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+    background-color: #d1dbe8;
+    color: #2c3e50;
+    text-decoration: none;
+}
+
+.loading-spinner {
+    display: none;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #ffffff;
+    border-top: 2px solid transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 10px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<header class="subscribe-header">
+    <h1 class="subscribe-title">订阅钉钉推送</h1>
+    <p class="subscribe-subtitle">
+        注册您的钉钉机器人，及时接收云服务厂商的最新技术动态和竞争情报分析
+    </p>
+</header>
+
+<div class="instructions">
+    <h3>🤖 如何创建钉钉机器人</h3>
+    <ol>
+        <li>在钉钉群聊中，点击右上角的 <strong>群设置</strong></li>
+        <li>选择 <strong>智能群助手</strong> → <strong>添加机器人</strong></li>
+        <li>选择 <strong>自定义</strong> 机器人类型</li>
+        <li>设置机器人名称（如 "云计算情报推送"）</li>
+        <li>选择安全设置（推荐使用 <strong>加签</strong> 方式，更安全）</li>
+        <li>复制生成的 <code>Webhook URL</code> 和 <code>加签密钥</code></li>
+        <li>在下方表单中填写相关信息完成注册</li>
+    </ol>
+    <p><strong>注意：</strong>请确保您有权限在目标群聊中添加机器人，并妥善保管Webhook URL和密钥信息。</p>
+</div>
+
+<div class="subscribe-form">
+    <form id="subscribeForm">
+        <div class="form-group">
+            <label for="robotName" class="form-label">机器人名称 *</label>
+            <input type="text" id="robotName" name="robotName" class="form-control" 
+                   placeholder="例如：技术团队情报推送" required>
+            <div class="form-help">为您的机器人起一个容易识别的名称</div>
+        </div>
+        
+        <div class="form-group">
+            <label for="webhookUrl" class="form-label">Webhook URL *</label>
+            <input type="url" id="webhookUrl" name="webhookUrl" class="form-control" 
+                   placeholder="https://oapi.dingtalk.com/robot/send?access_token=..." required>
+            <div class="form-help">完整的钉钉机器人Webhook地址，以 https://oapi.dingtalk.com/robot/send?access_token= 开头</div>
+        </div>
+        
+        <div class="form-group">
+            <label for="secret" class="form-label">加签密钥（推荐）</label>
+            <input type="text" id="secret" name="secret" class="form-control" 
+                   placeholder="SEC...">
+            <div class="form-help">如果您在创建机器人时选择了"加签"安全设置，请填写密钥以提高安全性</div>
+        </div>
+        
+        <div id="alertContainer"></div>
+        
+        <button type="submit" class="btn-primary" id="submitBtn">
+            <span class="loading-spinner" id="loadingSpinner"></span>
+            <span id="submitText">注册机器人</span>
+        </button>
+    </form>
+</div>
+
+<div class="nav-buttons">
+    {% if is_admin_logged_in %}
+        <a href="{{ url_for('subscription_manage') }}" class="btn-secondary">管理我的订阅</a>
+    {% endif %}
+    <a href="{{ url_for('index') }}" class="btn-secondary">返回首页</a>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('subscribeForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const submitText = document.getElementById('submitText');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const alertContainer = document.getElementById('alertContainer');
+    
+    // 表单提交处理
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // 清除之前的错误状态
+        clearErrors();
+        
+        // 获取表单数据
+        const formData = new FormData(form);
+        const data = {
+            name: formData.get('robotName').trim(),
+            webhook_url: formData.get('webhookUrl').trim(),
+            secret: formData.get('secret').trim()
+        };
+        
+        // 前端验证
+        if (!validateForm(data)) {
+            return;
+        }
+        
+        // 显示加载状态
+        setLoading(true);
+        
+        try {
+            const response = await fetch('/api/subscribe/dingtalk', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                showAlert('success', result.message);
+                form.reset();
+                // 3秒后跳转到管理页面
+                setTimeout(() => {
+                    window.location.href = '/subscribe/manage';
+                }, 3000);
+            } else {
+                showAlert('error', result.error || '注册失败，请稍后重试');
+            }
+        } catch (error) {
+            console.error('注册失败:', error);
+            showAlert('error', '网络错误，请检查网络连接后重试');
+        } finally {
+            setLoading(false);
+        }
+    });
+    
+    function validateForm(data) {
+        let isValid = true;
+        
+        // 验证机器人名称
+        if (!data.name) {
+            setFieldError('robotName', '机器人名称不能为空');
+            isValid = false;
+        }
+        
+        // 验证Webhook URL
+        if (!data.webhook_url) {
+            setFieldError('webhookUrl', 'Webhook URL不能为空');
+            isValid = false;
+        } else if (!data.webhook_url.startsWith('https://oapi.dingtalk.com/robot/send?access_token=')) {
+            setFieldError('webhookUrl', 'Webhook URL格式不正确');
+            isValid = false;
+        }
+        
+        return isValid;
+    }
+    
+    function setFieldError(fieldId, message) {
+        const field = document.getElementById(fieldId);
+        field.classList.add('error');
+        
+        // 移除现有的错误消息
+        const existingError = field.parentNode.querySelector('.error-message');
+        if (existingError) {
+            existingError.remove();
+        }
+        
+        // 添加错误消息
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'form-help error-message';
+        errorDiv.style.color = '#e74c3c';
+        errorDiv.textContent = message;
+        field.parentNode.appendChild(errorDiv);
+    }
+    
+    function clearErrors() {
+        // 移除所有错误状态
+        document.querySelectorAll('.form-control.error').forEach(field => {
+            field.classList.remove('error');
+        });
+        
+        // 移除所有错误消息
+        document.querySelectorAll('.error-message').forEach(error => {
+            error.remove();
+        });
+        
+        // 清除alert
+        alertContainer.innerHTML = '';
+    }
+    
+    function setLoading(loading) {
+        if (loading) {
+            submitBtn.disabled = true;
+            loadingSpinner.style.display = 'inline-block';
+            submitText.textContent = '注册中...';
+        } else {
+            submitBtn.disabled = false;
+            loadingSpinner.style.display = 'none';
+            submitText.textContent = '注册机器人';
+        }
+    }
+    
+    function showAlert(type, message) {
+        const alertClass = type === 'success' ? 'alert-success' : 'alert-error';
+        const iconClass = type === 'success' ? '✅' : '❌';
+        
+        alertContainer.innerHTML = `
+            <div class="alert ${alertClass}">
+                ${iconClass} ${message}
+            </div>
+        `;
+        
+        // 滚动到alert位置
+        alertContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+});
+</script>
+{% endblock %} 
