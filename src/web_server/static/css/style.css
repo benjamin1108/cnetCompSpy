@@ -1,5 +1,9 @@
 /* 云服务竞争情报系统 - 主样式表 */
 
+/* Google Fonts 引入 - 科技感字体 */
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
+
 /* 基础样式 */
 :root {
     --primary-color: #0066cc;
@@ -32,7 +36,7 @@
 }
 
 body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    font-family: 'Fira Code', 'JetBrains Mono', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Source Code Pro', 'Menlo', 'Courier New', monospace;
     line-height: 1.6;
     color: var(--text-primary);
     background-color: var(--bg-main);
@@ -78,8 +82,10 @@ header::before {
 header h1 {
     font-size: 2.2rem;
     margin: 0 0 15px 0;
-    font-weight: 700;
-    letter-spacing: -0.5px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    font-family: 'Fira Code', 'JetBrains Mono', monospace;
+    text-transform: uppercase;
 }
 
 .subtitle {
@@ -103,7 +109,10 @@ header h1 {
     border-radius: var(--radius-sm);
     background-color: rgba(255, 255, 255, 0.15);
     transition: var(--transition);
-    font-weight: 500;
+    font-weight: 400;
+    font-family: 'Fira Code', 'JetBrains Mono', monospace;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
 }
 
 .nav-links a:hover {
@@ -148,12 +157,14 @@ section h2 {
     margin-top: 0;
     margin-bottom: 20px;
     font-size: 1.5rem;
-    font-weight: 600;
+    font-weight: 500;
     display: flex;
     align-items: center;
-    letter-spacing: -0.3px;
+    letter-spacing: 0.8px;
     position: relative;
     padding-bottom: 10px;
+    font-family: 'Fira Code', 'JetBrains Mono', monospace;
+    text-transform: uppercase;
 }
 
 section h2::after {
@@ -205,10 +216,11 @@ th, td {
 th {
     background-color: var(--bg-dark);
     color: var(--text-dark);
-    font-weight: 600;
+    font-weight: 500;
     text-transform: uppercase;
     font-size: 0.85rem;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.8px;
+    font-family: 'Fira Code', 'JetBrains Mono', monospace;
 }
 
 td {
@@ -265,6 +277,10 @@ tbody tr:hover {
     font-size: 1.5rem;
     border-bottom: 1px solid var(--border-color);
     padding-bottom: 10px;
+    font-family: 'Fira Code', 'JetBrains Mono', monospace;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
 }
 
 /* 文档内容 */
@@ -273,10 +289,10 @@ tbody tr:hover {
     padding: var(--content-padding);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-md);
-    line-height: 1.9;
+    line-height: 1.8;
     border: 1px solid var(--border-color);
     font-size: 1.05rem;
-    font-family: "SimSun", "宋体", "NSimSun", "新宋体", serif;
+    font-family: 'Fira Code', 'JetBrains Mono', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Source Code Pro', 'Menlo', 'Courier New', monospace;
 }
 
 .document-content h1,
@@ -288,9 +304,10 @@ tbody tr:hover {
     margin-top: 1.8em;
     margin-bottom: 0.8em;
     color: var(--text-dark);
-    font-weight: 600;
-    letter-spacing: -0.3px;
-    font-family: "SimSun", "宋体", "NSimSun", "新宋体", serif;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    font-family: 'Fira Code', 'JetBrains Mono', monospace;
+    text-transform: uppercase;
 }
 
 .document-content h1 {
@@ -311,7 +328,7 @@ tbody tr:hover {
 .document-content ul,
 .document-content ol {
     margin-bottom: 1.2em;
-    font-family: "SimSun", "宋体", "NSimSun", "新宋体", serif;
+    font-family: 'Fira Code', 'JetBrains Mono', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Source Code Pro', 'Menlo', 'Courier New', monospace;
 }
 
 .document-content ul,
@@ -323,9 +340,10 @@ tbody tr:hover {
     background-color: #f5f7fa;
     padding: 3px 6px;
     border-radius: 3px;
-    font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+    font-family: 'Fira Code', 'JetBrains Mono', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Source Code Pro', 'Menlo', 'Courier New', monospace;
     font-size: 0.9em;
     color: #e83e8c;
+    font-weight: 400;
 }
 
 .document-content pre {
@@ -349,7 +367,8 @@ tbody tr:hover {
     margin: 1.5em 0;
     background-color: #f9fafb;
     border-radius: 0 8px 8px 0;
-    font-family: "SimSun", "宋体", "NSimSun", "新宋体", serif;
+    font-family: 'Fira Code', 'JetBrains Mono', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Source Code Pro', 'Menlo', 'Courier New', monospace;
+    font-style: italic;
 }
 
 .document-content img {
@@ -376,7 +395,7 @@ tbody tr:hover {
 .document-content td {
     padding: 10px;
     border: 1px solid var(--border-color);
-    font-family: "SimSun", "宋体", "NSimSun", "新宋体", serif;
+    font-family: 'Fira Code', 'JetBrains Mono', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Source Code Pro', 'Menlo', 'Courier New', monospace;
 }
 
 .doc-meta {
@@ -393,11 +412,14 @@ tbody tr:hover {
     display: inline-flex;
     align-items: center;
     color: var(--text-primary);
-    font-size: 0.95rem;
-    font-weight: 500;
+    font-size: 0.85rem;
+    font-weight: 400;
     background-color: var(--bg-dark);
     padding: 5px 12px;
     border-radius: 20px;
+    font-family: 'Fira Code', 'JetBrains Mono', monospace;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
 }
 
 .doc-meta .date::before {
@@ -459,7 +481,7 @@ tbody tr:hover {
     padding: 20px;
     margin: 1.5em 0;
     border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-    font-family: "SimSun", "宋体", "NSimSun", "新宋体", serif;
+    font-family: 'Fira Code', 'JetBrains Mono', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Source Code Pro', 'Menlo', 'Courier New', monospace;
 }
 
 .ai-summary {
@@ -469,7 +491,7 @@ tbody tr:hover {
     padding: 30px;
     margin-bottom: 30px;
     position: relative;
-    font-family: "SimSun", "宋体", "NSimSun", "新宋体", serif;
+    font-family: 'Fira Code', 'JetBrains Mono', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Source Code Pro', 'Menlo', 'Courier New', monospace;
 }
 
 .ai-summary::before {
@@ -552,7 +574,7 @@ tbody tr:hover {
     max-height: 100000px;
     overflow: hidden;
     transition: max-height 0.8s cubic-bezier(0,1,0,1), padding 0.3s;
-    font-family: "SimSun", "宋体", "NSimSun", "新宋体", serif;
+    font-family: 'Fira Code', 'JetBrains Mono', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Source Code Pro', 'Menlo', 'Courier New', monospace;
 }
 
 .collapsible-content.collapsed {
@@ -592,10 +614,13 @@ tbody tr:hover {
 }
 
 .filter-label {
-    font-weight: 500;
+    font-weight: 400;
     color: var(--text-primary);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     white-space: nowrap;
+    font-family: 'Fira Code', 'JetBrains Mono', monospace;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
 }
 
 .filter-select {
@@ -711,10 +736,10 @@ tbody tr:hover {
     color: white;
     border: none;
     border-radius: var(--radius-md);
-    font-weight: 500;
+    font-weight: 400;
     cursor: pointer;
     transition: var(--transition);
-    font-size: 1rem;
+    font-size: 0.9rem;
     position: relative;
     overflow: hidden;
     box-shadow: var(--shadow-sm);
@@ -723,6 +748,9 @@ tbody tr:hover {
     display: flex;
     align-items: center;
     justify-content: center;
+    font-family: 'Fira Code', 'JetBrains Mono', monospace;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
 }
 
 .load-more-btn:hover {
@@ -799,11 +827,14 @@ tbody tr:hover {
     border: none;
     border-bottom: 2px solid transparent;
     color: var(--text-light);
-    font-weight: 500;
+    font-weight: 400;
     cursor: pointer;
     transition: var(--transition);
     text-decoration: none;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
+    font-family: 'Fira Code', 'JetBrains Mono', monospace;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
 }
 
 .tab-button:hover {
@@ -820,7 +851,7 @@ tbody tr:hover {
 
 .tab-content {
     display: none;
-    font-family: "SimSun", "宋体", "NSimSun", "新宋体", serif;
+    font-family: 'Fira Code', 'JetBrains Mono', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Source Code Pro', 'Menlo', 'Courier New', monospace;
 }
 
 .tab-content.active {
