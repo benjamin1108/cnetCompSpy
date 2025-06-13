@@ -20,11 +20,39 @@ document.addEventListener('DOMContentLoaded', function() {
                         content.classList.remove('active');
                     }
                 });
+                
+                // 更新URL参数，但不刷新页面
+                const url = new URL(window.location);
+                url.searchParams.set('tab', tabId);
+                window.history.replaceState({}, '', url);
             });
         });
 
-        // 默认显示第一个标签
-        if (tabButtons.length > 0) {
+        // 检查URL参数中是否指定了要激活的tab
+        const urlParams = new URLSearchParams(window.location.search);
+        const activeTabFromUrl = urlParams.get('tab');
+        
+        let activeTabFound = false;
+        
+        if (activeTabFromUrl) {
+            // 尝试激活URL参数指定的tab
+            const targetButton = document.querySelector(`[data-tab="${activeTabFromUrl}"]`);
+            const targetContent = document.getElementById(`tab-${activeTabFromUrl}`);
+            
+            if (targetButton && targetContent) {
+                // 清除所有active状态
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                tabContents.forEach(content => content.classList.remove('active'));
+                
+                // 激活指定的tab
+                targetButton.classList.add('active');
+                targetContent.classList.add('active');
+                activeTabFound = true;
+            }
+        }
+        
+        // 如果没有找到指定的tab或没有URL参数，默认显示第一个标签
+        if (!activeTabFound && tabButtons.length > 0) {
             tabButtons[0].classList.add('active');
             tabContents[0].classList.add('active');
         }

@@ -46,10 +46,11 @@ ai_analyzer:
     prompt_root_dir: "prompt" # （可选）如果您想更改存放prompt文件的根目录
     # system_prompt_filename: "global_system_prompt.txt" # （可选）
     task_prompt_map:
-      "AI标题翻译": "title_translation.txt"  # 指向 prompt/title_translation_v1.txt
-      "AI竞争分析": "competitive_analysis.txt" # 指向 prompt/prompts_for_tasks/competitive_analysis_final.txt
+      "AI标题翻译": "title_translation.txt"  # 指向 prompt/title_translation.txt
+      "AI竞争分析": "competitive_analysis.txt" # 指向 prompt/competitive_analysis.txt (默认，现在会根据标题前缀动态选择)
       "AI全文翻译": "full_translation.txt"
       # 根据需要为其他任务添加映射
+      # 注意：解决方案分析和产品功能分析提示词会根据标题前缀动态选择，不需要在此映射
 
   tasks:
     - type: "AI标题翻译"

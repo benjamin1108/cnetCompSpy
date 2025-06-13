@@ -98,9 +98,9 @@
     
     <div class="nav-links" style="margin-top: 15px; justify-content: center;">
         {% if view_type == 'analysis' %}
-            <a href="{{ referrer or url_for('analysis_page', vendor=vendor) }}" class="back-link">返回 {{ vendor|upper }}</a>
+            <a href="{{ url_for('analysis_page', vendor=vendor) }}?tab={{ doc_type }}" class="back-link">返回 {{ vendor|upper }}</a>
         {% else %}
-            <a href="{{ referrer or url_for('vendor_page', vendor=vendor) }}" class="back-link">返回 {{ vendor|upper }}</a>
+            <a href="{{ url_for('vendor_page', vendor=vendor) }}?tab={{ doc_type }}" class="back-link">返回 {{ vendor|upper }}</a>
         {% endif %}
         <a href="{{ url_for('index') }}">返回首页</a>
     </div>

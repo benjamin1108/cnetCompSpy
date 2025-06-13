@@ -149,6 +149,39 @@ class PromptManager:
         else:
             logger.warning("部分任务的Prompt文件校验失败或内容为空，请检查日志和相关prompt文件。")
 
+    def get_competitive_analysis_prompt(self, title_with_prefix: str) -> str:
+        """
+        根据标题前缀选择合适的竞争分析提示词。
+        
+        Args:
+            title_with_prefix: 带前缀的标题，如 "[解决方案] 标题内容" 或 "[新产品/新功能] 标题内容"
+            
+        Returns:
+            对应的竞争分析提示词内容
+        """
+        if not title_with_prefix:
+            logger.warning("标题为空，使用默认竞争分析提示词")
+            return self.get_task_prompt("AI竞争分析")
+        
+        # 检查标题前缀
+        if title_with_prefix.startswith("[解决方案]"):
+            prompt_filename = "solution_analysis.txt"
+            logger.debug(f"检测到解决方案类标题，使用提示词文件: {prompt_filename}")
+        elif title_with_prefix.startswith("[新产品/新功能]"):
+            prompt_filename = "product_feature_analysis.txt"
+            logger.debug(f"检测到新产品/新功能类标题，使用提示词文件: {prompt_filename}")
+        else:
+            logger.warning(f"未识别的标题前缀: {title_with_prefix[:50]}..., 使用默认竞争分析提示词")
+            return self.get_task_prompt("AI竞争分析")
+        
+        # 直接加载对应的提示词文件
+        prompt_content = self._load_file_content(prompt_filename)
+        if not prompt_content:
+            logger.warning(f"加载竞争分析提示词文件 '{prompt_filename}' 失败，使用默认竞争分析提示词")
+            return self.get_task_prompt("AI竞争分析")
+        
+        return prompt_content
+
     def preload_all_task_prompts(self, defined_tasks: List[Dict[str, Any]]):
         """
         预加载所有已定义任务的prompts到缓存。
