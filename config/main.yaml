@@ -4,6 +4,7 @@
 # 导入配置的顺序很重要，后导入的配置会覆盖先导入的配置
 imports:
   - notification.yaml  # 通知配置
+  - reporting.yaml     # 报告配置
   - crawler.yaml       # 爬虫配置
   - sources.yaml       # 数据源配置
   - ai_analyzer.yaml   # AI分析配置

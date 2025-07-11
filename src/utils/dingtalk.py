@@ -76,14 +76,18 @@ class DingTalkNotifier:
         self.logger = logging.getLogger("DingTalkNotifier")
         self.robots: List[DingTalkRobot] = [] # Type hint for clarity
         self.config: Dict[str, Any] = {} # Type hint
+        self.reporting_config: Dict[str, Any] = {} # 添加reporting配置
         self._load_config(config_path)
     
     def _load_config(self, config_path: Optional[str] = None) -> None:
         self.config = {"enabled": False, "keyword": "云计算竞争本周动态", "robots": []}
+        self.reporting_config = {}
         try:
             # Assuming config_loader is in src.utils, this import is fine if script is run as a module
             from src.utils.config_loader import get_config 
             loaded_config = get_config(config_path=config_path)
+            
+            # 加载钉钉配置
             if loaded_config and "dingtalk" in loaded_config:
                 dingtalk_config = loaded_config["dingtalk"]
                 for key in ["enabled", "keyword"]:
@@ -98,11 +102,33 @@ class DingTalkNotifier:
                         "webhook_url": dingtalk_config.get("webhook_url", ""),
                         "secret": dingtalk_config.get("secret", "")
                     }]
+                    
+            # 加载reporting配置
+            if loaded_config and "reporting" in loaded_config:
+                self.reporting_config = loaded_config["reporting"]
+                self.logger.info("已加载reporting配置用于URL构建")
+            else:
+                self.logger.warning("未找到reporting配置，将使用默认URL配置")
+                # 设置默认配置
+                self.reporting_config = {
+                    "site_base_url": "http://cnetspy.site",
+                    "url_paths": {
+                        "document_analysis": "/analysis/document/{vendor}/{doc_type}/{filename}",
+                        "weekly_updates": "/weekly-updates",
+                        "daily_updates": "/daily-updates",
+                        "recent_updates": "/recent-updates?days={days}",
+                        "home": "/"
+                    },
+                    "beautification": {
+                        "platform_url": "http://cnetspy.site"
+                    }
+                }
+                
         except ImportError:
             self.logger.error("无法导入 src.utils.config_loader。请确保PYTHONPATH设置正确或从项目根目录以模块方式运行。")
             self.config["enabled"] = False # Disable if config can't be loaded
         except Exception as e:
-            self.logger.error(f"加载钉钉配置失败: {e}")
+            self.logger.error(f"加载配置失败: {e}")
             self.config["enabled"] = False # Disable on other errors too
         self._init_robots()
         if not self.config.get("enabled"):
@@ -110,6 +136,39 @@ class DingTalkNotifier:
         elif not self.robots:
             self.logger.error("未配置有效的钉钉机器人 (配置加载后)")
             self.config["enabled"] = False
+    
+    def _build_url(self, path_key: str, **kwargs) -> str:
+        """根据配置构建URL"""
+        base_url = self.reporting_config.get("site_base_url", "http://cnetspy.site")
+        url_paths = self.reporting_config.get("url_paths", {})
+        
+        if path_key not in url_paths:
+            self.logger.warning(f"URL路径配置中未找到 {path_key}，使用默认值")
+            # 提供默认路径
+            default_paths = {
+                "document_analysis": "/analysis/document/{vendor}/{doc_type}/{filename}",
+                "weekly_updates": "/weekly-updates",
+                "daily_updates": "/daily-updates",
+                "recent_updates": "/recent-updates?days={days}",
+                "home": "/"
+            }
+            path_template = default_paths.get(path_key, "/")
+        else:
+            path_template = url_paths[path_key]
+        
+        # 格式化路径模板
+        try:
+            formatted_path = path_template.format(**kwargs)
+        except KeyError as e:
+            self.logger.error(f"格式化URL路径时缺少参数: {e}")
+            formatted_path = path_template
+        
+        return f"{base_url.rstrip('/')}{formatted_path}"
+    
+    def _get_platform_url(self) -> str:
+        """获取平台首页URL"""
+        return self.reporting_config.get("beautification", {}).get("platform_url") or \
+               self.reporting_config.get("site_base_url", "http://cnetspy.site")
             
     def _init_robots(self) -> None:
         self.robots = []
@@ -132,8 +191,15 @@ class DingTalkNotifier:
         doc_type = update.get('doc_type', '').upper()
         vendor = update.get('vendor', '')
         filename = update.get('filename', '')
-        # Ensure these fields exist, provide defaults if necessary or handle missing data
-        url = f"http://cnetspy.site/analysis/document/{vendor or 'unknown'}/{doc_type.lower() or 'unknown'}/{filename or 'unknown'}"
+        
+        # 使用配置构建URL而不是硬编码
+        url = self._build_url(
+            "document_analysis",
+            vendor=vendor or 'unknown',
+            doc_type=doc_type.lower() or 'unknown',
+            filename=filename or 'unknown'
+        )
+        
         md_content = f"{index}. **[{title or '[无标题]'}]({url})**\n\n"
         md_content += f"   • 类型: {doc_type or 'N/A'}  \n"
         md_content += f"   • 日期: {date or 'N/A'}\n\n"
@@ -160,8 +226,8 @@ class DingTalkNotifier:
             sorted_updates = sorted(updates, key=lambda x: x.get('date', ''), reverse=True)
             for i, update_item in enumerate(sorted_updates):
                 md_content += self._format_update_item(i+1, update_item)
-        site_url = "http://cnetspy.site/weekly-updates"
-        site_home = "http://cnetspy.site"
+        site_url = self._build_url("weekly_updates")
+        site_home = self._get_platform_url()
         md_content += f"\n> [🔍 查看本周所有更新]({site_url})\n\n---\n*本消息由[云网络竞争分析平台]({site_home})自动发送*"
         return self._send_to_robots(title, md_content, robot_names)
 
@@ -182,8 +248,8 @@ class DingTalkNotifier:
             sorted_updates = sorted(updates, key=lambda x: x.get('date', ''), reverse=True)
             for i, update_item in enumerate(sorted_updates):
                 md_content += self._format_update_item(i+1, update_item)
-        site_url = "http://cnetspy.site/daily-updates"
-        site_home = "http://cnetspy.site"
+        site_url = self._build_url("daily_updates")
+        site_home = self._get_platform_url()
         md_content += f"\n\n---\n> [🔍 查看今日所有更新]({site_url})\n\n---\n*本消息由[云网络竞争分析平台]({site_home})自动发送*"
         return self._send_to_robots(title, md_content, robot_names)
 
@@ -206,8 +272,8 @@ class DingTalkNotifier:
             sorted_updates = sorted(updates, key=lambda x: x.get('date', ''), reverse=True)
             for i, update_item in enumerate(sorted_updates):
                 md_content += self._format_update_item(i+1, update_item)
-        site_url = f"http://cnetspy.site/recent-updates?days={days}"
-        site_home = "http://cnetspy.site"
+        site_url = self._build_url("recent_updates", days=days)
+        site_home = self._get_platform_url()
         md_content += f"\n\n---\n> [🔍 查看最近{days}天所有更新]({site_url})\n\n---\n*本消息由[云网络竞争分析平台]({site_home})自动发送*"
         return self._send_to_robots(title, md_content, robot_names)
 
