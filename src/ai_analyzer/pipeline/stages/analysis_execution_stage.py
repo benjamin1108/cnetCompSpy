@@ -188,7 +188,21 @@ class AnalysisExecutionStage(PipelineStage):
                     if not task_type:
                         self.logger.warning(f"跳过没有类型的任务: {task_config}") # REMOVED color_override (was warning color before)
                         continue
-                    task_prompt_text = context.prompt_manager.get_task_prompt(task_type)
+                    
+                    # 特殊处理AI竞争分析任务：根据标题前缀选择提示词
+                    if task_type == "AI竞争分析":
+                        # 先检查是否已经有标题翻译结果
+                        title_translation = analysis_content_for_file.get("AI标题翻译", "").strip()
+                        if title_translation:
+                            task_prompt_text = context.prompt_manager.get_competitive_analysis_prompt(title_translation)
+                            self.logger.info(f"根据标题前缀选择竞争分析提示词: {title_translation[:50]}...")
+                        else:
+                            # 如果没有标题翻译结果，使用默认的竞争分析提示词
+                            task_prompt_text = context.prompt_manager.get_task_prompt(task_type)
+                            self.logger.warning(f"未找到标题翻译结果，使用默认竞争分析提示词")
+                    else:
+                        task_prompt_text = context.prompt_manager.get_task_prompt(task_type)
+                    
                     if not task_prompt_text:
                         self.logger.warning(f"因prompt为空跳过任务 '{task_type}' 。") # REMOVED color_override (was warning color before)
                         current_file_tasks_status[task_type] = {'success': False, 'error': 'Empty prompt', 'timestamp': time.strftime('%Y-%m-%d %H:%M:%S')}
