@@ -20,7 +20,7 @@ reporting:
   
   # 周报摘要使用的模型配置 (profile name, 在 ai_analyzer.yaml 中定义)
   # 如果留空或未定义，则会尝试使用 ai_analyzer.yaml 中的 active_model_profile
-  weekly_summary_model_profile: "deepseek_v2_chat" 
+  weekly_summary_model_profile: "grok" 
 
   # 钉钉周报美化相关配置
   beautification:
