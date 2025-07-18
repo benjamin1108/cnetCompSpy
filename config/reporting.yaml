@@ -24,7 +24,7 @@ reporting:
 
   # 钉钉周报美化相关配置
   beautification:
-    banner_url: "https://gw.alipayobjects.com/zos/bmw-prod/05017104-6734-4893-9526-2950e7c2f2ec.svg" # 报告顶部的图片URL (留空则不显示)
+    banner_url: # 报告顶部的图片URL (留空则不显示)
     report_title_prefix: "【云网络竞争动态周报】"               # 报告主标题的前缀
     intro_text: "汇集本周全球主要云厂商公开的技术产品动态，实时掌握竞争动态" # 报告引言
     
