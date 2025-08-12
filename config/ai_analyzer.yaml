@@ -21,6 +21,14 @@ ai_analyzer:
         api_base: "https://api.x.ai/v1"
         max_tokens: 99999 
         temperature: 0.6
+    
+    gemini:
+      type: "openai_compatible"
+      config:
+        model: "gemini-2.5-pro"  # 或其他Gemini模型名称
+        api_base: "https://generativelanguage.googleapis.com/v1beta/openai"  # Google的API端点
+        max_tokens: 65535  # 增加最大token数，与qwen保持一致
+        temperature: 0.5
 
   # --- 以下配置项保持在 ai_analyzer 顶层不变 ---
   max_workers: 50 # 同时分析的最大文件数，设置为4个线程同时运行

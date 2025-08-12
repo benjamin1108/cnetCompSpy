@@ -66,6 +66,7 @@ class OpenAICompatibleAI:
     
     def predict(self, prompt):
         logger.debug(f"准备向模型 {self.model_name} (provider: {self.provider}) 发送请求")
+        logger.debug(f"API基础URL: {self.api_base}")
         logger.debug(f"提示词长度: {len(prompt)} 字符")
         
         try:
@@ -181,9 +182,13 @@ class OpenAICompatibleAI:
             "model": self.model_name,
             "messages": messages,
             "temperature": self.temperature,
-            "max_tokens": self.max_tokens,
-            "enable_search": self.enable_search 
+            "max_tokens": self.max_tokens
         }
+        
+        # 只有在特定提供商需要时才添加 enable_search 参数
+        # 目前大多数 OpenAI 兼容 API 不支持此参数，可能导致请求失败
+        if self.enable_search and self.provider in ["specific_provider_that_supports_search"]:
+            payload["enable_search"] = self.enable_search
         
         return {
             "url": url,
@@ -201,6 +206,19 @@ class OpenAICompatibleAI:
                 raise ParseError("API响应为空Json对象")
 
             logger.debug(f"原始响应 (前200字符): {str(response_json)[:200]}...")
+            logger.info(f"当前识别的提供商: {self.provider}")
+            logger.info(f"响应JSON的主要键: {list(response_json.keys()) if isinstance(response_json, dict) else '非字典类型'}")
+            
+            # 检查是否是错误响应
+            if isinstance(response_json, dict):
+                if 'error' in response_json:
+                    error_info = response_json['error']
+                    logger.error(f"API返回错误响应: {error_info}")
+                    raise ParseError(f"API返回错误: {error_info}")
+                elif 'message' in response_json and 'choices' not in response_json:
+                    # 可能是某些提供商的错误格式
+                    logger.error(f"API可能返回错误消息: {response_json.get('message')}")
+                    raise ParseError(f"API可能返回错误: {response_json}")
 
             if self.provider == "aliyun_compatible_full" or self.provider == "aliyun_compatible":
                 try:
@@ -217,7 +235,20 @@ class OpenAICompatibleAI:
                         raise ParseError(f"解析 {self.provider} 响应格式错误: 'message' 字段非字典类型")
 
                     if 'content' not in message:
-                        raise ParseError(f"解析 {self.provider} 响应格式错误: 'message' 对象中缺少 'content' 字段")
+                        # 检查是否是因为长度限制导致的空响应
+                        finish_reason = choices[0].get('finish_reason', 'unknown')
+                        usage_info = response_json.get('usage', {})
+                        completion_tokens = usage_info.get('completion_tokens', 0)
+                        
+                        if finish_reason == 'length' and completion_tokens == 0:
+                            logger.error(f"解析 {self.provider} 响应失败 - 因长度限制导致无内容生成")
+                            logger.error(f"finish_reason: {finish_reason}, completion_tokens: {completion_tokens}")
+                            logger.error(f"使用信息: {usage_info}")
+                            raise ParseError(f"API响应因长度限制而无法生成内容 (finish_reason='{finish_reason}', completion_tokens={completion_tokens})。请检查max_tokens设置或减少输入长度。")
+                        else:
+                            logger.error(f"解析 {self.provider} 响应失败 - message 对象内容: {message}")
+                            logger.error(f"完整响应内容: {response_json}")
+                            raise ParseError(f"解析 {self.provider} 响应格式错误: 'message' 对象中缺少 'content' 字段。message 内容: {message}")
                     content = message['content']
                     return content 
                 except (KeyError, IndexError, AttributeError, TypeError) as e:
@@ -304,7 +335,20 @@ class OpenAICompatibleAI:
                         raise ParseError(f"解析 {self.provider} 响应格式错误: 'message' 字段非字典类型")
 
                     if 'content' not in message:
-                        raise ParseError(f"解析 {self.provider} 响应格式错误: 'message' 对象中缺少 'content' 字段")
+                        # 检查是否是因为长度限制导致的空响应
+                        finish_reason = choices[0].get('finish_reason', 'unknown')
+                        usage_info = response_json.get('usage', {})
+                        completion_tokens = usage_info.get('completion_tokens', 0)
+                        
+                        if finish_reason == 'length' and completion_tokens == 0:
+                            logger.error(f"解析 {self.provider} 响应失败 - 因长度限制导致无内容生成")
+                            logger.error(f"finish_reason: {finish_reason}, completion_tokens: {completion_tokens}")
+                            logger.error(f"使用信息: {usage_info}")
+                            raise ParseError(f"API响应因长度限制而无法生成内容 (finish_reason='{finish_reason}', completion_tokens={completion_tokens})。请检查max_tokens设置或减少输入长度。")
+                        else:
+                            logger.error(f"解析 {self.provider} 响应失败 - message 对象内容: {message}")
+                            logger.error(f"完整响应内容: {response_json}")
+                            raise ParseError(f"解析 {self.provider} 响应格式错误: 'message' 对象中缺少 'content' 字段。message 内容: {message}")
                     content = message['content']
                     return content 
                 except (KeyError, IndexError, AttributeError, TypeError) as e:
@@ -327,7 +371,20 @@ class OpenAICompatibleAI:
                         raise ParseError(f"解析 {provider_name_for_log} 响应格式错误: 'message' 字段非字典类型")
                         
                     if 'content' not in message: 
-                        raise ParseError(f"解析 {provider_name_for_log} 响应格式错误: 'message' 对象中缺少 'content' 字段")
+                        # 检查是否是因为长度限制导致的空响应
+                        finish_reason = choices[0].get('finish_reason', 'unknown')
+                        usage_info = response_json.get('usage', {})
+                        completion_tokens = usage_info.get('completion_tokens', 0)
+                        
+                        if finish_reason == 'length' and completion_tokens == 0:
+                            logger.error(f"解析 {provider_name_for_log} 响应失败 - 因长度限制导致无内容生成")
+                            logger.error(f"finish_reason: {finish_reason}, completion_tokens: {completion_tokens}")
+                            logger.error(f"使用信息: {usage_info}")
+                            raise ParseError(f"API响应因长度限制而无法生成内容 (finish_reason='{finish_reason}', completion_tokens={completion_tokens})。请检查max_tokens设置或减少输入长度。")
+                        else:
+                            logger.error(f"解析 {provider_name_for_log} 响应失败 - message 对象内容: {message}")
+                            logger.error(f"完整响应内容: {response_json}")
+                            raise ParseError(f"解析 {provider_name_for_log} 响应格式错误: 'message' 对象中缺少 'content' 字段。message 内容: {message}")
                     content = message['content'] 
                     return content
                 except (KeyError, IndexError, AttributeError, TypeError) as e:
