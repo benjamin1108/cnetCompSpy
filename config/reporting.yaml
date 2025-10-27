@@ -1,6 +1,6 @@
 reporting:
   # 报告生成和推送相关配置
-  site_base_url: "http://cloudnetworkspy.mindfree.top" # 内部链接的基础URL
+  site_base_url: "http://cnetspy.site" # 内部链接的基础URL
 
   # 各种页面的URL路径配置
   url_paths:
@@ -49,7 +49,7 @@ reporting:
     no_updates_text: "本周各家云厂商在所监控的技术领域内暂无重要更新内容公开发布。" # 当没有任何厂商更新时的提示信息
     footer_text: "" # 报告页脚文本
     platform_link_text: "前往平台查看原始情报和更多分析" # 指向平台的链接文本
-    platform_url: "http://cloudnetworkspy.mindfree.top" # 平台URL (如果为空，则不显示平台链接)
+    platform_url: "http://cnetspy.site" # 平台URL (如果为空，则不显示平台链接)
 
 # 输出路径配置
 output_paths:

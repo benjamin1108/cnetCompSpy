@@ -71,6 +71,7 @@ class BaseCrawler(ABC):
         self.interval = self.crawler_config.get('interval', 2)
         self.headers = self.crawler_config.get('headers', {})
         self.driver = None
+        self.user_data_dir = None  # 存储临时用户数据目录路径
         
         # 创建每个爬虫实例的线程锁
         self.lock = threading.RLock()
@@ -113,6 +114,12 @@ class BaseCrawler(ABC):
             chrome_options.add_argument('--disable-software-rasterizer')  # 禁用软件光栅化
             chrome_options.add_argument('--disable-features=VizDisplayCompositor')  # 禁用显示合成器
             chrome_options.add_argument('--mute-audio')  # 静音，避免声音相关问题
+            
+            # 为每个WebDriver实例创建唯一的用户数据目录，避免多个实例冲突
+            import tempfile
+            self.user_data_dir = tempfile.mkdtemp(prefix='chrome_profile_')
+            chrome_options.add_argument(f'--user-data-dir={self.user_data_dir}')
+            logger.debug(f"使用临时用户数据目录: {self.user_data_dir}")
             
             # 从配置中获取是否使用有界面模式
             if not self.crawler_config.get('headless', True):
@@ -240,6 +247,16 @@ class BaseCrawler(ABC):
                 self.driver.quit()
                 self.driver = None
                 logger.debug("WebDriver已关闭")
+            
+            # 清理临时用户数据目录
+            if self.user_data_dir and os.path.exists(self.user_data_dir):
+                try:
+                    import shutil
+                    shutil.rmtree(self.user_data_dir, ignore_errors=True)
+                    logger.debug(f"已清理临时用户数据目录: {self.user_data_dir}")
+                    self.user_data_dir = None
+                except Exception as e:
+                    logger.warning(f"清理临时用户数据目录失败: {e}")
     
     def _get_http(self, url: str) -> Optional[str]:
         """

@@ -237,7 +237,13 @@ class AwsWhatsnewCrawler(BaseCrawler):
                                 url_path = item_data.get("additionalFields", {}).get("headlineUrl", "")
                                 
                                 if headline and url_path:
-                                    full_url_item = f"https://aws.amazon.com{url_path}" if not url_path.startswith("http") else url_path
+                                    # 确保URL路径以斜杠开头
+                                    if not url_path.startswith("http"):
+                                        if not url_path.startswith("/"):
+                                            url_path = "/" + url_path
+                                        full_url_item = f"https://aws.amazon.com{url_path}"
+                                    else:
+                                        full_url_item = url_path
                                     articles.append((headline, full_url_item))
                             
                             total_items += len(page_items)
