@@ -148,7 +148,7 @@ class DocumentManager:
     
     def _extract_document_meta(self, file_path: str) -> Dict[str, str]:
         """
-        从文档中提取元数据
+        从文档头部提取元数据（简化版）
         
         Args:
             file_path: 文档路径
@@ -163,7 +163,9 @@ class DocumentManager:
         
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
-                content = f.read(16384)  # 读取前16KB，增加获取元数据的可能性
+                # 只读取前20行，metadata应该在文件头部
+                lines = [f.readline() for _ in range(20)]
+                content = ''.join(lines)
             
             # 尝试从内容中提取标题
             title_match = re.search(r'^#\s+(.+)$', content, re.MULTILINE)
@@ -195,6 +197,7 @@ class DocumentManager:
             # 尝试匹配多种可能的日期格式，同时支持中英文标点符号
             date_patterns = [
                 # 常见的显式标记日期格式 - 支持中英文冒号和其他常见变体
+                r'发布于[：:]\s*(\d{4}\s*年\s*\d{1,2}\s*月\s*\d{1,2}\s*日)',  # 发布于: 2025 年 9 月 17 日
                 r'发表于[：:]\s*(\d{4}年\d{1,2}月\d{1,2}日)',  # 匹配爬虫注入的"发表于"时间
                 r'发布(?:日期|时间)[：:]\s*(\d{4}[-/]\d{1,2}[-/]\d{1,2})',  # 发布日期: 2025-04-10
                 r'\*\*发布时间[：:]\*\*\s*(\d{4}[-/]\d{1,2}[-/]\d{1,2})',  # **发布时间:** 2025-04-10
@@ -218,9 +221,17 @@ class DocumentManager:
                 date_match = re.search(pattern, content, re.MULTILINE)
                 if date_match:
                     date_str = date_match.group(1).strip()
-                    # 处理中文日期格式 (2025年4月10日 -> 2025-04-10)
+                    # 处理中文日期格式 (2025年4月10日 -> 2025-04-10 或 2025 年 9 月 17 日 -> 2025-09-17)
                     if '年' in date_str and '月' in date_str and '日' in date_str:
+                        # 移除所有空格
+                        date_str = date_str.replace(' ', '')
+                        # 替换中文字符
                         date_str = date_str.replace('年', '-').replace('月', '-').replace('日', '')
+                        # 确保月份和日期是两位数
+                        parts = date_str.split('-')
+                        if len(parts) == 3:
+                            year, month, day = parts
+                            date_str = f"{year}-{month.zfill(2)}-{day.zfill(2)}"
                     # 统一分隔符为横杠
                     date_str = date_str.replace('/', '-')
                     

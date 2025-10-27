@@ -1,0 +1,71 @@
+---
+inclusion: manual
+---
+# 爬虫架构
+
+## 爬虫模块结构
+
+爬虫系统采用分层架构设计：
+
+- [crawlers/common/crawler_manager.py](mdc:src/crawlers/common/crawler_manager.py) - 爬虫管理器，负责协调多个爬虫任务
+- [crawlers/common/base_crawler.py](mdc:src/crawlers/common/base_crawler.py) - 爬虫基类，定义通用爬虫接口和功能
+- [crawlers/vendors/](mdc:src/crawlers/vendors) - 不同厂商的具体爬虫实现：
+  - [crawlers/vendors/aws/](mdc:src/crawlers/vendors/aws) - AWS爬虫
+  - [crawlers/vendors/azure/](mdc:src/crawlers/vendors/azure) - Azure爬虫
+  - [crawlers/vendors/gcp/](mdc:src/crawlers/vendors/gcp) - Google Cloud爬虫
+
+## 爬虫工作流程
+
+1. **爬虫管理器初始化**：
+   - 加载配置
+   - 根据配置和命令行参数确定要启动的爬虫
+   - 获取进程锁避免多个实例同时爬取
+
+2. **爬虫任务执行**：
+   - 每个厂商有多个爬虫类型（如博客、产品更新等）
+   - 管理器并行启动多个爬虫任务，每个任务负责不同的数据源
+   - 爬虫类通过检查元数据确定增量爬取范围
+
+3. **数据存储**：
+   - 爬取的内容按照厂商和类型存储在目录结构中
+   - 同时更新元数据记录，方便下次增量爬取
+
+## 爬虫和线程池交互
+
+1. **爬虫管理器使用线程池**：
+   ```python
+   # 在crawler_manager.py中
+   def run_crawlers(self):
+       # 创建线程池
+       thread_pool = get_thread_pool(initial_threads=2, max_threads=50)
+       
+       # 添加爬虫任务
+       for crawler in self.crawlers:
+           thread_pool.add_task(self._run_crawler, crawler)
+       
+       # 等待所有爬虫完成
+       thread_pool.wait_for_completion()
+   ```
+
+2. **单个爬虫内部使用线程池**：
+   ```python
+   # 在具体爬虫实现中
+   def crawl_articles(self, article_urls):
+       # 创建用于并行爬取文章的线程池
+       article_pool = get_thread_pool(initial_threads=2, max_threads=10)
+       
+       # 添加文章爬取任务
+       for url in article_urls:
+           article_pool.add_task(self.crawl_single_article, url)
+       
+       # 等待所有文章爬取完成
+       article_pool.wait_for_completion()
+   ```
+
+## 常见问题与解决方案
+
+1. **嵌套线程池**：爬虫管理器使用线程池启动爬虫，而部分爬虫又创建自己的线程池。这种嵌套结构要确保内部线程池在外部线程池关闭前完全关闭。
+
+2. **资源竞争**：多个爬虫同时写入文件系统或元数据时需要避免冲突，解决方案是使用锁或原子操作。
+
+3. **爬虫异常处理**：爬虫任务应当捕获所有异常并记录，避免因单个任务失败导致整个线程池卡住。

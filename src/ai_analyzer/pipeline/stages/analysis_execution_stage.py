@@ -48,7 +48,8 @@ class AnalysisExecutionStage(PipelineStage):
             'type': ''
         }
         lines = file_content.split('\n')
-        for line in lines[:20]:
+        # 增加检查行数到60行，以覆盖AI全文翻译部分
+        for line in lines[:60]:
             line_stripped = line.strip()
             if line_stripped.startswith('# ') and not metadata.get('title'):
                 metadata['title'] = line_stripped[2:].strip()
@@ -60,6 +61,16 @@ class AnalysisExecutionStage(PipelineStage):
                 metadata['crawl_time'] = line_stripped.split(':', 1)[1].strip()
             elif line_stripped.startswith('发布时间:') or line_stripped.startswith('**发布时间:**'):
                 metadata['publish_date'] = line_stripped.split(':', 1)[1].strip()
+            # 支持"发布于"格式，常见于AI全文翻译部分
+            elif line_stripped.startswith('发布于:') or '发布于:' in line_stripped:
+                # 提取日期，支持多种格式：2025 年 9 月 17 日 或 2025-09-17
+                date_match = re.search(r'发布于[：:]\s*(\d{4}\s*年\s*\d{1,2}\s*月\s*\d{1,2}\s*日|\d{4}[-/]\d{1,2}[-/]\d{1,2})', line_stripped)
+                if date_match:
+                    date_str = date_match.group(1).strip()
+                    # 转换中文日期格式为标准格式
+                    if '年' in date_str:
+                        date_str = re.sub(r'(\d{4})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日', r'\1-\2-\3', date_str)
+                    metadata['publish_date'] = date_str
             elif line_stripped.startswith('厂商:') or line_stripped.startswith('**厂商:**'):
                 metadata['vendor'] = line_stripped.split(':', 1)[1].strip()
             elif line_stripped.startswith('类型:') or line_stripped.startswith('**类型:**'):
@@ -68,11 +79,39 @@ class AnalysisExecutionStage(PipelineStage):
         # 如果没有明确的发布时间，但有爬取时间，则使用爬取时间作为发布时间的后备
         if not metadata['publish_date'] and metadata['crawl_time']:
             metadata['publish_date'] = metadata['crawl_time']
-            
+        
+        # 清理所有字段中的星号和多余空格
         for key in metadata:
             if isinstance(metadata[key], str):
-                metadata[key] = metadata[key].replace('**', '').strip()
+                # 移除星号和多余空格
+                metadata[key] = metadata[key].replace('**', '').replace('*', '').strip()
+        
         return metadata
+
+    def _write_metadata_header(self, outfile, embedded_meta: Dict[str, Any]) -> None:
+        """
+        写入metadata头部到分析文件
+        
+        Args:
+            outfile: 文件对象
+            embedded_meta: 从原始文件提取的metadata字典
+        """
+        if not embedded_meta:
+            return
+        
+        # 按顺序写入metadata字段
+        if embedded_meta.get('publish_date'):
+            outfile.write(f"**发布时间:** {embedded_meta['publish_date']}\n\n")
+        if embedded_meta.get('vendor'):
+            outfile.write(f"**厂商:** {embedded_meta['vendor']}\n\n")
+        if embedded_meta.get('type'):
+            outfile.write(f"**类型:** {embedded_meta['type']}\n\n")
+        if embedded_meta.get('original_url'):
+            outfile.write(f"**原始链接:** {embedded_meta['original_url']}\n\n")
+        
+        # 写入分隔线
+        outfile.write("---\n\n")
+        outfile.flush()
 
     def _clean_ai_response(self, raw_result: str, task_type: str) -> str:
         cleaned_result = raw_result.strip()
@@ -183,6 +222,9 @@ class AnalysisExecutionStage(PipelineStage):
             if not model_client:
                  raise AIAnalyzerError(f"未能从ModelManager获取模型客户端 (线程ID: {thread_id})。")
             with open(analysis_output_file_path, 'w', encoding='utf-8') as outfile:
+                # 写入metadata头部到分析文档顶部
+                self._write_metadata_header(outfile, embedded_meta)
+                
                 for i, task_config in enumerate(defined_tasks):
                     task_type = task_config.get('type')
                     if not task_type:
