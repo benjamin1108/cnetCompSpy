@@ -250,6 +250,8 @@ class HuaweiWhatsnewCrawler(BaseCrawler):
             logger.debug(f"在 {source_name} 中找到 {len(time_headers)} 个时间标题")
             
             # 建立时间标题和表格的映射关系
+            current_month = datetime.date.today().strftime('%Y-%m')
+            
             for header in time_headers:
                 # 解析时间格式：2025年04月 -> 2025-04，支持2010-2029年
                 time_match = re.search(r'(20[1-2][0-9])年([0-1]?[0-9])月', header.get_text())
@@ -285,22 +287,29 @@ class HuaweiWhatsnewCrawler(BaseCrawler):
                     if next_table:
                         time_map[next_table] = time_key
                         logger.debug(f"找到时间映射: {time_key} -> 表格")
+                        
+                        # 如果是当前月份，记录找到
+                        if time_key == current_month:
+                            logger.info(f"找到当前月份 {current_month} 的更新内容")
                     else:
                         logger.debug(f"未找到时间 {time_key} 对应的表格")
             
-            # 如果没有找到时间映射，使用当前时间作为默认值
+            # 如果没有找到时间映射，记录警告但不处理任何表格
+            # 避免将历史数据错误标记为当前月份
             if not time_map:
-                logger.warning(f"在 {source_name} 中未找到时间标题映射，使用当前时间")
-                default_time = datetime.date.today().strftime('%Y-%m')
-                for table in tables:
-                    time_map[table] = default_time
+                logger.warning(f"在 {source_name} 中未找到当前月份 {current_month} 的时间标题映射")
+                logger.info(f"源 {source_name} 在当前月份无新更新，跳过处理")
+                return []
             
             # 解析每个表格
             for table in tables:
-                table_time = time_map.get(table, datetime.date.today().strftime('%Y-%m'))
-                table_updates = self._parse_huawei_table(table, source_name, url, table_time)
-                updates.extend(table_updates)
-                logger.debug(f"从表格解析到 {len(table_updates)} 条更新 (时间: {table_time})")
+                table_time = time_map.get(table)
+                if table_time:  # 只处理有明确时间映射的表格
+                    table_updates = self._parse_huawei_table(table, source_name, url, table_time)
+                    updates.extend(table_updates)
+                    logger.debug(f"从表格解析到 {len(table_updates)} 条更新 (时间: {table_time})")
+                else:
+                    logger.debug(f"跳过没有时间映射的表格")
             
             logger.info(f"从 {source_name} 解析到 {len(updates)} 条更新")
             return updates

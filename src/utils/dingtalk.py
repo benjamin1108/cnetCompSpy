@@ -185,100 +185,17 @@ class DingTalkNotifier:
             self.robots.append(robot)
         self.logger.info(f"初始化了 {len(self.robots)} 个机器人")
 
-    def _format_update_item(self, index: int, update: Dict[str, Any]) -> str:
-        title = update.get('translated_title') or update.get('original_title')
-        date = update.get('date', '').replace('_', '-')
-        doc_type = update.get('doc_type', '').upper()
-        vendor = update.get('vendor', '')
-        filename = update.get('filename', '')
+    def send_report_file(self, filepath: str, robot_names: Optional[List[str]] = None) -> bool:
+        """
+        发送 markdown 报告文件到钉钉机器人
         
-        # 使用配置构建URL而不是硬编码
-        url = self._build_url(
-            "document_analysis",
-            vendor=vendor or 'unknown',
-            doc_type=doc_type.lower() or 'unknown',
-            filename=filename or 'unknown'
-        )
-        
-        md_content = f"{index}. **[{title or '[无标题]'}]({url})**\n\n"
-        md_content += f"   • 类型: {doc_type or 'N/A'}  \n"
-        md_content += f"   • 日期: {date or 'N/A'}\n\n"
-        return md_content
-
-    def send_weekly_updates(self, weekly_updates_data: Dict[str, List[Dict[str, Any]]], robot_names: Optional[List[str]] = None) -> bool:
-        if not self.config.get("enabled") or not self.robots:
-            self.logger.warning("钉钉周报推送条件不满足（未启用/无机器人）")
-            return False # Cannot send if not enabled or no robots
-        if not weekly_updates_data or sum(len(v) for v in weekly_updates_data.values()) == 0:
-            self.logger.info("本周无更新数据 (传递给 DingTalkNotifier.send_weekly_updates)，不发送通知")
-            return True # Consistent with original logic: if no data, it's a "successful" non-send
-
-        today = datetime.now()
-        start_of_week = today - timedelta(days=today.weekday())
-        start_of_week = datetime(start_of_week.year, start_of_week.month, start_of_week.day)
-        end_of_week = start_of_week + timedelta(days=6)
-        title = f"{self.config.get('keyword', '本周动态')} ({start_of_week.strftime('%Y.%m.%d')}-{end_of_week.strftime('%Y.%m.%d')})"
-        total_count = sum(len(updates) for updates in weekly_updates_data.values())
-        md_content = f"# {title}\n\n📊 本周共有 **{total_count}** 条云计算网络竞争情报\n\n"
-        for vendor, updates in weekly_updates_data.items():
-            vendor_icon = {"aws": "🟠", "azure": "🔵", "gcp": "🔴"}.get(vendor.lower(), "☁️")
-            md_content += f"## {vendor_icon} {vendor.upper()} ({len(updates)}条)\n\n"
-            sorted_updates = sorted(updates, key=lambda x: x.get('date', ''), reverse=True)
-            for i, update_item in enumerate(sorted_updates):
-                md_content += self._format_update_item(i+1, update_item)
-        site_url = self._build_url("weekly_updates")
-        site_home = self._get_platform_url()
-        md_content += f"\n> [🔍 查看本周所有更新]({site_url})\n\n---\n*本消息由[云网络竞争分析平台]({site_home})自动发送*"
-        return self._send_to_robots(title, md_content, robot_names)
-
-    def send_daily_updates(self, daily_updates_data: Dict[str, List[Dict[str, Any]]], robot_names: Optional[List[str]] = None) -> bool:
-        if not self.config.get("enabled") or not self.robots:
-            self.logger.warning("钉钉日报推送条件不满足（未启用/无机器人）")
-            return False
-        if not daily_updates_data or sum(len(v) for v in daily_updates_data.values()) == 0:
-            self.logger.info("今日无更新数据 (传递给 DingTalkNotifier.send_daily_updates)，不发送通知")
-            return True
-        today = datetime.now()
-        title = f"云计算竞争今日动态 ({today.strftime('%Y.%m.%d')})"
-        total_count = sum(len(updates) for updates in daily_updates_data.values())
-        md_content = f"# {title}\n\n📊 今日共有 **{total_count}** 条云计算网络竞争情报\n\n"
-        for vendor, updates in daily_updates_data.items():
-            vendor_icon = {"aws": "🟠", "azure": "🔵", "gcp": "🔴"}.get(vendor.lower(), "☁️")
-            md_content += f"## {vendor_icon} {vendor.upper()} ({len(updates)}条)\n\n"
-            sorted_updates = sorted(updates, key=lambda x: x.get('date', ''), reverse=True)
-            for i, update_item in enumerate(sorted_updates):
-                md_content += self._format_update_item(i+1, update_item)
-        site_url = self._build_url("daily_updates")
-        site_home = self._get_platform_url()
-        md_content += f"\n\n---\n> [🔍 查看今日所有更新]({site_url})\n\n---\n*本消息由[云网络竞争分析平台]({site_home})自动发送*"
-        return self._send_to_robots(title, md_content, robot_names)
-
-    def send_recently_updates(self, recently_updates_data: Dict[str, List[Dict[str, Any]]], days: int, robot_names: Optional[List[str]] = None) -> bool:
-        if not self.config.get("enabled") or not self.robots:
-            self.logger.warning(f"钉钉近{days}日推送条件不满足（未启用/无机器人）")
-            return False
-        if not recently_updates_data or sum(len(v) for v in recently_updates_data.values()) == 0:
-            self.logger.info(f"最近{days}天无更新数据 (传递给 DingTalkNotifier.send_recently_updates)，不发送通知")
-            return True
-        today = datetime.now()
-        today_date = datetime(today.year, today.month, today.day)
-        start_date = today_date - timedelta(days=days-1)
-        title = f"云计算竞争近{days}天动态 ({start_date.strftime('%Y.%m.%d')}-{today_date.strftime('%Y.%m.%d')})"
-        total_count = sum(len(updates) for updates in recently_updates_data.values())
-        md_content = f"# {title}\n\n📊 近{days}天共有 **{total_count}** 条云计算网络竞争情报\n\n"
-        for vendor, updates in recently_updates_data.items():
-            vendor_icon = {"aws": "🟠", "azure": "🔵", "gcp": "🔴"}.get(vendor.lower(), "☁️")
-            md_content += f"## {vendor_icon} {vendor.upper()} ({len(updates)}条)\n\n"
-            sorted_updates = sorted(updates, key=lambda x: x.get('date', ''), reverse=True)
-            for i, update_item in enumerate(sorted_updates):
-                md_content += self._format_update_item(i+1, update_item)
-        site_url = self._build_url("recent_updates", days=days)
-        site_home = self._get_platform_url()
-        md_content += f"\n\n---\n> [🔍 查看最近{days}天所有更新]({site_url})\n\n---\n*本消息由[云网络竞争分析平台]({site_home})自动发送*"
-        return self._send_to_robots(title, md_content, robot_names)
-
-    def send_markdown_file(self, filepath: str, robot_names: Optional[List[str]] = None) -> bool:
-        """读取指定的Markdown文件并将其内容推送到钉钉。"""
+        参数:
+            filepath: Markdown 文件路径
+            robot_names: 可选的机器人名称列表
+            
+        返回:
+            如果成功发送到至少一个机器人则返回 True
+        """
         if not self.config.get("enabled") or not self.robots:
             self.logger.warning(f"钉钉文件推送条件不满足（未启用/无机器人）: {filepath}")
             return False
@@ -353,12 +270,12 @@ class DingTalkNotifier:
 def parse_arguments_for_cli():
     parser = argparse.ArgumentParser(description="钉钉机器人推送工具")
     
-    # 1. 创建通用参数的父解析器
+    # 创建通用参数的父解析器
     common_options_parser = argparse.ArgumentParser(add_help=False)
     common_options_parser.add_argument(
         "--config", 
         type=str, 
-        default=None, # 明确设置默认值
+        default=None,
         help="自定义配置文件路径 (例如: config/notification.yaml)"
     )
     common_options_parser.add_argument(
@@ -369,36 +286,17 @@ def parse_arguments_for_cli():
     common_options_parser.add_argument(
         "--robot", 
         action="append", 
-        dest="robots", # 保持原来的 dest
-        default=None, # 明确设置默认值
+        dest="robots",
+        default=None,
         help="指定机器人名称(可多次使用，例如 --robot name1 --robot name2)"
     )
 
-    subparsers = parser.add_subparsers(dest="command", help="推送命令", title="可用命令", required=True) # 添加 title
+    subparsers = parser.add_subparsers(dest="command", help="推送命令", title="可用命令", required=True)
     
-    # 2. 让所有子解析器继承通用参数
-    weekly_parser = subparsers.add_parser(
-        "weekly", 
-        help="推送本周更新", 
-        parents=[common_options_parser]
-    )
-    
-    daily_parser = subparsers.add_parser(
-        "daily", 
-        help="推送今日更新", 
-        parents=[common_options_parser]
-    )
-    
-    recent_parser = subparsers.add_parser(
-        "recent", 
-        help="推送最近n天更新", 
-        parents=[common_options_parser]
-    )
-    recent_parser.add_argument("days", type=int, help="天数")
-    
+    # 仅保留 pushfile 子命令
     pushfile_parser = subparsers.add_parser(
         "pushfile", 
-        help="推送指定的Markdown文件内容", 
+        help="推送指定的Markdown报告文件", 
         parents=[common_options_parser]
     )
     pushfile_parser.add_argument(
@@ -429,59 +327,24 @@ def cli_main():
     if args.robots:
         logger.info(f"指定使用机器人: {', '.join(args.robots)}")
 
-    notifier = DingTalkNotifier(args.config) # Initialize notifier once with config
-    if not notifier.config.get("enabled"): # Check if notifier is enabled after loading config
+    notifier = DingTalkNotifier(args.config)
+    if not notifier.config.get("enabled"):
         logger.warning("DingTalkNotifier 未启用，无法推送。请检查配置。")
-        # Depending on desired behavior, could exit here or let specific send methods handle it.
-        # For now, let it proceed, send_x_updates methods also check for enabled status.
+        return 1
 
-    fetched_data: Optional[Dict[str, List[Dict[str, Any]]]] = None
     success = False
     
     try:
-        # Dynamically import web_server components only when script is run
-        current_file_dir = os.path.dirname(os.path.abspath(__file__))
-        src_dir = os.path.dirname(current_file_dir) # Assumes this file is in src/utils/
-        if src_dir not in sys.path:
-            sys.path.insert(0, src_dir) # Insert at the beginning for priority
+        if args.command == "pushfile":
+            logger.info(f"推送指定的Markdown报告文件...")
+            success = notifier.send_report_file(args.filepath, args.robots)
+        else:
+            logger.error(f"未知命令: {args.command}")
+            return 1
         
-        # It's generally better if PYTHONPATH is set correctly or the module is run with `python -m`
-        # so that these imports work without sys.path manipulation.
-        from web_server.vendor_manager import VendorManager
-        from web_server.document_manager import DocumentManager
-
-        project_root = os.path.dirname(src_dir)
-        raw_dir = os.path.join(project_root, "data", "raw")
-        analyzed_dir = os.path.join(project_root, "data", "analysis")
-        
-        document_manager = DocumentManager(raw_dir, analyzed_dir)
-        vendor_manager = VendorManager(raw_dir, analyzed_dir, document_manager)
-
-        if args.command == "weekly":
-            logger.info("获取本周更新数据...")
-            fetched_data = vendor_manager.get_weekly_updates()
-            logger.info(f"准备推送周报数据 ({sum(len(v) for v in fetched_data.values()) if fetched_data else 0} 条)")
-            success = notifier.send_weekly_updates(fetched_data, args.robots)
-        elif args.command == "daily":
-            logger.info("获取每日更新数据...")
-            fetched_data = vendor_manager.get_daily_updates()
-            logger.info(f"准备推送日报数据 ({sum(len(v) for v in fetched_data.values()) if fetched_data else 0} 条)")
-            success = notifier.send_daily_updates(fetched_data, args.robots)
-        elif args.command == "recent":
-            logger.info(f"获取最近{args.days}天更新数据...")
-            fetched_data = vendor_manager.get_recently_updates(args.days)
-            logger.info(f"准备推送近{args.days}日数据 ({sum(len(v) for v in fetched_data.values()) if fetched_data else 0} 条)")
-            success = notifier.send_recently_updates(fetched_data, args.days, args.robots)
-        elif args.command == "pushfile":
-            logger.info(f"推送指定的Markdown文件内容...")
-            success = notifier.send_markdown_file(args.filepath)
-        
-    except ImportError as ie:
-        logger.error(f"导入 web_server 组件失败: {ie}。请确保从项目根目录使用 'python -m src.utils.dingtalk' 运行，或 PYTHONPATH 配置正确。", exc_info=True)
-        return 1 # Indicate failure
     except Exception as e:
-        logger.error(f"执行钉钉推送 cli_main 时发生错误: {e}", exc_info=True)
-        return 1 # Indicate failure
+        logger.error(f"执行钉钉推送时发生错误: {e}", exc_info=True)
+        return 1
 
     if success:
         logger.info("钉钉推送操作成功完成")

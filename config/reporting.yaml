@@ -1,5 +1,5 @@
 reporting:
-  # 周报生成和推送相关配置
+  # 报告生成和推送相关配置
   site_base_url: "http://cloudnetworkspy.mindfree.top" # 内部链接的基础URL
 
   # 各种页面的URL路径配置
@@ -8,38 +8,51 @@ reporting:
     document_analysis: "/analysis/document/{vendor}/{doc_type}/{filename}"
     # 周报页面路径
     weekly_updates: "/weekly-updates"
-    # 日报页面路径
-    daily_updates: "/daily-updates"  
     # 近期更新页面路径
     recent_updates: "/recent-updates?days={days}"
     # 首页路径
     home: "/"
 
-  # 使用的周报提示模板的键名 (在 prompt_paths 主配置中定义，例如在 main.yaml 或单独的 prompts.yaml 中)
-  weekly_update_prompt_key: "weekly_updates" 
+  # 报告生成器配置
+  report_generator:
+    # 周报使用的提示模板键名 (在 prompt_paths 主配置中定义)
+    weekly_prompt_key: "weekly_updates"
+    # 最近N天报告使用的提示模板键名（使用与周报相同的提示）
+    recent_prompt_key: "weekly_updates"
+    # 报告摘要使用的模型配置 (profile name, 在 ai_analyzer.yaml 中定义)
+    # 如果留空或未定义，则会尝试使用 ai_analyzer.yaml 中的 active_model_profile
+    model_profile: "gemini"
   
-  # 周报摘要使用的模型配置 (profile name, 在 ai_analyzer.yaml 中定义)
-  # 如果留空或未定义，则会尝试使用 ai_analyzer.yaml 中的 active_model_profile
-  weekly_summary_model_profile: "grok" 
+  # 保留旧配置键以兼容现有代码
+  weekly_update_prompt_key: "weekly_updates"
+  weekly_summary_model_profile: "gemini"
 
-  # 钉钉周报美化相关配置
+  # 报告美化相关配置
   beautification:
     banner_url: # 报告顶部的图片URL (留空则不显示)
-    report_title_prefix: "【云网络竞争动态周报】"               # 报告主标题的前缀
-    intro_text: "汇集本周全球主要云厂商公开的技术产品动态，实时掌握竞争动态" # 报告引言
+    report_title_prefix: "【云网络竞争动态周报】"               # 周报主标题的前缀
+    recent_title_prefix: "【云网络竞争动态】"                   # 最近N天报告主标题的前缀
+    intro_text: "汇集本周全球主要云厂商公开的技术产品动态，实时掌握竞争动态" # 周报引言
+    recent_intro_text: "汇集近期全球主要云厂商公开的技术产品动态，实时掌握竞争动态" # 最近N天报告引言
     
     # 各厂商的Emoji图标，键为大写厂商名 (AWS, AZURE, GCP等, 与 vendors_to_scan 中的名称对应)
     vendor_emojis:
       AWS: "AWS"
       AZURE: "AZURE"
-      GCP: "GCP" # 示例：也可以是中文
+      GCP: "GCP"
       HUAWEI: "🌺"
       TENCENT: "🐧"
       VOLCANO: "🌋"
-      ALIBABA: "阿里云" # 示例
+      ALIBABA: "阿里云"
       DEFAULT: "📰" # 未在上方明确列出的厂商，或作为备用的默认Emoji
 
     no_updates_text: "本周各家云厂商在所监控的技术领域内暂无重要更新内容公开发布。" # 当没有任何厂商更新时的提示信息
     footer_text: "" # 报告页脚文本
     platform_link_text: "前往平台查看原始情报和更多分析" # 指向平台的链接文本
-    platform_url: "http://cloudnetworkspy.mindfree.top" # 平台URL (如果为空，则不显示平台链接) - 统一为与site_base_url一致 
+    platform_url: "http://cloudnetworkspy.mindfree.top" # 平台URL (如果为空，则不显示平台链接)
+
+# 输出路径配置
+output_paths:
+  reports_dir: "data/reports"
+  weekly_filename_pattern: "weekly_report_{start_date}_to_{end_date}.md"
+  recent_filename_pattern: "recent_{days}_days_report_{end_date}.md"

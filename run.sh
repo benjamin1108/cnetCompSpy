@@ -98,25 +98,27 @@ show_help() {
     
     echo -e "${BLUE}dingpush 命令:${NC}"
     echo -e "  子命令:"
-    echo -e "  ${GREEN}weekly${NC}                       - 推送本周更新"
-    echo -e "  ${GREEN}daily${NC}                        - 推送今日更新"
-    echo -e "  ${GREEN}recent${NC} [天数]                - 推送最近几天更新"
-    echo -e "  ${GREEN}weekly-report${NC}             - 生成并推送每周竞品分析报告"
+    echo -e "  ${GREEN}weekly-report${NC}                - 生成并推送每周竞品分析报告"
+    echo -e "  ${GREEN}recent-report${NC} [天数]         - 生成并推送最近N天竞品分析报告"
+    echo -e "  ${GREEN}pushfile${NC} --filepath [路径]   - 推送指定的Markdown文件"
     echo -e ""
     echo -e "  选项:"
     echo -e "  ${GREEN}--robot${NC} [机器人名称]           - 使用指定的钉钉机器人推送（可指定多个）"
     echo -e "  ${GREEN}--config${NC} [配置文件]           - 指定配置文件路径"
+    echo -e "  ${GREEN}--filepath${NC} [文件路径]         - 要推送的Markdown文件路径（pushfile命令必需）"
     echo ""
     
     echo -e "${YELLOW}示例用法:${NC}"
-    echo -e "  $0 crawl --vendor aws --limit 10         # 爬取AWS的数据，限制10篇文章"
-    echo -e "  $0 analyze --file data/raw/aws/blog/某文件.md  # 分析特定文件"
-    echo -e "  $0 server --host 0.0.0.0 --port 8080     # 指定主机和端口启动服务器"
-    echo -e "  $0 daily --no-email                      # 执行每日任务但不发送邮件"
-    echo -e "  $0 rebuild-md --type analysis --force    # 强制重建分析元数据"
-    echo -e "  $0 dingpush weekly --robot 机器人1 --robot 机器人2  # 使用指定机器人推送本周更新"
-    echo -e "  $0 dingpush recent 7                     # 推送最近7天的更新"
-    echo -e "  $0 --debug crawl --vendor aws            # 以调试模式爬取AWS数据"
+    echo -e "  $0 crawl --vendor aws --limit 10                    # 爬取AWS的数据，限制10篇文章"
+    echo -e "  $0 analyze --file data/raw/aws/blog/某文件.md        # 分析特定文件"
+    echo -e "  $0 server --host 0.0.0.0 --port 8080                # 指定主机和端口启动服务器"
+    echo -e "  $0 daily --no-email                                 # 执行每日任务但不发送邮件"
+    echo -e "  $0 rebuild-md --type analysis --force               # 强制重建分析元数据"
+    echo -e "  $0 dingpush weekly-report                           # 生成并推送周报"
+    echo -e "  $0 dingpush recent-report 7                         # 生成并推送最近7天报告"
+    echo -e "  $0 dingpush recent-report 7 --robot 机器人1         # 使用指定机器人推送"
+    echo -e "  $0 dingpush pushfile --filepath data/reports/xxx.md # 推送指定文件"
+    echo -e "  $0 --debug crawl --vendor aws                       # 以调试模式爬取AWS数据"
 }
 
 # 显示错误信息
@@ -580,8 +582,8 @@ validate_args() {
             
         dingpush)
             # dingpush命令有效参数
-            local valid_opts=("weekly" "daily" "recent" "weekly-report")
-            local has_recent=false
+            local valid_opts=("weekly-report" "recent-report" "pushfile")
+            local has_recent_report=false
             
             # 检查是否有子命令及其是否有效
             if [ $# -gt 0 ]; then
@@ -591,9 +593,9 @@ validate_args() {
                 for opt in "${valid_opts[@]}"; do
                     if [[ "$subcmd" == "$opt" ]]; then
                         is_valid=true
-                        # 记录是否使用了recent子命令
-                        if [[ "$subcmd" == "recent" ]]; then
-                            has_recent=true
+                        # 记录是否使用了recent-report子命令
+                        if [[ "$subcmd" == "recent-report" ]]; then
+                            has_recent_report=true
                         fi
                         break
                     fi
@@ -601,28 +603,26 @@ validate_args() {
                 
                 if ! $is_valid; then
                     invalid_args+=("$subcmd")
-                    # return 1 # REMOVED: Let the common error handling at the end of function catch this.
                 fi
                 
-                # 如果是recent子命令，验证下一个参数是否为数字
-                if $has_recent; then
+                # 如果是recent-report子命令，验证下一个参数是否为数字
+                if $has_recent_report; then
                     if [ $# -lt 2 ] || ! [[ "$2" =~ ^[0-9]+$ ]]; then
                         # 这里不添加到invalid_args，因为错误会在run_dingpush中处理
-                        # 我们只需让验证通过即可
                         :
                     else
                         # 验证通过，跳过子命令和天数参数的进一步检查
                         shift 2
                     fi
                 else
-                    # 如果不是recent子命令，跳过子命令参数的进一步检查
+                    # 如果不是recent-report子命令，跳过子命令参数的进一步检查
                     shift
                 fi
             fi
             
             # 检查剩余参数
-            local valid_extra_opts=("--config" "--robot")
-            local requires_value=("--config" "--robot")
+            local valid_extra_opts=("--config" "--robot" "--filepath")
+            local requires_value=("--config" "--robot" "--filepath")
             
             while [[ $# -gt 0 ]]; do
                 local current="$1"
@@ -647,6 +647,8 @@ validate_args() {
                         # 检查特定参数的值约束
                         if [[ "$current" == "--config" ]]; then
                             check_config_exists "$2"
+                        elif [[ "$current" == "--filepath" ]]; then
+                            check_file_exists "$2"
                         fi
                         
                         shift
@@ -1148,121 +1150,143 @@ run_rebuild_metadata() {
     return $RESULT
 }
 
-# 执行钉钉推送(支持多种推送模式和机器人选项)
+# 执行钉钉推送（支持报告生成和推送）
 run_dingpush() {
     echo -e "${BLUE}开始执行钉钉推送...${NC}"
     
     # 激活虚拟环境
     activate_venv
     
-    # 获取传递给 run_dingpush 的所有参数
-    # 全局的 --debug 应该已经由 main 函数处理并包含在 $@ 中 (如果存在)
     local all_args=("$@")
-
-    # 检查是否至少有一个参数 (子命令)
-    if [ ${#all_args[@]} -eq 0 ]; then
-        # 让 python 脚本内部的 argparse 来处理缺少命令的情况
-        echo -e "${YELLOW}未指定推送子命令，将由Python脚本处理...${NC}"
-        # 即使没有子命令，也直接调用Python脚本，让其内部的argparse处理
-        python -m src.utils.dingtalk "${all_args[@]}"
-    elif [ "${all_args[0]}" == "weekly-report" ]; then # CHANGED from weekly_report
-        # 处理 weekly-report 子命令
-        echo -e "${BLUE}正在生成每周竞品分析报告...${NC}"
-        
-        local gen_script_args=()
-        local push_script_args=()
-        
-        # Add global config to generate_weekly_report.py args if set
-        if [ -n "$GLOBAL_CONFIG_FILE_PATH" ]; then
-            # Assuming generate_weekly_report.py can accept --config path/to/file.yaml
-            # If it needs a different arg like --config-file, this should be adjusted.
-            # Also assuming it doesn't conflict with its own --loglevel.
-            gen_script_args+=("--config" "$GLOBAL_CONFIG_FILE_PATH")
-        fi
-
-        for arg in "${all_args[@]:1}"; do
-            if [ "$arg" == "--debug" ]; then
-                gen_script_args+=("--loglevel" "DEBUG")
-            fi
-            push_script_args+=("$arg") 
-        done
-
-        # Note: If generate_weekly_report.py does not accept --config,
-        # it will rely on get_config() finding the config via default paths or env vars.
-        python "$SCRIPT_DIR/scripts/generate_weekly_report.py" "${gen_script_args[@]}"
-        local generation_exit_code=$?
-
-        if [ $generation_exit_code -eq 0 ]; then
-            echo -e "${GREEN}✓ 周报生成成功。${NC}"
-            echo -e "${BLUE}现在尝试将生成的周报文件内容推送到钉钉...${NC}"
-            
-            # ---- 确定生成的报告文件路径 ----
-            # generate_weekly_report.py 会将文件输出到 config.yaml 中 output_paths.reports_dir 定义的目录
-            # 并且文件名格式为 weekly_competitor_summary_YYYY-MM-DD_to_YYYY-MM-DD.md
-            # 我们需要从 config.yaml 读取 reports_dir，或者假设一个默认值（不推荐）
-            # 更稳健的做法是让 generate_weekly_report.py 打印它最终写入的文件路径到stdout
-            # 然后 run.sh 捕获这个输出。
-            # 但作为当前步骤，我们先基于日期动态构造文件名，假设输出目录为 data/reports/
-            # 这个日后可以优化为从脚本输出获取实际路径
-
-            # 获取当前周的周一和今天日期，用于构造文件名
-            # 注意：macOS的date命令和Linux的date命令在获取周一的逻辑上可能不同
-            # 使用Python来获取日期更跨平台，但这里是在bash脚本中
-            local today_date=$(date +%Y-%m-%d)
-            local day_of_week=$(date +%u) # 1 for Monday, 7 for Sunday
-            local start_of_week_ts=$(($(date +%s) - (day_of_week - 1) * 86400))
-            local start_of_week_date=$(date -d @"$start_of_week_ts" +%Y-%m-%d)
-            
-            # 修正macOS date命令的兼容性
-            if [[ "$(uname)" == "Darwin" ]]; then
-                start_of_week_ts=$(date -j -f "%Y-%m-%d" "$today_date" +%s)
-                start_of_week_ts=$((start_of_week_ts - (day_of_week - 1) * 86400))
-                start_of_week_date=$(date -r "$start_of_week_ts" +%Y-%m-%d)
-            fi
-
-            local generated_report_filename="weekly_competitor_summary_${start_of_week_date}_to_${today_date}.md"
-            # 假设 generate_weekly_report.py 中的输出目录配置与这里一致
-            # 这个路径最好能从Python脚本的输出中获取，或者从配置文件中读取
-            # TODO: 从config.yaml中读取reports_dir路径, 而不是硬编码 'data/reports'
-            local reports_dir_in_config=$(python -c "import yaml; import os; config_path = os.path.join(os.path.dirname(os.path.abspath('$0')), 'config.yaml'); default_reports_dir = 'data/reports'; print(yaml.safe_load(open(config_path)).get('output_paths', {}).get('reports_dir', default_reports_dir) if os.path.exists(config_path) else default_reports_dir)" || echo "data/reports")
-            local generated_report_path="$SCRIPT_DIR/${reports_dir_in_config}/${generated_report_filename}"
-            
-            echo -e "${BLUE}预期生成的报告文件路径: ${generated_report_path}${NC}"
-
-            if [ ! -f "$generated_report_path" ]; then
-                echo -e "${RED}✗ 错误: 未找到预期生成的周报文件: ${generated_report_path}${NC}"
-                echo -e "${YELLOW}请检查 generate_weekly_report.py 的输出路径配置是否与 run.sh 中的假定一致。${NC}"
-                return 1 # 指示错误
-            fi
-            
-            local final_dingtalk_args=()
-            if [ -n "$GLOBAL_CONFIG_FILE_PATH" ]; then
-                # Prepend global config if set. Assumes dingtalk.py can handle --config path/to/file.yaml
-                # And that if push_script_args also contains a --config, argparse in Python handles precedence.
-                final_dingtalk_args+=("--config" "$GLOBAL_CONFIG_FILE_PATH")
-            fi
-            final_dingtalk_args+=("${push_script_args[@]}")
-
-            python -m src.utils.dingtalk pushfile --filepath "$generated_report_path" "${final_dingtalk_args[@]}"
-        else
-            echo -e "${RED}✗ 周报生成失败 (退出码: $generation_exit_code)，跳过钉钉推送步骤。${NC}"
-            return $generation_exit_code # 返回生成失败的退出码
-        fi
-    else
-        # 处理其他 dingpush 子命令 (weekly, daily, recent 等)
-        # 帮助信息 (-h, --help, no args) 已经在主 case 语句中处理过了，这里不需要重复。
-        # ${all_args[@]} 包含了从主 case 语句传递过来的、经过初步处理的参数 (如子命令 weekly, daily, recent 及其选项)
-        echo -e "${BLUE}执行钉钉子命令: python -m src.utils.dingtalk ${all_args[*]}${NC}"
-        python -m src.utils.dingtalk "${all_args[@]}"
+    local subcmd="${all_args[0]:-}"
+    
+    # 检查是否至少有一个参数（子命令）
+    if [ -z "$subcmd" ]; then
+        echo -e "${YELLOW}未指定推送子命令，将显示帮助信息...${NC}"
+        python -m src.utils.dingtalk --help
+        echo ""
+        echo -e "${YELLOW}提示:${NC} ${BLUE}run.sh 还提供以下封装命令:${NC}"
+        echo -e "  ${GREEN}weekly-report${NC}  - 生成并推送周报"
+        echo -e "  ${GREEN}recent-report${NC} [天数] - 生成并推送最近N天报告"
+        return 1
     fi
     
-    local exit_code=$?
-    if [ $exit_code -eq 0 ]; then
-        echo -e "${GREEN}✓ 钉钉推送成功${NC}"
-    else
-        echo -e "${RED}✗ 钉钉推送失败 (退出码: $exit_code)${NC}"
-        return $exit_code
-    fi
+    case "$subcmd" in
+        weekly-report)
+            echo -e "${BLUE}正在生成每周竞品分析报告...${NC}"
+            
+            local gen_args=("--mode" "weekly")
+            local push_args=()
+            
+            # 处理参数
+            for arg in "${all_args[@]:1}"; do
+                case "$arg" in
+                    --debug)
+                        gen_args+=("--loglevel" "DEBUG")
+                        ;;
+                    --robot|--config)
+                        push_args+=("$arg")
+                        ;;
+                    *)
+                        push_args+=("$arg")
+                        ;;
+                esac
+            done
+            
+            # 添加全局配置
+            if [ -n "$GLOBAL_CONFIG_FILE_PATH" ]; then
+                gen_args+=("--config" "$GLOBAL_CONFIG_FILE_PATH")
+            fi
+            
+            # 生成报告并捕获输出路径
+            local report_path=$(python -m src.utils.report_generator "${gen_args[@]}" 2>&1 | tail -n 1)
+            local gen_exit_code=$?
+            
+            if [ $gen_exit_code -eq 0 ] && [ -f "$report_path" ]; then
+                echo -e "${GREEN}✓ 周报生成成功: $report_path${NC}"
+                echo -e "${BLUE}现在推送到钉钉...${NC}"
+                
+                local dingtalk_args=("pushfile" "--filepath" "$report_path")
+                if [ -n "$GLOBAL_CONFIG_FILE_PATH" ]; then
+                    dingtalk_args+=("--config" "$GLOBAL_CONFIG_FILE_PATH")
+                fi
+                dingtalk_args+=("${push_args[@]}")
+                
+                python -m src.utils.dingtalk "${dingtalk_args[@]}"
+                return $?
+            else
+                echo -e "${RED}✗ 周报生成失败 (退出码: $gen_exit_code)${NC}"
+                return $gen_exit_code
+            fi
+            ;;
+            
+        recent-report)
+            local days="${all_args[1]:-}"
+            
+            if [[ ! "$days" =~ ^[0-9]+$ ]]; then
+                show_error "recent-report 需要一个数字类型的天数参数\n用法: $0 dingpush recent-report <天数> [选项]"
+                return 1
+            fi
+            
+            echo -e "${BLUE}正在生成最近 ${days} 天竞品分析报告...${NC}"
+            
+            local gen_args=("--mode" "recent" "--days" "$days")
+            local push_args=()
+            
+            # 处理参数（跳过前两个：子命令和天数）
+            for arg in "${all_args[@]:2}"; do
+                case "$arg" in
+                    --debug)
+                        gen_args+=("--loglevel" "DEBUG")
+                        ;;
+                    --robot|--config)
+                        push_args+=("$arg")
+                        ;;
+                    *)
+                        push_args+=("$arg")
+                        ;;
+                esac
+            done
+            
+            # 添加全局配置
+            if [ -n "$GLOBAL_CONFIG_FILE_PATH" ]; then
+                gen_args+=("--config" "$GLOBAL_CONFIG_FILE_PATH")
+            fi
+            
+            # 生成报告并捕获输出路径
+            local report_path=$(python -m src.utils.report_generator "${gen_args[@]}" 2>&1 | tail -n 1)
+            local gen_exit_code=$?
+            
+            if [ $gen_exit_code -eq 0 ] && [ -f "$report_path" ]; then
+                echo -e "${GREEN}✓ 最近 ${days} 天报告生成成功: $report_path${NC}"
+                echo -e "${BLUE}现在推送到钉钉...${NC}"
+                
+                local dingtalk_args=("pushfile" "--filepath" "$report_path")
+                if [ -n "$GLOBAL_CONFIG_FILE_PATH" ]; then
+                    dingtalk_args+=("--config" "$GLOBAL_CONFIG_FILE_PATH")
+                fi
+                dingtalk_args+=("${push_args[@]}")
+                
+                python -m src.utils.dingtalk "${dingtalk_args[@]}"
+                return $?
+            else
+                echo -e "${RED}✗ 最近 ${days} 天报告生成失败 (退出码: $gen_exit_code)${NC}"
+                return $gen_exit_code
+            fi
+            ;;
+            
+        pushfile)
+            # 直接传递给 dingtalk.py
+            echo -e "${BLUE}推送指定的Markdown文件...${NC}"
+            python -m src.utils.dingtalk "${all_args[@]}"
+            return $?
+            ;;
+            
+        *)
+            show_error "未知的 dingpush 子命令: $subcmd\n有效子命令: weekly-report, recent-report, pushfile"
+            return 1
+            ;;
+    esac
 }
 
 # 主函数
@@ -1545,23 +1569,27 @@ main() {
             ;;
         dingpush)
             # 检查是否请求帮助或无参数
-            # 注意: FILTERED_ARGS 是移除了全局 --debug 后的参数列表
             if [[ -z "${FILTERED_ARGS[0]}" ]] || [[ "${FILTERED_ARGS[0]}" == "-h" ]] || [[ "${FILTERED_ARGS[0]}" == "--help" ]]; then
-                echo -e "${BLUE}正在调用 src.utils.dingtalk 以显示其直接支持的子命令和选项...${NC}"
-                activate_venv # 确保环境已激活
-                python -m src.utils.dingtalk --help
-                exit_code=$?
-                echo "" # 加一个空行
-                echo -e "${YELLOW}提示:${NC} ${BLUE}run.sh脚本还为dingpush封装了 'weekly_report' 子命令，用于生成并推送周报。${NC}"
-                echo -e "${BLUE}     其功能是先调用 generate_weekly_report.py 生成报告，然后使用 dingtalk.py 的 pushfile 进行推送。${NC}"
-                echo -e "${BLUE}     要查看 run.sh 提供的所有命令 (包括 weekly_report 的描述)，请使用: ./run.sh help${NC}"
-                
-                # 如果python脚本因为缺少命令而退出码为2 (argparse的标准行为)
-                # 这时它通常会打印帮助信息，所以我们应该视作成功 (退出码0)
-                if [ $exit_code -eq 2 ]; then
-                    exit 0 
-                fi
-                exit $exit_code # 否则，使用python脚本的实际退出码
+                echo -e "${BLUE}钉钉推送命令帮助${NC}"
+                echo ""
+                echo -e "${YELLOW}可用子命令:${NC}"
+                echo -e "  ${GREEN}weekly-report${NC}                - 生成并推送每周竞品分析报告"
+                echo -e "  ${GREEN}recent-report${NC} [天数]         - 生成并推送最近N天竞品分析报告"
+                echo -e "  ${GREEN}pushfile${NC} --filepath [路径]   - 推送指定的Markdown文件"
+                echo ""
+                echo -e "${YELLOW}选项:${NC}"
+                echo -e "  ${GREEN}--robot${NC} [机器人名称]           - 使用指定的钉钉机器人推送（可指定多个）"
+                echo -e "  ${GREEN}--config${NC} [配置文件]           - 指定配置文件路径"
+                echo -e "  ${GREEN}--filepath${NC} [文件路径]         - 要推送的Markdown文件路径（pushfile命令必需）"
+                echo ""
+                echo -e "${YELLOW}示例:${NC}"
+                echo -e "  $0 dingpush weekly-report"
+                echo -e "  $0 dingpush recent-report 7"
+                echo -e "  $0 dingpush recent-report 7 --robot 机器人1"
+                echo -e "  $0 dingpush pushfile --filepath data/reports/report.md"
+                echo ""
+                echo -e "${BLUE}提示: pushfile 子命令直接调用 dingtalk.py 模块${NC}"
+                exit 0
             fi
 
             # 正常参数验证和执行
