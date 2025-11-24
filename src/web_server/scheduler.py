@@ -202,11 +202,10 @@ class Scheduler:
             root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
             run_script = os.path.join(root_dir, 'run.sh')
             
-            # 执行钉钉周报生成和推送命令
-            cmd = [run_script, 'dingpush', 'weekly-report']
+            # 执行钉钉最近7天报告生成和推送命令（确保包含周末数据）
+            cmd = [run_script, 'dingpush', 'recent-report', '7']
             
             # 如果 scheduler 配置了 debug_mode，则给 run.sh 传递 --debug 参数
-            # run.sh 的 weekly_report 子命令会进一步将此debug状态传递给相关脚本
             if self.debug_mode:
                 cmd.append('--debug') # run.sh 的全局 --debug
                 logger.info("以调试模式运行钉钉周报任务 (通过 run.sh --debug)")
