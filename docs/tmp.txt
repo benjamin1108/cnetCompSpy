@@ -1,0 +1,558 @@
+#!/usr/bin/env python3
+"""
+产品动态页面爬虫
+专门爬取各云厂商的产品动态/新功能发布记录页面
+"""
+
+import asyncio
+import sys
+from pathlib import Path
+from datetime import datetime
+from playwright.async_api import async_playwright
+from rich.console import Console
+from rich.progress import Progress
+
+# 添加 src 目录到 Python 路径
+src_path = Path(__file__).parent / "src"
+sys.path.insert(0, str(src_path))
+
+from config_loader import config_loader
+from src.help_crawler.content_extractor import (
+    crawl_and_extract,
+    save_content,
+)
+
+CONSOLE = Console()
+OUTPUT_FORMATS = ['md']
+
+# 火山云产品动态URL列表
+VOLCENGINE_WHATSNEW = [
+    {"product": "vpc", "name": "VPC私有网络 - 产品动态", "url": "https://www.volcengine.com/docs/6401/67803"},
+    {"product": "eip", "name": "公网IP(EIP) - 新功能发布记录", "url": "https://www.volcengine.com/docs/6402/67934"},
+    {"product": "shared_bandwidth_package", "name": "共享带宽包 - 新功能发布记录", "url": "https://www.volcengine.com/docs/6623/93507"},
+    {"product": "nat_gateway", "name": "NAT网关 - 新功能发布记录", "url": "https://www.volcengine.com/docs/6404/67976"},
+    {"product": "ipv6_gateway", "name": "IPv6网关 - 新功能发布记录", "url": "https://www.volcengine.com/docs/6896/133698"},
+    {"product": "cen", "name": "云企业网(CEN) - 产品动态", "url": "https://www.volcengine.com/docs/6405/68180"},
+    {"product": "transit_router", "name": "中转路由器(TR) - 产品动态", "url": "https://www.volcengine.com/docs/6979/155961"},
+    {"product": "clb", "name": "负载均衡(CLB) - 产品动态", "url": "https://www.volcengine.com/docs/6406/1264527"},
+    {"product": "clb_release", "name": "负载均衡(CLB) - 新功能发布记录", "url": "https://www.volcengine.com/docs/6406/113563"},
+    {"product": "alb", "name": "应用型负载均衡(ALB) - 产品动态", "url": "https://www.volcengine.com/docs/6406/67894"},
+    {"product": "direct_connect", "name": "专线连接 - 新功能发布记录", "url": "https://www.volcengine.com/docs/6407/68174"},
+    {"product": "vpn_connection", "name": "VPN连接 - 新功能发布记录", "url": "https://www.volcengine.com/docs/6455/70535"},
+    {"product": "private_link", "name": "私网连接(PrivateLink) - 新功能发布记录", "url": "https://www.volcengine.com/docs/6980/155768"},
+    {"product": "nic", "name": "网络智能中心(NIC) - 产品动态", "url": "https://www.volcengine.com/docs/83782/1155035"},
+    {"product": "cloud_connector", "name": "云连接器 - 产品动态", "url": "https://www.volcengine.com/docs/83812/1167747"},
+    {"product": "shared_traffic_package", "name": "共享流量包 - 产品动态", "url": "https://www.volcengine.com/docs/84435/1282844"},
+]
+
+# 腾讯云产品动态URL列表
+TENCENTCLOUD_WHATSNEW = [
+    {"product": "clb", "name": "负载均衡(CLB) - 产品动态", "url": "https://cloud.tencent.com/document/product/214/42841"},
+    {"product": "gwlb", "name": "网关负载均衡(GWLB) - 产品动态", "url": "https://cloud.tencent.com/document/product/1782/111599"},
+    {"product": "vpc", "name": "私有网络(VPC) - 产品动态", "url": "https://cloud.tencent.com/document/product/215/37951"},
+    {"product": "nat", "name": "NAT网关 - 产品动态", "url": "https://cloud.tencent.com/document/product/552/71560"},
+    {"product": "bwp", "name": "共享带宽包(BWP) - 产品动态", "url": "https://cloud.tencent.com/document/product/684/74390"},
+    {"product": "stp", "name": "共享流量包 - 产品动态", "url": "https://cloud.tencent.com/document/product/1171/61165"},
+    {"product": "ipv6", "name": "弹性公网IPv6 - 产品动态", "url": "https://cloud.tencent.com/document/product/1142/112767"},
+    {"product": "eip", "name": "弹性公网IP(EIP) - 产品动态", "url": "https://cloud.tencent.com/document/product/1199/44150"},
+    {"product": "ihpn", "name": "智能高性能网络(IHPN) - 产品动态", "url": "https://cloud.tencent.com/document/product/1779/110928"},
+    {"product": "privatelink", "name": "私有连接(PrivateLink) - 产品动态", "url": "https://cloud.tencent.com/document/product/1451/57261"},
+    {"product": "dc", "name": "专线接入(DC) - 产品动态", "url": "https://cloud.tencent.com/document/product/216/52940"},
+    {"product": "ccn", "name": "云联网(CCN) - 产品动态", "url": "https://cloud.tencent.com/document/product/877/58511"},
+    {"product": "vpn", "name": "VPN连接 - 产品动态", "url": "https://cloud.tencent.com/document/product/554/53881"},
+    {"product": "gaap", "name": "全球应用加速(GAAP) - 产品动态", "url": "https://cloud.tencent.com/document/product/608/64952"},
+]
+
+
+async def crawl_whatsnew(vendor: str, whatsnew_list: list):
+    """爬取指定厂商的产品动态页面"""
+    content_base_dir = Path("out/content")
+    output_dir = content_base_dir / vendor / "whatsnew"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    # 获取厂商配置
+    vendor_config = config_loader.get_vendor_config(vendor)
+    crawler_settings = vendor_config.get('crawler_settings', {}) if vendor_config else {}
+    save_raw_html = crawler_settings.get('save_raw_html', False)
+    
+    CONSOLE.print(f"\n[bold cyan]开始爬取 {vendor} 产品动态页面...[/bold cyan]")
+    CONSOLE.print(f"[dim]共 {len(whatsnew_list)} 个页面待爬取[/dim]")
+    
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        page = await browser.new_page()
+        
+        with Progress(*Progress.get_default_columns(), console=CONSOLE) as progress:
+            task = progress.add_task(f"[green]爬取 {vendor} 产品动态", total=len(whatsnew_list))
+            
+            for item in whatsnew_list:
+                try:
+                    extracted_data = await crawl_and_extract(page, item['url'], vendor, save_raw_html)
+                    if extracted_data:
+                        # 使用产品名称作为标题，确保每个产品保存为独立文件
+                        full_metadata = {
+                            "url": item['url'],
+                            "vendor": vendor,
+                            "product": "whatsnew",
+                            "product_key": item['product'],
+                            "crawl_time": datetime.now().isoformat(),
+                            **extracted_data,  # 先展开extracted_data
+                            "title": f"{item['product']}_{item['name']}",  # 再设置标题，覆盖extracted_data中的title
+                        }
+                        save_content(content_base_dir, full_metadata, OUTPUT_FORMATS, save_raw_html)
+                        CONSOLE.log(f"[green]✔[/green] {item['name']}")
+                    else:
+                        CONSOLE.log(f"[yellow]⚠[/yellow] {item['name']} - 无法提取内容")
+                except Exception as e:
+                    CONSOLE.log(f"[red]✘[/red] {item['name']} - 错误: {e}")
+                
+                progress.update(task, advance=1)
+        
+        await browser.close()
+    
+    CONSOLE.print(f"[bold green]✔ 完成 {vendor} 产品动态爬取[/bold green]")
+
+
+async def main():
+    """主函数"""
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="产品动态页面爬虫")
+    parser.add_argument('--vendor', choices=['volcengine', 'tencentcloud', 'all'], 
+                       default='all', help='指定要爬取的厂商')
+    args = parser.parse_args()
+    
+    CONSOLE.print("[bold yellow]🚀 产品动态页面爬虫[/bold yellow]")
+    CONSOLE.print(f"[dim]开始时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}[/dim]\n")
+    
+    if args.vendor in ['volcengine', 'all']:
+        await crawl_whatsnew('volcengine', VOLCENGINE_WHATSNEW)
+    
+    if args.vendor in ['tencentcloud', 'all']:
+        await crawl_whatsnew('tencentcloud', TENCENTCLOUD_WHATSNEW)
+    
+    CONSOLE.print(f"\n[bold green]🎉 爬取完成！[/bold green]")
+    CONSOLE.print(f"[dim]结束时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}[/dim]")
+    CONSOLE.print(f"[dim]输出目录: out/content/{{vendor}}/whatsnew/[/dim]")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
+
+
+
+
+import asyncio
+import os
+import re
+import yaml
+import pandas as pd
+from pathlib import Path
+from datetime import datetime
+from playwright.async_api import async_playwright
+from bs4 import BeautifulSoup
+from markdownify import markdownify as md
+from urllib.parse import urljoin
+from io import StringIO
+from rich.console import Console
+
+CONSOLE = Console()
+
+class BaseExtractor:
+    """
+    提取器基类，定义了所有提取器应遵循的接口和默认实现。
+    """
+    def __init__(self, soup: BeautifulSoup, url: str):
+        self.soup = soup
+        self.url = url
+
+    def extract(self) -> dict:
+        """
+        执行提取过程并返回一个包含所有数据的结构化字典。
+        """
+        title = self._extract_title()
+        content_html = self._extract_content_html()
+        
+        if content_html:
+            self._fix_relative_urls(content_html)
+
+        return {
+            "title": title,
+            "content_html": str(content_html) if content_html else "",
+        }
+
+    def _extract_title(self) -> str:
+        """提取页面主标题。默认实现是查找第一个h1标签。"""
+        title_tag = self.soup.find('h1')
+        return title_tag.get_text(strip=True) if title_tag else "Untitled"
+
+    def _extract_content_html(self) -> BeautifulSoup:
+        """
+        默认的内容提取逻辑。
+        它会先移除通用干扰标签，然后返回清理后的 <body>。
+        """
+        body = self.soup.find('body')
+        if not body:
+            return self.soup # 如果没有body，返回整个soup
+
+        # 对body进行通用清理
+        for tag in body.find_all(['nav', 'footer', 'header', 'script', 'style', 'aside', 'form']):
+            tag.decompose()
+        return body
+
+    def _fix_relative_urls(self, content_soup: BeautifulSoup):
+        """将内容中的相对URL转换为绝对URL。"""
+        for tag in content_soup.find_all(['a'], href=True):
+            if tag['href'].startswith('/'):
+                tag['href'] = urljoin(self.url, tag['href'])
+        for tag in content_soup.find_all(['img'], src=True):
+            if tag['src'].startswith('/'):
+                tag['src'] = urljoin(self.url, tag['src'])
+
+
+class TencentCloudExtractor(BaseExtractor):
+    """腾讯云专属提取器。"""
+    def _extract_content_html(self) -> BeautifulSoup:
+        return self.soup.select_one('#docArticleContent') or super()._extract_content_html()
+
+class AliyunExtractor(BaseExtractor):
+    """阿里云专属提取器。"""
+    def _extract_content_html(self) -> BeautifulSoup:
+        return self.soup.select_one('.content-body') or super()._extract_content_html()
+
+class HuaweiCloudExtractor(BaseExtractor):
+    """华为云专属提取器。"""
+    def _extract_content_html(self) -> BeautifulSoup:
+        return self.soup.select_one('.content-body') or super()._extract_content_html()
+
+class VolcengineExtractor(BaseExtractor):
+    """火山引擎专属提取器。"""
+    
+    def _convert_volcengine_links(self, content: BeautifulSoup) -> None:
+        """
+        将火山云特殊的链接格式转换为标准的<a href>标签。
+        火山云使用 class="url hyperlink-href:https://..." 格式存储链接。
+        """
+        import re
+        # 查找所有包含 hyperlink-href 的元素
+        for elem in content.find_all(class_=re.compile(r'hyperlink-href:')):
+            class_str = ' '.join(elem.get('class', []))
+            # 提取URL
+            match = re.search(r'hyperlink-href:(\S+)', class_str)
+            if match:
+                href = match.group(1)
+                # 获取文本内容
+                text = elem.get_text(strip=True)
+                # 创建新的<a>标签，使用self.soup而不是content
+                new_tag = self.soup.new_tag('a', href=href)
+                new_tag.string = text
+                elem.replace_with(new_tag)
+    
+    def _extract_content_html(self) -> BeautifulSoup:
+        # 火山云文档的主内容区域选择器
+        # 火山云使用动态生成的class名，但有固定的volc-doceditor类class
+        selectors = [
+            '.volc-doceditor-container',  # 文档编辑器容器
+            '.editor-kit-container.volc-doceditor',  # 编辑器容器
+            '.volc-doceditor',  # 文档编辑器
+            'article',  # 文章标签
+        ]
+        
+        for selector in selectors:
+            content = self.soup.select_one(selector)
+            if content:
+                # 移除不需要的元素
+                for tag in content.find_all(['script', 'style']):
+                    tag.decompose()
+                # 转换火山云特殊链接格式
+                self._convert_volcengine_links(content)
+                return content
+        
+        # 回退到默认实现
+        return super()._extract_content_html()
+
+class DefaultExtractor(BaseExtractor):
+    """默认提取器，当没有特定厂商的提取器时使用。"""
+    pass
+
+
+def get_extractor(vendor: str, soup: BeautifulSoup, url: str) -> BaseExtractor:
+    """
+    提取器工厂函数。根据厂商名称返回相应的提取器实例。
+    """
+    extractors = {
+        'tencentcloud': TencentCloudExtractor,
+        'aliyun': AliyunExtractor,
+        'huaweicloud': HuaweiCloudExtractor,
+        'volcengine': VolcengineExtractor,
+    }
+    
+    extractor_class = extractors.get(vendor.lower(), DefaultExtractor)
+    return extractor_class(soup, url)
+
+
+def advanced_html_to_markdown(html_content: str) -> str:
+    """
+    一个增强版的HTML到Markdown转换器，能够更好地处理复杂表格。
+    它使用pandas来解析表格，从而正确处理rowspan和colspan。
+    """
+    if not html_content:
+        return ""
+
+    soup = BeautifulSoup(html_content, 'html.parser')
+    
+    # 先将表格中的链接转换为Markdown格式，这样pandas处理后不会丢失链接
+    for table in soup.find_all('table'):
+        for link in table.find_all('a', href=True):
+            href = link.get('href', '')
+            text = link.get_text(strip=True)
+            if href and text:
+                # 将<a>标签替换为Markdown链接格式
+                md_link = f'[{text}]({href})'
+                link.replace_with(md_link)
+
+    for table_idx, table in enumerate(soup.find_all('table')):
+        try:
+            # 检查表格是否有真正的表头（th标签）
+            has_real_header = bool(table.find('th'))
+            
+            # 使用pandas读取HTML表格
+            # 如果没有真正的表头，告诉pandas不要把第一行当作header
+            if has_real_header:
+                df_list = pd.read_html(StringIO(str(table)), flavor='bs4')
+            else:
+                df_list = pd.read_html(StringIO(str(table)), flavor='bs4', header=None)
+            
+            if not df_list:
+                continue
+            
+            # 一个<table>标签通常只包含一个表格
+            df = df_list[0]
+            
+            # 数据清理：
+            # 1. 删除全空的行
+            df = df.dropna(how='all')
+            
+            # 2. 删除全空的列
+            df = df.dropna(axis=1, how='all')
+            
+            # 3. 将NaN替换为空字符串
+            df = df.fillna('')
+            
+            # 4. 删除所有列都是空字符串的行
+            df = df[~(df == '').all(axis=1)]
+            
+            # 5. 处理colspan产生的列错位问题：将部分空列的内容合并到前一列
+            cols_to_drop = []
+            for col_idx in range(len(df.columns) - 1, 0, -1):  # 从右到左遍历
+                col = df.columns[col_idx]
+                prev_col = df.columns[col_idx - 1]
+                # 如果当前列大部分是空的（超过50%），将非空内容合并到前一列
+                empty_count = (df[col] == '').sum()
+                if empty_count > len(df) * 0.5:  # 超过50%是空的
+                    for idx in df.index:
+                        if df.at[idx, col] != '' and df.at[idx, prev_col] != '':
+                            # 合并到前一列
+                            df.at[idx, prev_col] = str(df.at[idx, prev_col]) + str(df.at[idx, col])
+                        elif df.at[idx, col] != '':
+                            df.at[idx, prev_col] = df.at[idx, col]
+                    cols_to_drop.append(col)
+            
+            # 删除已处理的列
+            if cols_to_drop:
+                df = df.drop(columns=cols_to_drop)
+            
+            # 6. 删除所有值都是空字符串的列
+            df = df.loc[:, ~(df == '').all()]
+            
+            # 7. 特殊处理：如果第一行是空的（可能是pandas生成的空表头），删除它
+            if not df.empty and (df.iloc[0] == '').all():
+                df = df.iloc[1:].reset_index(drop=True)
+            
+            # 8. 如果DataFrame为空，跳过这个表格
+            if df.empty:
+                continue
+            
+            # 将DataFrame转换为一个简单的、没有合并单元格的HTML表格
+            # header=False 确保不输出pandas自动生成的列名
+            if has_real_header:
+                simple_table_html = df.to_html(index=False, border=0, escape=False)
+            else:
+                simple_table_html = df.to_html(index=False, border=0, header=False, escape=False)
+            
+            simple_table_soup = BeautifulSoup(simple_table_html, 'html.parser')
+            new_table = simple_table_soup.find('table')
+            
+            # 关键修复：将第一行的td转换为th，这样markdownify就能正确识别表头
+            first_row = new_table.find('tr')
+            if first_row:
+                for td in first_row.find_all('td'):
+                    # 创建新的th标签，复制td的内容和属性
+                    th = simple_table_soup.new_tag('th')
+                    th.string = td.get_text()
+                    # 复制所有属性
+                    for attr, value in td.attrs.items():
+                        th[attr] = value
+                    # 替换td为th
+                    td.replace_with(th)
+            
+            # 替换旧的复杂表格
+            table.replace_with(new_table)
+
+        except Exception as e:
+            # 如果pandas处理失败（例如，表格格式非常不规范），
+            # 打印一个警告并保持原样，让markdownify尝试处理
+            CONSOLE.log(f"[yellow]警告: 处理表格时出错: {e}。将回退到默认转换。[/yellow]")
+            continue
+
+    # 将整个HTML（现在只包含简单表格）转换为Markdown
+    md_content = md(str(soup), heading_style="ATX", bullets='-')
+
+    return md_content
+
+
+def parse_link_file(file_path: Path):
+    """从链接文件中解析URL和标题。"""
+    with open(file_path, 'r', encoding='utf-8') as f:
+        lines = f.readlines()
+
+    docs = []
+    current_title = None
+    item_pattern = re.compile(r"^\s*\d+\.\s*(.*)")
+
+    try:
+        start_index = lines.index("=" * 50 + "\n") + 2
+    except ValueError:
+        start_index = 0
+
+    for i in range(start_index, len(lines)):
+        line = lines[i].strip()
+        if not line:
+            continue
+        
+        match = item_pattern.match(line)
+        if match:
+            current_title = match.group(1).strip()
+        elif (line.startswith("https://") or line.startswith("http://")) and current_title:
+            docs.append({"title": current_title, "url": line})
+            current_title = None
+        elif current_title: # 处理多行标题
+             current_title += " " + line
+                
+    return docs
+
+
+def create_metadata_header(metadata: dict) -> str:
+    """创建YAML Front Matter格式的元数据块。"""
+    # 过滤掉内容字段，只保留元数据
+    excluded_fields = ['md_content', 'txt_content', 'raw_html']
+    header_data = {k: v for k, v in metadata.items() if k not in excluded_fields}
+    return f"---\n{yaml.dump(header_data, allow_unicode=True)}---\n\n"
+
+
+async def crawl_and_extract(page, url: str, vendor: str, save_raw_html: bool = False):
+    """
+    获取页面HTML，并使用适合该厂商的提取器来处理它。
+    """
+    try:
+        response = await page.goto(url, timeout=60000, wait_until='domcontentloaded')
+        
+        # 火山云是SPA页面，需要等待JavaScript渲染完成
+        if vendor.lower() == 'volcengine':
+            # 等待内容容器出现，这比networkidle更精确
+            try:
+                await page.wait_for_selector('.volc-doceditor-container', timeout=15000)
+            except:
+                # 如果容器没出现，回退到短暂的networkidle等待
+                try:
+                    await page.wait_for_load_state('networkidle', timeout=10000)
+                except:
+                    pass
+            # 短暂等待确保内容渲染
+            await page.wait_for_timeout(500)
+        
+        # 获取渲染后的HTML内容
+        html_content = await page.content()
+        html_bytes = html_content.encode('utf-8')
+        soup = BeautifulSoup(html_bytes, 'lxml')
+
+        # 如果启用了调试模式，保存原始HTML
+        raw_html_content = None
+        if save_raw_html:
+            raw_html_content = html_content
+
+        # 使用工厂函数获取合适的提取器
+        extractor = get_extractor(vendor, soup, url)
+        extracted_data = extractor.extract()
+
+        # 将HTML内容转换为Markdown和TXT
+        content_html = extracted_data.get('content_html', '')
+
+        # 使用我们新的、更强大的HTML到Markdown转换函数
+        md_content = advanced_html_to_markdown(content_html)
+        
+        txt_content = BeautifulSoup(content_html, 'html.parser').get_text(separator='\\n', strip=True)
+        
+        # 清理不需要的Unicode字符（例如：零宽非中断空格 U+FEFF）
+        if md_content:
+            md_content = md_content.replace('\ufeff', '')
+        if txt_content:
+            txt_content = txt_content.replace('\ufeff', '')
+        
+        result = {
+            "title": extracted_data.get('title'),
+            "md_content": md_content,
+            "txt_content": txt_content,
+        }
+        
+        # 如果启用了调试模式，将原始HTML添加到结果中
+        if save_raw_html and raw_html_content:
+            result["raw_html"] = raw_html_content
+        
+        return result
+    except Exception as e:
+        CONSOLE.log(f"[red]❌ 爬取 {url} 时出错: {e}[/red]")
+        return None
+
+
+def save_content(output_dir: Path, metadata: dict, output_formats: list = ['md'], save_raw_html: bool = False):
+    """将提取的内容和元数据保存为文件。"""
+    vendor = metadata.get('vendor', 'unknown')
+    product = metadata.get('product', 'unknown')
+    
+    safe_title = re.sub(r'[\\/*?:"<>|]', "", metadata['title'])
+    safe_filename = safe_title.replace(" ", "_")[:100]
+
+    metadata_header = create_metadata_header(metadata)
+    
+    content_map = {
+        'md': metadata.get('md_content', ''),
+        'txt': metadata.get('txt_content', '')
+    }
+
+    target_dir = output_dir / vendor / product
+    target_dir.mkdir(parents=True, exist_ok=True)
+        
+    for format_type in output_formats:
+        content_to_save = content_map.get(format_type)
+        if content_to_save:
+            file_path = target_dir / f"{safe_filename}.{format_type}"
+            try:
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    f.write(metadata_header + content_to_save)
+            except Exception as e:
+                CONSOLE.log(f"[red]❌ 保存文件 {file_path} 时出错: {e}[/red]")
+    
+    # 如果启用了调试模式，保存原始HTML
+    if save_raw_html and metadata.get('raw_html'):
+        debug_dir = output_dir / 'debug' / vendor / product
+        debug_dir.mkdir(parents=True, exist_ok=True)
+        
+        html_file_path = debug_dir / f"{safe_filename}.html"
+        try:
+            with open(html_file_path, 'w', encoding='utf-8') as f:
+                f.write(metadata['raw_html'])
+            CONSOLE.log(f"[green]✅ 已保存原始HTML: {html_file_path}[/green]")
+        except Exception as e:
+            CONSOLE.log(f"[red]❌ 保存原始HTML {html_file_path} 时出错: {e}[/red]") 

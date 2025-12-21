@@ -12,9 +12,6 @@ from urllib.parse import urljoin, urlparse
 
 import requests
 from bs4 import BeautifulSoup, Tag
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 
 from src.crawlers.common.base_crawler import BaseCrawler
 
@@ -87,17 +84,13 @@ class AzureInfraBlogCrawler(BaseCrawler):
             except Exception as e:
                 logger.error(f"使用requests库获取页面失败: {e}")
             
-            # 只有在requests失败时才尝试使用Selenium
+            # 只有在requests失败时才尝试使用Playwright
             if not html:
                 try:
-                    logger.debug("requests获取失败，尝试使用Selenium")
-                    # 初始化WebDriver（如果未初始化）
-                    if not self.driver:
-                        self._init_driver()
-                    
-                    html = self._get_selenium(self.start_url)
+                    logger.debug("requests获取失败，尝试使用Playwright")
+                    html = self._get_with_playwright(self.start_url)
                 except Exception as e:
-                    logger.warning(f"使用Selenium获取页面失败: {e}")
+                    logger.warning(f"使用Playwright获取页面失败: {e}")
             
             if not html:
                 logger.error(f"获取博客列表页失败: {self.start_url}")
@@ -169,12 +162,12 @@ class AzureInfraBlogCrawler(BaseCrawler):
                     except Exception as e:
                         logger.error(f"使用requests库获取文章失败: {e}")
                     
-                    # 如果requests失败，才尝试Selenium
-                    if not article_html and self.driver:
+                    # 如果requests失败，才尝试Playwright
+                    if not article_html:
                         try:
-                            article_html = self._get_selenium(url)
+                            article_html = self._get_with_playwright(url)
                         except Exception as e:
-                            logger.warning(f"使用Selenium获取文章失败: {e}")
+                            logger.warning(f"使用Playwright获取文章失败: {e}")
                     
                     if not article_html:
                         logger.warning(f"获取文章内容失败: {url}")
@@ -203,9 +196,9 @@ class AzureInfraBlogCrawler(BaseCrawler):
             # 关闭WebDriver
             self._close_driver()
             
-    def _get_selenium(self, url: str) -> str:
+    def _get_with_playwright(self, url: str) -> str:
         """
-        使用Selenium获取页面内容
+        使用Playwright获取页面内容
         
         Args:
             url: 页面URL
@@ -214,65 +207,42 @@ class AzureInfraBlogCrawler(BaseCrawler):
             页面HTML内容
         """
         try:
-            logger.debug(f"使用Selenium获取页面: {url}")
-            self.driver.get(url)
+            from playwright.sync_api import sync_playwright
             
-            # 减少等待时间，避免长时间卡住
-            wait_time = 10
-            logger.debug(f"等待页面加载，超时时间: {wait_time}秒")
+            logger.debug(f"使用Playwright获取页面: {url}")
             
-            try:
-                # 等待页面主体内容加载完成
-                WebDriverWait(self.driver, wait_time).until(
-                    EC.presence_of_element_located((By.TAG_NAME, "main"))
+            with sync_playwright() as p:
+                browser = p.chromium.launch(
+                    headless=True,
+                    args=['--no-sandbox', '--disable-dev-shm-usage']
                 )
-                logger.debug("找到main元素，页面基本结构已加载")
-            except Exception as e:
-                logger.warning(f"等待main元素超时: {e}")
                 try:
-                    # 如果找不到main标签，尝试等待article标签
-                    WebDriverWait(self.driver, wait_time).until(
-                        EC.presence_of_element_located((By.TAG_NAME, "article"))
-                    )
-                    logger.debug("找到article元素，页面基本结构已加载")
-                except Exception as e:
-                    logger.warning(f"等待article元素超时: {e}")
-                    # 如果找不到article标签，尝试等待body加载完成
-                    WebDriverWait(self.driver, wait_time).until(
-                        EC.presence_of_element_located((By.TAG_NAME, "body"))
-                    )
-                    logger.debug("找到body元素，继续等待内容加载")
-            
-            # 简化滚动操作，减少等待时间
-            logger.debug("执行简化的滚动操作")
-            
-            # 初始等待
-            time.sleep(2)
-            
-            # 执行滚动操作，触发懒加载内容
-            self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight / 2);")
-            time.sleep(1)
-            
-            # 滚动到底部
-            self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            time.sleep(1)
-            
-            # 滚动回顶部
-            self.driver.execute_script("window.scrollTo(0, 0);")
-            time.sleep(1)
-            
-            # 不再尝试点击"显示更多"按钮
-            # 根据用户要求，只获取首页文章，无需加载更多
-            
-            # 获取最终页面内容
-            html = self.driver.page_source
-            logger.info(f"成功获取页面内容，大小: {len(html)} 字节")
-            return html
-            
+                    page = browser.new_page()
+                    page.set_default_timeout(30000)
+                    page.goto(url, wait_until='domcontentloaded')
+                    
+                    # 等待主要内容加载
+                    try:
+                        page.wait_for_selector('main, article, body', timeout=10000)
+                    except:
+                        pass
+                    
+                    # 滚动触发懒加载
+                    page.evaluate('window.scrollTo(0, document.body.scrollHeight / 2)')
+                    page.wait_for_timeout(500)
+                    page.evaluate('window.scrollTo(0, document.body.scrollHeight)')
+                    page.wait_for_timeout(500)
+                    page.evaluate('window.scrollTo(0, 0)')
+                    page.wait_for_timeout(500)
+                    
+                    html = page.content()
+                    logger.info(f"成功获取页面内容，大小: {len(html)} 字节")
+                    return html
+                finally:
+                    browser.close()
+                    
         except Exception as e:
-            logger.error(f"Selenium获取页面内容失败: {e}")
-            import traceback
-            logger.error(traceback.format_exc())
+            logger.error(f"Playwright获取页面内容失败: {e}")
             raise e
     
     def _parse_article_links(self, html: str) -> List[Tuple[str, str, Optional[str]]]:

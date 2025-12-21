@@ -12,9 +12,6 @@ from urllib.parse import urljoin, urlparse
 
 import requests
 from bs4 import BeautifulSoup, Tag
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 
 from src.crawlers.common.base_crawler import BaseCrawler
 
@@ -66,49 +63,21 @@ class AzureTechBlogCrawler(BaseCrawler):
             # 获取博客列表页
             logger.info(f"获取Azure技术博客列表页: {self.start_url}")
             
-            # 先尝试使用requests库获取页面内容(优先使用更稳定的方式)
+            # TechCommunity站点需要JS渲染且有反爬虫机制，直接使用Playwright
             html = None
             try:
-                logger.debug("使用requests库获取页面内容")
-                headers = {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                    'Accept-Language': 'en-US,en;q=0.5',
-                    'Connection': 'keep-alive',
-                    'Upgrade-Insecure-Requests': '1',
-                    'Cache-Control': 'max-age=0'
-                }
-                response = requests.get(self.start_url, headers=headers, timeout=30)
-                if response.status_code == 200:
-                    html = response.text
-                    logger.debug("使用requests库成功获取到页面内容")
-                else:
-                    logger.error(f"请求返回非成功状态码: {response.status_code}")
+                logger.debug("使用Playwright获取页面内容（绕过反爬虫）")
+                html = self._get_with_playwright(self.start_url)
             except Exception as e:
-                logger.error(f"使用requests库获取页面失败: {e}")
-            
-            # 只有在requests失败时才尝试使用Selenium
-            if not html:
+                logger.warning(f"使用Playwright获取页面失败: {e}，将尝试使用备用URL")
+                # 尝试备用URL
                 try:
-                    logger.debug("requests获取失败，尝试使用Selenium")
-                    # 初始化WebDriver（如果未初始化）
-                    if not self.driver:
-                        self._init_driver()
-                    
-                    html = self._get_selenium(self.start_url)
-                except Exception as e:
-                    logger.warning(f"使用Selenium获取页面失败: {e}，将尝试使用备用URL")
-                    # 尝试备用URL
-                    try:
-                        backup_url = "https://techcommunity.microsoft.com/t5/azure-networking-blog/bg-p/AzureNetworkingBlog"
-                        if backup_url != self.start_url:
-                            logger.debug(f"尝试使用备用URL: {backup_url}")
-                            response = requests.get(backup_url, headers=headers, timeout=30)
-                            if response.status_code == 200:
-                                html = response.text
-                                logger.debug("使用备用URL成功获取到页面内容")
-                    except Exception as backup_e:
-                        logger.error(f"使用备用URL获取页面失败: {backup_e}")
+                    backup_url = "https://techcommunity.microsoft.com/t5/azure-networking-blog/bg-p/AzureNetworkingBlog"
+                    if backup_url != self.start_url:
+                        logger.debug(f"尝试使用备用URL: {backup_url}")
+                        html = self._get_with_playwright(backup_url)
+                except Exception as backup_e:
+                    logger.error(f"使用备用URL获取页面失败: {backup_e}")
             
             if not html:
                 logger.error(f"获取博客列表页失败: {self.start_url}")
@@ -180,12 +149,12 @@ class AzureTechBlogCrawler(BaseCrawler):
                     except Exception as e:
                         logger.error(f"使用requests库获取文章失败: {e}")
                     
-                    # 如果requests失败，才尝试Selenium
-                    if not article_html and self.driver:
+                    # 如果requests失败，才尝试Playwright
+                    if not article_html:
                         try:
-                            article_html = self._get_selenium(url)
+                            article_html = self._get_with_playwright(url)
                         except Exception as e:
-                            logger.warning(f"使用Selenium获取文章失败: {e}")
+                            logger.warning(f"使用Playwright获取文章失败: {e}")
                     
                     if not article_html:
                         logger.warning(f"获取文章内容失败: {url}")
@@ -214,9 +183,9 @@ class AzureTechBlogCrawler(BaseCrawler):
             # 关闭WebDriver
             self._close_driver()
             
-    def _get_selenium(self, url: str) -> str:
+    def _get_with_playwright(self, url: str) -> str:
         """
-        使用Selenium获取页面内容
+        使用Playwright获取页面内容（带反检测）
         
         Args:
             url: 页面URL
@@ -224,64 +193,116 @@ class AzureTechBlogCrawler(BaseCrawler):
         Returns:
             页面HTML内容
         """
+        from playwright.sync_api import sync_playwright
+        
         try:
-            logger.debug(f"使用Selenium获取页面: {url}")
-            self.driver.get(url)
-            
-            # 减少等待时间，避免长时间卡住
-            wait_time = 10
-            logger.debug(f"等待页面加载，超时时间: {wait_time}秒")
-            
-            try:
-                # 等待页面主体内容加载完成
-                WebDriverWait(self.driver, wait_time).until(
-                    EC.presence_of_element_located((By.TAG_NAME, "main"))
+            logger.debug(f"使用Playwright获取页面: {url}")
+            with sync_playwright() as p:
+                # 使用更真实的浏览器配置绕过反爬虫
+                browser = p.chromium.launch(
+                    headless=True,
+                    args=[
+                        '--no-sandbox',
+                        '--disable-dev-shm-usage',
+                        '--disable-blink-features=AutomationControlled',
+                        '--disable-infobars',
+                        '--window-size=1920,1080',
+                        '--disable-extensions',
+                        '--disable-plugins-discovery',
+                        '--start-maximized'
+                    ]
                 )
-                logger.debug("找到main元素，页面基本结构已加载")
-            except Exception as e:
-                logger.warning(f"等待main元素超时: {e}")
                 try:
-                    # 如果找不到main标签，尝试等待article标签
-                    WebDriverWait(self.driver, wait_time).until(
-                        EC.presence_of_element_located((By.TAG_NAME, "article"))
+                    # 创建带有真实浏览器指纹的上下文
+                    context = browser.new_context(
+                        viewport={'width': 1920, 'height': 1080},
+                        user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        locale='en-US',
+                        timezone_id='America/New_York',
+                        permissions=['geolocation'],
+                        java_script_enabled=True,
+                        bypass_csp=True,
+                        extra_http_headers={
+                            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+                            'Accept-Language': 'en-US,en;q=0.9',
+                            'Accept-Encoding': 'gzip, deflate, br',
+                            'Connection': 'keep-alive',
+                            'Upgrade-Insecure-Requests': '1',
+                            'Sec-Fetch-Dest': 'document',
+                            'Sec-Fetch-Mode': 'navigate',
+                            'Sec-Fetch-Site': 'none',
+                            'Sec-Fetch-User': '?1',
+                            'Cache-Control': 'max-age=0'
+                        }
                     )
-                    logger.debug("找到article元素，页面基本结构已加载")
-                except Exception as e:
-                    logger.warning(f"等待article元素超时: {e}")
-                    # 如果找不到article标签，尝试等待body加载完成
-                    WebDriverWait(self.driver, wait_time).until(
-                        EC.presence_of_element_located((By.TAG_NAME, "body"))
-                    )
-                    logger.debug("找到body元素，继续等待内容加载")
-            
-            # 简化滚动操作，减少等待时间
-            logger.debug("执行简化的滚动操作")
-            
-            # 初始等待
-            time.sleep(2)
-            
-            # 执行滚动操作，触发懒加载内容
-            self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight / 2);")
-            time.sleep(1)
-            
-            # 滚动到底部
-            self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            time.sleep(1)
-            
-            # 滚动回顶部
-            self.driver.execute_script("window.scrollTo(0, 0);")
-            time.sleep(1)
-            
-            # 不再尝试点击"显示更多"按钮
-            # 根据用户要求，只获取首页文章，无需加载更多
-            
-            # 获取最终页面内容
-            html = self.driver.page_source
-            logger.info(f"成功获取页面内容，大小: {len(html)} 字节")
-            return html
-            
+                    
+                    page = context.new_page()
+                    
+                    # 注入反检测脚本
+                    page.add_init_script("""
+                        // 隐藏webdriver标识
+                        Object.defineProperty(navigator, 'webdriver', {
+                            get: () => undefined
+                        });
+                        
+                        // 模拟正常的插件数组
+                        Object.defineProperty(navigator, 'plugins', {
+                            get: () => [1, 2, 3, 4, 5]
+                        });
+                        
+                        // 模拟正常的语言设置
+                        Object.defineProperty(navigator, 'languages', {
+                            get: () => ['en-US', 'en']
+                        });
+                        
+                        // 隐藏Chrome自动化特征
+                        window.chrome = {
+                            runtime: {}
+                        };
+                        
+                        // 模拟正常的权限查询
+                        const originalQuery = window.navigator.permissions.query;
+                        window.navigator.permissions.query = (parameters) => (
+                            parameters.name === 'notifications' ?
+                                Promise.resolve({ state: Notification.permission }) :
+                                originalQuery(parameters)
+                        );
+                    """)
+                    
+                    # 访问页面
+                    page.goto(url, wait_until='networkidle', timeout=60000)
+                    
+                    # 等待页面加载完成
+                    page.wait_for_timeout(3000)
+                    
+                    # 模拟真实用户行为：随机移动鼠标
+                    page.mouse.move(100, 200)
+                    page.wait_for_timeout(500)
+                    page.mouse.move(300, 400)
+                    
+                    # 滚动触发懒加载
+                    page.evaluate('window.scrollTo(0, document.body.scrollHeight / 2)')
+                    page.wait_for_timeout(1500)
+                    
+                    page.evaluate('window.scrollTo(0, document.body.scrollHeight)')
+                    page.wait_for_timeout(1500)
+                    
+                    page.evaluate('window.scrollTo(0, 0)')
+                    page.wait_for_timeout(1000)
+                    
+                    html = page.content()
+                    logger.info(f"成功获取页面内容，大小: {len(html)} 字节")
+                    
+                    # 检测是否被拦截（页面内容过小说明可能被拦截）
+                    if len(html) < 1000:
+                        logger.warning(f"页面内容过小({len(html)}字节)，可能被反爬虫拦截")
+                    
+                    context.close()
+                    return html
+                finally:
+                    browser.close()
         except Exception as e:
-            logger.error(f"Selenium获取页面内容失败: {e}")
+            logger.error(f"Playwright获取页面内容失败: {e}")
             import traceback
             logger.error(traceback.format_exc())
             raise e

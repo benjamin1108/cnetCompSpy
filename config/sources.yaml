@@ -66,7 +66,7 @@ sources:
         type: "documentation"
       # NAT Gateway相关更新
       natgateway:
-        url: "https://support.huaweicloud.com/natgateway/index.html"
+        url: "https://support.huaweicloud.com/wtsnew-natgateway/index.html"
         type: "documentation"
       # DC相关更新
       dc-whatsnew:
@@ -92,11 +92,160 @@ sources:
       ga-whatsnew:
         url: "https://support.huaweicloud.com/wtsnew-ga/index.html"
         type: "documentation"
-  # volcano:
-  #   blog:
-  #     url: "https://volcano.sh/en/blog/"
-  #     type: "blog"
-  #     analyze: false
-  #   docs:
-  #     url: "https://volcano.sh/en/docs/"
-  #     type: "documentation" 
+  tencentcloud:
+    whatsnew:
+      analyze: false  # 腾讯云whatsnew整体是否需要AI分析
+      # 负载均衡(CLB)
+      clb:
+        url: "https://cloud.tencent.com/document/product/214/42841"
+        type: "documentation"
+        name: "负载均衡(CLB) - 产品动态"
+      # 网关负载均衡(GWLB)
+      gwlb:
+        url: "https://cloud.tencent.com/document/product/1782/111599"
+        type: "documentation"
+        name: "网关负载均衡(GWLB) - 产品动态"
+      # 私有网络(VPC)
+      vpc:
+        url: "https://cloud.tencent.com/document/product/215/37951"
+        type: "documentation"
+        name: "私有网络(VPC) - 产品动态"
+      # NAT网关
+      nat:
+        url: "https://cloud.tencent.com/document/product/552/71560"
+        type: "documentation"
+        name: "NAT网关 - 产品动态"
+      # 共享带宽包(BWP)
+      bwp:
+        url: "https://cloud.tencent.com/document/product/684/74390"
+        type: "documentation"
+        name: "共享带宽包(BWP) - 产品动态"
+      # 共享流量包
+      stp:
+        url: "https://cloud.tencent.com/document/product/1171/61165"
+        type: "documentation"
+        name: "共享流量包 - 产品动态"
+      # 弹性公网IPv6
+      ipv6:
+        url: "https://cloud.tencent.com/document/product/1142/112767"
+        type: "documentation"
+        name: "弹性公网IPv6 - 产品动态"
+      # 弹性公网IP(EIP)
+      eip:
+        url: "https://cloud.tencent.com/document/product/1199/44150"
+        type: "documentation"
+        name: "弹性公网IP(EIP) - 产品动态"
+      # 智能高性能网络(IHPN)
+      ihpn:
+        url: "https://cloud.tencent.com/document/product/1779/110928"
+        type: "documentation"
+        name: "智能高性能网络(IHPN) - 产品动态"
+      # 私有连接(PrivateLink)
+      privatelink:
+        url: "https://cloud.tencent.com/document/product/1451/57261"
+        type: "documentation"
+        name: "私有连接(PrivateLink) - 产品动态"
+      # 专线接入(DC)
+      dc:
+        url: "https://cloud.tencent.com/document/product/216/52940"
+        type: "documentation"
+        name: "专线接入(DC) - 产品动态"
+      # 云联网(CCN)
+      ccn:
+        url: "https://cloud.tencent.com/document/product/877/58511"
+        type: "documentation"
+        name: "云联网(CCN) - 产品动态"
+      # VPN连接
+      vpn:
+        url: "https://cloud.tencent.com/document/product/554/53881"
+        type: "documentation"
+        name: "VPN连接 - 产品动态"
+      # 全球应用加速(GAAP)
+      gaap:
+        url: "https://cloud.tencent.com/document/product/608/64952"
+        type: "documentation"
+        name: "全球应用加速(GAAP) - 产品动态"
+  
+  volcengine:
+    whatsnew:
+      analyze: false  # 火山引擎whatsnew整体是否需要AI分析
+      # VPC私有网络
+      vpc:
+        url: "https://www.volcengine.com/docs/6401/67803"
+        type: "documentation"
+        name: "VPC私有网络 - 产品动态"
+      # 公网IP(EIP)
+      eip:
+        url: "https://www.volcengine.com/docs/6402/67934"
+        type: "documentation"
+        name: "公网IP(EIP) - 新功能发布记录"
+      # 共享带宽包
+      shared_bandwidth_package:
+        url: "https://www.volcengine.com/docs/6623/93507"
+        type: "documentation"
+        name: "共享带宽包 - 新功能发布记录"
+      # NAT网关
+      nat_gateway:
+        url: "https://www.volcengine.com/docs/6404/67976"
+        type: "documentation"
+        name: "NAT网关 - 新功能发布记录"
+      # IPv6网关
+      ipv6_gateway:
+        url: "https://www.volcengine.com/docs/6896/133698"
+        type: "documentation"
+        name: "IPv6网关 - 新功能发布记录"
+      # 云企业网(CEN)
+      cen:
+        url: "https://www.volcengine.com/docs/6405/68180"
+        type: "documentation"
+        name: "云企业网(CEN) - 产品动态"
+      # 中转路由器(TR)
+      transit_router:
+        url: "https://www.volcengine.com/docs/6979/155961"
+        type: "documentation"
+        name: "中转路由器(TR) - 产品动态"
+      # 负载均衡(CLB)
+      clb:
+        url: "https://www.volcengine.com/docs/6406/1264527"
+        type: "documentation"
+        name: "负载均衡(CLB) - 产品动态"
+      # 负载均衡(CLB) - 发布记录
+      clb_release:
+        url: "https://www.volcengine.com/docs/6406/113563"
+        type: "documentation"
+        name: "负载均衡(CLB) - 新功能发布记录"
+      # 应用型负载均衡(ALB)
+      alb:
+        url: "https://www.volcengine.com/docs/6406/67894"
+        type: "documentation"
+        name: "应用型负载均衡(ALB) - 产品动态"
+      # 专线连接
+      direct_connect:
+        url: "https://www.volcengine.com/docs/6407/68174"
+        type: "documentation"
+        name: "专线连接 - 新功能发布记录"
+      # VPN连接
+      vpn_connection:
+        url: "https://www.volcengine.com/docs/6455/70535"
+        type: "documentation"
+        name: "VPN连接 - 新功能发布记录"
+      # 私网连接(PrivateLink)
+      private_link:
+        url: "https://www.volcengine.com/docs/6980/155768"
+        type: "documentation"
+        name: "私网连接(PrivateLink) - 新功能发布记录"
+      # 网络智能中心(NIC)
+      nic:
+        url: "https://www.volcengine.com/docs/83782/1155035"
+        type: "documentation"
+        name: "网络智能中心(NIC) - 产品动态"
+      # 云连接器
+      cloud_connector:
+        url: "https://www.volcengine.com/docs/83812/1167747"
+        type: "documentation"
+        name: "云连接器 - 产品动态"
+      # 共享流量包
+      shared_traffic_package:
+        url: "https://www.volcengine.com/docs/84435/1282844"
+        type: "documentation"
+        name: "共享流量包 - 产品动态" 

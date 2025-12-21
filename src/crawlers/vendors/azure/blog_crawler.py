@@ -15,9 +15,7 @@ from bs4 import BeautifulSoup
 import requests
 import markdown
 import html2text
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+
 
 # 添加项目根目录到路径
 sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))))
@@ -85,15 +83,10 @@ class AzureBlogCrawler(BaseCrawler):
             except Exception as e:
                 logger.error(f"使用requests库获取页面失败: {e}")
             
-            # 只有在requests失败时才尝试使用Selenium
+            # 只有在requests失败时才尝试使用Playwright
             if not html:
-                logger.debug("requests获取失败，尝试使用Selenium")
-                # 初始化WebDriver（如果未初始化）
-                if not self.driver:
-                    self._init_driver()
-                
-                # 使用增强的Selenium获取方法，带有特定页面处理
-                html = self._get_azure_page(self.start_url)
+                logger.debug("requests获取失败，尝试使用Playwright")
+                html = self._get_with_playwright(self.start_url)
             
             if not html:
                 logger.error(f"获取博客列表页失败: {self.start_url}")
@@ -163,10 +156,10 @@ class AzureBlogCrawler(BaseCrawler):
                     except Exception as e:
                         logger.error(f"使用requests库获取文章失败: {e}")
                     
-                    # 如果requests失败，才尝试Selenium
-                    if not article_html and self.driver:
-                        logger.debug(f"尝试使用Selenium获取文章内容: {url}")
-                        article_html = self._get_azure_page(url)
+                    # 如果requests失败，才尝试Playwright
+                    if not article_html:
+                        logger.debug(f"尝试使用Playwright获取文章内容: {url}")
+                        article_html = self._get_with_playwright(url)
                     
                     if not article_html:
                         logger.warning(f"获取文章内容失败: {url}")
@@ -672,9 +665,9 @@ class AzureBlogCrawler(BaseCrawler):
         """
         return super().save_to_markdown(url, title, content_and_date)
     
-    def _get_azure_page(self, url: str) -> Optional[str]:
+    def _get_with_playwright(self, url: str) -> Optional[str]:
         """
-        针对Azure页面的特殊获取方法，使用增强的等待机制
+        使用Playwright获取页面内容
         
         Args:
             url: 目标URL
@@ -682,38 +675,31 @@ class AzureBlogCrawler(BaseCrawler):
         Returns:
             网页HTML内容或None（如果失败）
         """
-        if not self.driver:
-            self._init_driver()
+        from playwright.sync_api import sync_playwright
         
         for i in range(self.retry):
             try:
-                logger.info(f"正在加载Azure页面: {url}")
-                self.driver.get(url)
-                logger.info("页面初始加载完成")
-                
-                # 简化页面加载等待 - 只等待body元素
-                WebDriverWait(self.driver, self.crawler_config.get('page_load_timeout', 45)).until(
-                    EC.presence_of_element_located((By.TAG_NAME, "body"))
-                )
-                logger.info("基础页面body元素加载完成")
-                
-                # 快速等待主要内容
-                try:
-                    WebDriverWait(self.driver, 5).until(
-                        EC.presence_of_element_located((By.CSS_SELECTOR, "main, article, .content"))
+                logger.info(f"使用Playwright获取页面: {url}")
+                with sync_playwright() as p:
+                    browser = p.chromium.launch(
+                        headless=True,
+                        args=['--no-sandbox', '--disable-dev-shm-usage']
                     )
-                    logger.info("主要内容元素找到")
-                except Exception as e:
-                    logger.warning(f"主要内容等待超时，继续处理: {e}")
-                
-                # 获取页面源码并立即返回，跳过其他处理
-                page_source = self.driver.page_source
-                logger.info(f"成功获取页面源码，长度: {len(page_source)} 字符")
-                
-                return page_source
-            
+                    try:
+                        page = browser.new_page()
+                        page.goto(url, wait_until='domcontentloaded', timeout=30000)
+                        
+                        # 滚动触发懒加载
+                        page.evaluate('window.scrollTo(0, document.body.scrollHeight / 2)')
+                        page.wait_for_timeout(500)
+                        
+                        html = page.content()
+                        logger.info(f"成功获取页面源码，长度: {len(html)} 字符")
+                        return html
+                    finally:
+                        browser.close()
             except Exception as e:
-                logger.warning(f"Azure页面请求失败 (尝试 {i+1}/{self.retry}): {url} - {e}")
+                logger.warning(f"Playwright获取页面失败 (尝试 {i+1}/{self.retry}): {url} - {e}")
                 if i < self.retry - 1:
                     retry_interval = self.interval * (i + 1)
                     logger.info(f"等待 {retry_interval} 秒后重试...")
