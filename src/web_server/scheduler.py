@@ -17,11 +17,15 @@ class Scheduler:
         # 初始化状态变量
         self.last_run_date = None
         self.last_dingtalk_push_date = None
+        self.last_monthly_domestic_push_month = None  # 记录上次月度推送的月份
         self.running = False
         self.current_daily_task_time = None
         self.current_dingtalk_push_time = None
         self.current_dingtalk_push_day = None
         self.current_check_interval = None
+        self.current_monthly_domestic_enabled = None
+        self.current_monthly_domestic_push_day = None
+        self.current_monthly_domestic_push_time = None
         self.debug_mode = False
         self.vendor = None  # 厂商设置
         self.limit = None   # 文章数量限制
@@ -43,6 +47,11 @@ class Scheduler:
             new_debug_mode = config.get('scheduler', {}).get('debug_mode', False)
             new_vendor = config.get('scheduler', {}).get('vendor', None)  # 厂商设置，默认为None（全部厂商）
             new_limit = config.get('scheduler', {}).get('limit', None)    # 文章数量限制，默认为None（无限制）
+            
+            # 月度国内报告推送配置
+            new_monthly_domestic_enabled = config.get('dingtalk', {}).get('monthly_domestic_enabled', False)
+            new_monthly_domestic_push_day = config.get('dingtalk', {}).get('monthly_domestic_push_day', 1)
+            new_monthly_domestic_push_time = config.get('dingtalk', {}).get('monthly_domestic_push_time', '08:30')
             
             # 确保星期几的值在1-7之间
             if not (1 <= new_dingtalk_push_day <= 7):
@@ -80,14 +89,28 @@ class Scheduler:
                 self.limit = new_limit
                 config_changed = True
             
+            # 月度国内报告配置变化检查
+            if new_monthly_domestic_enabled != self.current_monthly_domestic_enabled:
+                self.current_monthly_domestic_enabled = new_monthly_domestic_enabled
+                config_changed = True
+            
+            if new_monthly_domestic_push_day != self.current_monthly_domestic_push_day:
+                self.current_monthly_domestic_push_day = new_monthly_domestic_push_day
+                config_changed = True
+            
+            if new_monthly_domestic_push_time != self.current_monthly_domestic_push_time:
+                self.current_monthly_domestic_push_time = new_monthly_domestic_push_time
+                config_changed = True
+            
             if config_changed:
                 weekday_names = {1: "周一", 2: "周二", 3: "周三", 4: "周四", 5: "周五", 6: "周六", 7: "周日"}
                 weekday_name = weekday_names.get(new_dingtalk_push_day, "未知")
                 vendor_info = f"厂商={new_vendor}" if new_vendor else "厂商=全部"
                 limit_info = f"限制={new_limit}篇" if new_limit else "限制=无"
+                monthly_info = f"月度国内报告=每月{new_monthly_domestic_push_day}号 {new_monthly_domestic_push_time}" if new_monthly_domestic_enabled else "月度国内报告=关闭"
                 
                 logger.info(f"定时任务配置已加载：每日任务时间={new_daily_task_time}, 钉钉推送时间={weekday_name} {new_dingtalk_push_time}, " + 
-                          f"检查间隔={new_check_interval}秒, 调试模式={'开启' if new_debug_mode else '关闭'}, {vendor_info}, {limit_info}")
+                          f"检查间隔={new_check_interval}秒, 调试模式={'开启' if new_debug_mode else '关闭'}, {vendor_info}, {limit_info}, {monthly_info}")
             
             self.daily_task_time = new_daily_task_time
             self.check_interval = new_check_interval
@@ -96,6 +119,9 @@ class Scheduler:
             self.debug_mode = new_debug_mode
             self.vendor = new_vendor
             self.limit = new_limit
+            self.monthly_domestic_enabled = new_monthly_domestic_enabled
+            self.monthly_domestic_push_day = new_monthly_domestic_push_day
+            self.monthly_domestic_push_time = new_monthly_domestic_push_time
         except Exception as e:
             logger.error(f"加载配置文件出错：{e}")
             self.daily_task_time = '02:00'
@@ -105,6 +131,9 @@ class Scheduler:
             self.debug_mode = False
             self.vendor = None
             self.limit = None
+            self.monthly_domestic_enabled = False
+            self.monthly_domestic_push_day = 1
+            self.monthly_domestic_push_time = '08:30'
 
     def should_run_task(self):
         """检查是否应该运行每日任务"""
@@ -220,6 +249,74 @@ class Scheduler:
         except Exception as e:
             logger.error(f"执行钉钉推送任务出错：{e}")
 
+    def should_push_monthly_domestic(self):
+        """检查是否应该执行月度国内报告推送任务"""
+        # 检查是否启用
+        if not self.monthly_domestic_enabled:
+            return False
+        
+        current_time = datetime.datetime.now()
+        current_date = current_time.date()
+        current_month = (current_date.year, current_date.month)
+        
+        # 检查是否是配置的每月第几天
+        if current_date.day != self.monthly_domestic_push_day:
+            return False
+        
+        push_hour, push_minute = map(int, self.monthly_domestic_push_time.split(':'))
+        push_time_today = current_time.replace(hour=push_hour, minute=push_minute, second=0, microsecond=0)
+        
+        # 检查是否已经推送过本月
+        if self.last_monthly_domestic_push_month == current_month:
+            return False
+        
+        # 检查当前时间是否在推送时间附近（5分钟窗口）
+        time_difference = (current_time - push_time_today).total_seconds()
+        if time_difference >= 0 and time_difference <= 300:  # 5分钟窗口
+            self.last_monthly_domestic_push_month = current_month
+            logger.info(f"今天是{current_date.month}月{current_date.day}号，符合月度国内报告推送条件")
+            return True
+        
+        return False
+
+    def run_monthly_domestic_push(self):
+        """运行月度国内报告推送任务"""
+        logger.info(f"启动月度国内报告推送任务(每月{self.monthly_domestic_push_day}号 {self.monthly_domestic_push_time})...")
+        
+        try:
+            # 获取项目根目录
+            root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            run_script = os.path.join(root_dir, 'run.sh')
+            
+            # 计算上个月的年份和月份
+            current_date = datetime.datetime.now().date()
+            if current_date.month == 1:
+                last_year = current_date.year - 1
+                last_month = 12
+            else:
+                last_year = current_date.year
+                last_month = current_date.month - 1
+            
+            # 执行月度国内报告生成和推送命令
+            cmd = [run_script, 'dingpush', 'monthly-domestic-report', 
+                   '--year', str(last_year), '--month', str(last_month)]
+            
+            # 如果 scheduler 配置了 debug_mode，则给 run.sh 传递 --debug 参数
+            if self.debug_mode:
+                cmd.append('--debug')
+                logger.info("以调试模式运行月度国内报告任务")
+            
+            logger.info(f"执行命令: {' '.join(cmd)}")
+            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            stdout, stderr = process.communicate()
+            
+            if process.returncode == 0:
+                logger.info(f"月度国内报告推送任务执行成功：\n{stdout}")
+            else:
+                logger.error(f"月度国内报告推送任务执行失败：\n{stderr}")
+        except Exception as e:
+            logger.error(f"执行月度国内报告推送任务出错：{e}")
+
     def check_and_run(self):
         """检查并运行定时任务"""
         while self.running:
@@ -234,6 +331,11 @@ class Scheduler:
             if self.should_push_dingtalk():
                 logger.info(f"达到钉钉推送时间 {self.dingtalk_push_time}，启动钉钉推送...")
                 self.run_dingtalk_push()
+            
+            # 检查月度国内报告推送任务
+            if self.should_push_monthly_domestic():
+                logger.info(f"达到月度国内报告推送时间 {self.monthly_domestic_push_time}，启动月度推送...")
+                self.run_monthly_domestic_push()
             
             time.sleep(self.check_interval)
 

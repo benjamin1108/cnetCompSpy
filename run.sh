@@ -622,8 +622,8 @@ validate_args() {
             fi
             
             # 检查剩余参数
-            local valid_extra_opts=("--config" "--robot" "--filepath")
-            local requires_value=("--config" "--robot" "--filepath")
+            local valid_extra_opts=("--config" "--robot" "--filepath" "--year" "--month")
+            local requires_value=("--config" "--robot" "--filepath" "--year" "--month")
             
             while [[ $# -gt 0 ]]; do
                 local current="$1"

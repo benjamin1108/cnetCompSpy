@@ -14,4 +14,9 @@ dingtalk:
   keyword: "云网络竞争动态每周更新"  # 钉钉机器人安全设置的自定义关键词
   # webhook和secret存放在config.secret.yaml中
   weekly_push_time: "14:00"  # 每周钉钉推送时间，格式为 HH:MM（24小时制）
-  weekly_push_day: 5  # 每周钉钉推送星期几，1-7表示周一到周日，默认5表示周五 
+  weekly_push_day: 5  # 每周钉钉推送星期几，1-7表示周一到周日，默认5表示周五
+  
+  # 月度国内报告推送配置
+  monthly_domestic_enabled: true  # 启用月度国内报告自动推送
+  monthly_domestic_push_day: 1  # 每月第几天推送，默认1表示每月第一天
+  monthly_domestic_push_time: "08:30"  # 推送时间，格式为 HH:MM（24小时制） 
