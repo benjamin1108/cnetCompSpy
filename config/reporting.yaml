@@ -19,6 +19,8 @@ reporting:
     weekly_prompt_key: "weekly_updates"
     # 最近N天报告使用的提示模板键名（使用与周报相同的提示）
     recent_prompt_key: "weekly_updates"
+    # 月度国内报告使用的提示模板键名
+    monthly_domestic_prompt_key: "monthly_domestic"
     # 报告摘要使用的模型配置 (profile name, 在 ai_analyzer.yaml 中定义)
     # 如果留空或未定义，则会尝试使用 ai_analyzer.yaml 中的 active_model_profile
     model_profile: "gemini"
@@ -26,14 +28,18 @@ reporting:
   # 保留旧配置键以兼容现有代码
   weekly_update_prompt_key: "weekly_updates"
   weekly_summary_model_profile: "gemini"
+  monthly_domestic_prompt_key: "monthly_domestic"
+  monthly_domestic_model_profile: "gemini"
 
   # 报告美化相关配置
   beautification:
     banner_url: # 报告顶部的图片URL (留空则不显示)
     report_title_prefix: "【云网络竞争动态周报】"               # 周报主标题的前缀
     recent_title_prefix: "【云网络竞争动态】"                   # 最近N天报告主标题的前缀
+    monthly_domestic_title_prefix: "【国内云网络月报】"          # 月度国内报告标题前缀
     intro_text: "汇集本周全球主要云厂商公开的技术产品动态，实时掌握竞争动态" # 周报引言
     recent_intro_text: "汇集近期全球主要云厂商公开的技术产品动态，实时掌握竞争动态" # 最近N天报告引言
+    monthly_domestic_intro_text: "汇集本月华为云、腾讯云、火山引擎三大国内云厂商的网络产品动态，助您掌握国内云市场最新变化。" # 月度国内报告引言
     
     # 各厂商的Emoji图标，键为大写厂商名 (AWS, AZURE, GCP等, 与 vendors_to_scan 中的名称对应)
     vendor_emojis:
@@ -56,3 +62,4 @@ output_paths:
   reports_dir: "data/reports"
   weekly_filename_pattern: "weekly_report_{start_date}_to_{end_date}.md"
   recent_filename_pattern: "recent_{days}_days_report_{end_date}.md"
+  monthly_domestic_filename_pattern: "monthly_domestic_{year}_{month:02d}.md"

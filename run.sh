@@ -100,6 +100,7 @@ show_help() {
     echo -e "  子命令:"
     echo -e "  ${GREEN}weekly-report${NC}                - 生成并推送每周竞品分析报告"
     echo -e "  ${GREEN}recent-report${NC} [天数]         - 生成并推送最近N天竞品分析报告"
+    echo -e "  ${GREEN}monthly-domestic-report${NC}      - 生成并推送国内云厂商月报（华为/腾讯/火山）"
     echo -e "  ${GREEN}pushfile${NC} --filepath [路径]   - 推送指定的Markdown文件"
     echo -e ""
     echo -e "  选项:"
@@ -582,7 +583,7 @@ validate_args() {
             
         dingpush)
             # dingpush命令有效参数
-            local valid_opts=("weekly-report" "recent-report" "pushfile")
+            local valid_opts=("weekly-report" "recent-report" "monthly-domestic-report" "pushfile")
             local has_recent_report=false
             
             # 检查是否有子命令及其是否有效
@@ -1168,6 +1169,7 @@ run_dingpush() {
         echo -e "${YELLOW}提示:${NC} ${BLUE}run.sh 还提供以下封装命令:${NC}"
         echo -e "  ${GREEN}weekly-report${NC}  - 生成并推送周报"
         echo -e "  ${GREEN}recent-report${NC} [天数] - 生成并推送最近N天报告"
+        echo -e "  ${GREEN}monthly-domestic-report${NC} [选项] - 生成并推送国内云厂商月报"
         return 1
     fi
     
@@ -1281,9 +1283,80 @@ run_dingpush() {
             python -m src.utils.dingtalk "${all_args[@]}"
             return $?
             ;;
+        
+        monthly-domestic-report)
+            echo -e "${BLUE}正在生成国内云厂商月度竞争动态报告...${NC}"
+            
+            local gen_args=("--mode" "monthly-domestic")
+            local push_args=()
+            local year_arg=""
+            local month_arg=""
+            local skip_next=false
+            
+            # 处理参数
+            for i in "${!all_args[@]}"; do
+                if [ $i -eq 0 ]; then
+                    continue  # 跳过子命令
+                fi
+                
+                if $skip_next; then
+                    skip_next=false
+                    continue
+                fi
+                
+                local arg="${all_args[$i]}"
+                case "$arg" in
+                    --debug)
+                        gen_args+=("--loglevel" "DEBUG")
+                        ;;
+                    --year)
+                        year_arg="${all_args[$((i+1))]}"
+                        gen_args+=("--year" "$year_arg")
+                        skip_next=true
+                        ;;
+                    --month)
+                        month_arg="${all_args[$((i+1))]}"
+                        gen_args+=("--month" "$month_arg")
+                        skip_next=true
+                        ;;
+                    --robot|--config)
+                        push_args+=("$arg")
+                        ;;
+                    *)
+                        push_args+=("$arg")
+                        ;;
+                esac
+            done
+            
+            # 添加全局配置
+            if [ -n "$GLOBAL_CONFIG_FILE_PATH" ]; then
+                gen_args+=("--config" "$GLOBAL_CONFIG_FILE_PATH")
+            fi
+            
+            # 生成报告并捕获输出路径
+            local report_path=$(python -m src.utils.report_generator "${gen_args[@]}" 2>&1 | tail -n 1)
+            local gen_exit_code=$?
+            
+            if [ $gen_exit_code -eq 0 ] && [ -f "$report_path" ]; then
+                echo -e "${GREEN}✓ 国内月报生成成功: $report_path${NC}"
+                echo -e "${BLUE}现在推送到钉钉...${NC}"
+                
+                local dingtalk_args=("pushfile" "--filepath" "$report_path")
+                if [ -n "$GLOBAL_CONFIG_FILE_PATH" ]; then
+                    dingtalk_args+=("--config" "$GLOBAL_CONFIG_FILE_PATH")
+                fi
+                dingtalk_args+=("${push_args[@]}")
+                
+                python -m src.utils.dingtalk "${dingtalk_args[@]}"
+                return $?
+            else
+                echo -e "${RED}✗ 国内月报生成失败 (退出码: $gen_exit_code)${NC}"
+                return $gen_exit_code
+            fi
+            ;;
             
         *)
-            show_error "未知的 dingpush 子命令: $subcmd\n有效子命令: weekly-report, recent-report, pushfile"
+            show_error "未知的 dingpush 子命令: $subcmd\n有效子命令: weekly-report, recent-report, monthly-domestic-report, pushfile"
             return 1
             ;;
     esac
@@ -1575,16 +1648,21 @@ main() {
                 echo -e "${YELLOW}可用子命令:${NC}"
                 echo -e "  ${GREEN}weekly-report${NC}                - 生成并推送每周竞品分析报告"
                 echo -e "  ${GREEN}recent-report${NC} [天数]         - 生成并推送最近N天竞品分析报告"
+                echo -e "  ${GREEN}monthly-domestic-report${NC}      - 生成并推送国内云厂商月报（华为/腾讯/火山）"
                 echo -e "  ${GREEN}pushfile${NC} --filepath [路径]   - 推送指定的Markdown文件"
                 echo ""
                 echo -e "${YELLOW}选项:${NC}"
                 echo -e "  ${GREEN}--robot${NC} [机器人名称]           - 使用指定的钉钉机器人推送（可指定多个）"
                 echo -e "  ${GREEN}--config${NC} [配置文件]           - 指定配置文件路径"
                 echo -e "  ${GREEN}--filepath${NC} [文件路径]         - 要推送的Markdown文件路径（pushfile命令必需）"
+                echo -e "  ${GREEN}--year${NC} [年份]                 - 指定报告年份（monthly-domestic-report可用）"
+                echo -e "  ${GREEN}--month${NC} [月份]                - 指定报告月份（monthly-domestic-report可用）"
                 echo ""
                 echo -e "${YELLOW}示例:${NC}"
                 echo -e "  $0 dingpush weekly-report"
                 echo -e "  $0 dingpush recent-report 7"
+                echo -e "  $0 dingpush monthly-domestic-report"
+                echo -e "  $0 dingpush monthly-domestic-report --year 2025 --month 11"
                 echo -e "  $0 dingpush recent-report 7 --robot 机器人1"
                 echo -e "  $0 dingpush pushfile --filepath data/reports/report.md"
                 echo ""

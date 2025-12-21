@@ -610,6 +610,278 @@ def generate_recent_report(config: dict, days: int) -> Optional[str]:
         return None
 
 
+def generate_monthly_domestic_report(config: dict, year: int = None, month: int = None) -> Optional[str]:
+    """
+    生成国内三家云厂商（华为云、腾讯云、火山引擎）的月度竞争动态报告
+    
+    参数:
+        config: 配置字典
+        year: 年份，默认当前年份
+        month: 月份，默认上个月
+        
+    返回:
+        生成的报告文件路径，如果失败则返回 None
+    """
+    logger = logging.getLogger(__name__)
+    
+    # 计算日期范围
+    today = date.today()
+    if year is None or month is None:
+        # 默认生成上个月的报告
+        if today.month == 1:
+            year = today.year - 1
+            month = 12
+        else:
+            year = today.year
+            month = today.month - 1
+    
+    # 计算月份的起止日期
+    start_date = date(year, month, 1)
+    if month == 12:
+        end_date = date(year + 1, 1, 1) - timedelta(days=1)
+    else:
+        end_date = date(year, month + 1, 1) - timedelta(days=1)
+    
+    logger.info(f"生成国内云厂商月度报告: {year}年{month}月 ({start_date} 到 {end_date})")
+    
+    # 国内三家厂商
+    domestic_vendors = ["huawei", "tencentcloud", "volcengine"]
+    
+    try:
+        # 初始化 ModelManager
+        ai_config = config.get("ai_analyzer")
+        if not ai_config:
+            logger.error("配置中未找到 'ai_analyzer' 部分")
+            return None
+        
+        model_manager = ModelManager(ai_config=ai_config)
+        
+        # 加载月度国内报告的提示模板
+        prompt_file_path_config = config.get("prompt_paths", {})
+        reporting_config = config.get("reporting", {})
+        prompt_key = reporting_config.get("monthly_domestic_prompt_key", "monthly_domestic")
+        prompt_file_path = prompt_file_path_config.get(prompt_key, f"prompt/{prompt_key}.txt")
+        
+        with open(prompt_file_path, 'r', encoding='utf-8') as f:
+            system_prompt = f.read()
+        
+        # 获取模型配置
+        model_profile = reporting_config.get(
+            "monthly_domestic_model_profile",
+            reporting_config.get("weekly_summary_model_profile", model_manager.active_model_profile_name)
+        )
+        
+        llm_client = model_manager.get_model_client(
+            system_prompt_text=system_prompt,
+            model_profile_name=model_profile
+        )
+        
+        # 创建报告生成器，仅扫描国内厂商
+        generator = MonthlyDomesticReportGenerator(
+            config, start_date, end_date, year, month, domestic_vendors
+        )
+        report_content = generator.generate_report(llm_client)
+        
+        if not report_content:
+            logger.error("月度国内报告生成失败")
+            return None
+        
+        # 保存报告
+        output_path = generator.save_report(report_content)
+        return output_path
+        
+    except Exception as e:
+        logger.error(f"生成月度国内报告时出错: {e}", exc_info=True)
+        return None
+
+
+class MonthlyDomesticReportGenerator(ReportGenerator):
+    """国内云厂商月度报告生成器"""
+    
+    def __init__(self, config: dict, start_date: date, end_date: date, 
+                 year: int, month: int, vendors: List[str]):
+        # 临时修改配置中的厂商列表
+        config_copy = config.copy()
+        config_copy["vendors_to_scan"] = vendors
+        
+        super().__init__(config_copy, start_date, end_date, "monthly_domestic")
+        self.year = year
+        self.month = month
+        self.domestic_vendors = vendors
+    
+    def collect_articles(self) -> List[Dict[str, str]]:
+        """
+        收集月度文章，支持按月份命名的文件格式（如 2025-10.md）
+        """
+        if not os.path.isdir(self.base_path):
+            self.logger.error(f"原始数据基础路径未找到: {self.base_path}")
+            return []
+        
+        all_articles_data = []
+        month_str = f"{self.year}-{self.month:02d}"
+        
+        self.logger.info(
+            f"正在扫描 {self.year}年{self.month}月 的国内厂商数据，"
+            f"供应商: {self.domestic_vendors}"
+        )
+        
+        for vendor in self.domestic_vendors:
+            vendor_base_path = os.path.join(self.base_path, vendor)
+            if not os.path.isdir(vendor_base_path):
+                self.logger.debug(f"供应商路径未找到: {vendor_base_path}")
+                continue
+            
+            try:
+                subcategories = [
+                    d for d in os.listdir(vendor_base_path) 
+                    if os.path.isdir(os.path.join(vendor_base_path, d))
+                ]
+            except OSError as e:
+                self.logger.warning(f"无法列出 {vendor_base_path} 中的子类别: {e}")
+                continue
+            
+            for subcategory in subcategories:
+                subcategory_path = os.path.join(vendor_base_path, subcategory)
+                
+                try:
+                    for filename in os.listdir(subcategory_path):
+                        if not filename.endswith(".md"):
+                            continue
+                        
+                        file_path = os.path.join(subcategory_path, filename)
+                        
+                        # 检查是否是月度文件（格式：YYYY-MM.md）
+                        if filename == f"{month_str}.md":
+                            self.logger.info(f"找到月度文件: {file_path}")
+                            article_data = self._read_monthly_file(
+                                file_path, filename, vendor, subcategory
+                            )
+                            if article_data:
+                                all_articles_data.append(article_data)
+                            continue
+                        
+                        # 也检查日期格式的文件是否在月份范围内
+                        file_date_obj = self._parse_date_from_filename(filename)
+                        if file_date_obj and (self.start_date <= file_date_obj <= self.end_date):
+                            article_data = self._read_article_file(
+                                file_path, filename, vendor, subcategory, file_date_obj
+                            )
+                            if article_data:
+                                all_articles_data.append(article_data)
+                                
+                except OSError as e:
+                    self.logger.warning(f"无法列出 {subcategory_path} 中的文件: {e}")
+        
+        self.logger.info(f"共收集到 {len(all_articles_data)} 篇文章/文档")
+        return all_articles_data
+    
+    def _read_monthly_file(self, file_path: str, filename: str, 
+                           vendor: str, subcategory: str) -> Optional[Dict[str, str]]:
+        """读取月度汇总文件"""
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            if not content.strip():
+                self.logger.warning(f"月度文件内容为空: {file_path}")
+                return None
+            
+            vendor_names = {
+                "huawei": "华为云",
+                "tencentcloud": "腾讯云",
+                "volcengine": "火山引擎"
+            }
+            vendor_cn = vendor_names.get(vendor, vendor)
+            
+            source_info = f"来源: {vendor_cn}/{subcategory}/{self.year}年{self.month}月"
+            
+            return {
+                "raw_content": content,
+                "vendor": vendor,
+                "subcategory": subcategory,
+                "original_filename": filename,
+                "source_info_for_llm": source_info,
+                "original_url": f"MONTHLY_{vendor}_{subcategory}_{self.year}_{self.month:02d}",
+                "date_published": f"{self.year}-{self.month:02d}"
+            }
+            
+        except Exception as e:
+            self.logger.warning(f"读取月度文件失败 {file_path}: {e}")
+            return None
+    
+    def _assemble_final_report(self, content: str, article_count: int) -> str:
+        """组合月度国内报告的最终 Markdown"""
+        final_parts = []
+        
+        # Banner
+        banner_url = self.beautification_config.get("banner_url", "")
+        if banner_url:
+            final_parts.append(f"![]({banner_url})\n")
+        
+        # 标题
+        title_prefix = self.beautification_config.get(
+            "monthly_domestic_title_prefix", 
+            "【国内云网络月报】"
+        )
+        title = f"{title_prefix} {self.year}年{self.month}月 竞争动态汇总"
+        
+        intro = self.beautification_config.get(
+            "monthly_domestic_intro_text",
+            "汇集本月华为云、腾讯云、火山引擎三大国内云厂商的网络产品动态，助您掌握国内云市场最新变化。"
+        )
+        
+        final_parts.append(f"# {title}\n")
+        final_parts.append(f"{intro}\n")
+        
+        # 内容
+        final_parts.append(content)
+        if not content.endswith('\n'):
+            final_parts.append("\n")
+        
+        # 页脚
+        footer_text = self.beautification_config.get("footer_text", "")
+        platform_link_text = self.beautification_config.get("platform_link_text", "前往平台查看更多详情")
+        
+        if self.platform_url and platform_link_text:
+            if footer_text:
+                final_parts.append(f"{footer_text} [{platform_link_text}]({self.platform_url})")
+            else:
+                final_parts.append(f"[{platform_link_text}]({self.platform_url})")
+        elif footer_text:
+            final_parts.append(footer_text)
+        
+        self.logger.info(f"月度国内报告已生成 (处理了 {article_count} 个数据源)")
+        return "\n".join(final_parts)
+    
+    def save_report(self, content: str) -> str:
+        """保存月度国内报告"""
+        output_dir_config = self.config.get("output_paths", {})
+        output_dir = output_dir_config.get("reports_dir", "data/reports")
+        
+        try:
+            os.makedirs(output_dir, exist_ok=True)
+        except OSError as e:
+            self.logger.error(f"无法创建输出目录 {output_dir}: {e}")
+            raise
+        
+        filename_pattern = output_dir_config.get(
+            "monthly_domestic_filename_pattern",
+            "monthly_domestic_{year}_{month:02d}.md"
+        )
+        filename = filename_pattern.format(year=self.year, month=self.month)
+        
+        output_filepath = os.path.join(output_dir, filename)
+        
+        try:
+            with open(output_filepath, 'w', encoding='utf-8') as f:
+                f.write(content)
+            self.logger.info(f"月度国内报告已保存: {output_filepath}")
+            return output_filepath
+        except IOError as e:
+            self.logger.error(f"写入报告文件失败 {output_filepath}: {e}")
+            raise
+
+
 # CLI 主函数
 
 def main():
@@ -618,13 +890,23 @@ def main():
     parser.add_argument(
         '--mode',
         required=True,
-        choices=['weekly', 'recent'],
-        help='报告模式: weekly (本周) 或 recent (最近N天)'
+        choices=['weekly', 'recent', 'monthly-domestic'],
+        help='报告模式: weekly (本周) 或 recent (最近N天) 或 monthly-domestic (国内月报)'
     )
     parser.add_argument(
         '--days',
         type=int,
         help='最近N天（仅在 mode=recent 时需要）'
+    )
+    parser.add_argument(
+        '--year',
+        type=int,
+        help='年份（仅在 mode=monthly-domestic 时可用，默认上月）'
+    )
+    parser.add_argument(
+        '--month',
+        type=int,
+        help='月份（仅在 mode=monthly-domestic 时可用，默认上月）'
     )
     parser.add_argument(
         '--loglevel',
@@ -646,6 +928,9 @@ def main():
     
     if args.days and args.days <= 0:
         parser.error("--days 必须是正整数")
+    
+    if args.month and (args.month < 1 or args.month > 12):
+        parser.error("--month 必须在1-12之间")
     
     # 设置日志
     numeric_log_level = getattr(logging, args.loglevel.upper())
@@ -671,8 +956,13 @@ def main():
     try:
         if args.mode == 'weekly':
             output_path = generate_weekly_report(config)
-        else:  # recent
+        elif args.mode == 'recent':
             output_path = generate_recent_report(config, args.days)
+        elif args.mode == 'monthly-domestic':
+            output_path = generate_monthly_domestic_report(config, args.year, args.month)
+        else:
+            logger.error(f"未知模式: {args.mode}")
+            return 1
         
         if output_path:
             logger.info(f"报告生成成功: {output_path}")
