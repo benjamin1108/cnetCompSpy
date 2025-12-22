@@ -20,7 +20,7 @@ class RouteManager:
     """路由管理器类"""
     
     def __init__(self, app: Flask, document_manager: Any, vendor_manager: Any, 
-                 admin_manager: Any, stats_manager: Any):
+                 admin_manager: Any, stats_manager: Any, search_manager: Any = None):
         """
         初始化路由管理器
         
@@ -30,6 +30,7 @@ class RouteManager:
             vendor_manager: 厂商管理器实例
             admin_manager: 管理员管理器实例
             stats_manager: 统计管理器实例
+            search_manager: 搜索管理器实例
         """
         self.logger = logging.getLogger(__name__)
         self.app = app
@@ -37,6 +38,7 @@ class RouteManager:
         self.vendor_manager = vendor_manager
         self.admin_manager = admin_manager
         self.stats_manager = stats_manager
+        self.search_manager = search_manager
         
         # 从配置中读取是否启用访问日志
         config = get_config()
@@ -657,17 +659,28 @@ class RouteManager:
                 return jsonify({'error': f'获取统计数据失败: {e}'}), 500
         # --- 结束新增 API --- 
         
-        # API: 搜索文档
+        # API: 搜索文档（全文搜索）
         @self.app.route('/api/search')
         def api_search():
             keyword = request.args.get('keyword', '').strip()
             vendor_filter = request.args.get('vendor', '').strip()
+            search_content = request.args.get('content', 'true').lower() == 'true'
             
             if not keyword:
                 return jsonify([])
             
             try:
-                # 从所有厂商的所有文档中搜索
+                # 使用搜索管理器进行全文搜索
+                if self.search_manager:
+                    search_results = self.search_manager.search(
+                        keyword=keyword,
+                        vendor_filter=vendor_filter,
+                        search_content=search_content,
+                        max_results=50
+                    )
+                    return jsonify(search_results)
+                
+                # 回退到旧的标题搜索逻辑（如果搜索管理器未初始化）
                 search_results = []
                 if os.path.exists(self.vendor_manager.raw_dir):
                     for vendor in os.listdir(self.vendor_manager.raw_dir):
@@ -715,7 +728,10 @@ class RouteManager:
                                                     'vendor': vendor,
                                                     'doc_type': doc_type,
                                                     'date': date_str,
-                                                    'has_analysis': os.path.isfile(analysis_path)
+                                                    'has_analysis': os.path.isfile(analysis_path),
+                                                    'snippet': '',
+                                                    'match_type': 'title',
+                                                    'relevance_score': 0
                                                 })
                 
                 # 最多返回50个结果
