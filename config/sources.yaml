@@ -41,6 +41,54 @@ sources:
       type: "blog"
       analyze: true
     
+    whatsnew:
+      analyze: true  # GCP whatsnew整体是否需要AI分析
+      # VPC
+      vpc:
+        url: "https://cloud.google.com/vpc/docs/release-notes"
+        type: "documentation"
+        name: "VPC - Release Notes"
+      # Cloud Load Balancing
+      load-balancing:
+        url: "https://cloud.google.com/load-balancing/docs/release-notes"
+        type: "documentation"
+        name: "Cloud Load Balancing - Release Notes"
+      # Cloud CDN
+      cdn:
+        url: "https://cloud.google.com/cdn/docs/release-notes"
+        type: "documentation"
+        name: "Cloud CDN - Release Notes"
+      # Cloud DNS
+      dns:
+        url: "https://cloud.google.com/dns/docs/release-notes"
+        type: "documentation"
+        name: "Cloud DNS - Release Notes"
+      # Cloud NAT
+      nat:
+        url: "https://cloud.google.com/nat/docs/release-notes"
+        type: "documentation"
+        name: "Cloud NAT - Release Notes"
+      # Cloud Interconnect
+      interconnect:
+        url: "https://cloud.google.com/network-connectivity/docs/interconnect/release-notes"
+        type: "documentation"
+        name: "Cloud Interconnect - Release Notes"
+      # Cloud VPN
+      vpn:
+        url: "https://cloud.google.com/network-connectivity/docs/vpn/release-notes"
+        type: "documentation"
+        name: "Cloud VPN - Release Notes"
+      # Network Connectivity Center
+      network-connectivity:
+        url: "https://cloud.google.com/network-connectivity/docs/network-connectivity-center/release-notes"
+        type: "documentation"
+        name: "Network Connectivity Center - Release Notes"
+      # Cloud Armor
+      armor:
+        url: "https://cloud.google.com/armor/docs/release-notes"
+        type: "documentation"
+        name: "Cloud Armor - Release Notes"
+    
   # tencent:
   #   blog:
   #     url: "https://www.tencentcloud.com/document/product"
@@ -51,7 +99,7 @@ sources:
   #     type: "documentation"
   huawei:
     whatsnew:
-      analyze: false  # 华为whatsnew整体是否需要AI分析（多源合并后统一分析）
+      analyze: true  # 华为whatsnew整体是否需要AI分析（多源合并后统一分析）
       # VPC相关更新
       vpc-whatsnew:
         url: "https://support.huaweicloud.com/wtsnew-vpc/index.html"
@@ -94,7 +142,7 @@ sources:
         type: "documentation"
   tencentcloud:
     whatsnew:
-      analyze: false  # 腾讯云whatsnew整体是否需要AI分析
+      analyze: true  # 腾讯云whatsnew整体是否需要AI分析
       # 负载均衡(CLB)
       clb:
         url: "https://cloud.tencent.com/document/product/214/42841"
@@ -168,7 +216,7 @@ sources:
   
   volcengine:
     whatsnew:
-      analyze: false  # 火山引擎whatsnew整体是否需要AI分析
+      analyze: true  # 火山引擎whatsnew整体是否需要AI分析
       # VPC私有网络
       vpc:
         url: "https://www.volcengine.com/docs/6401/67803"

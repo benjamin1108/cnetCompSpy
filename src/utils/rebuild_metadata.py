@@ -236,17 +236,24 @@ def validate_task_content(task_type: str, content: str) -> Dict[str, Any]:
     
     # 根据任务类型进行特定验证
     if task_type == "AI标题翻译":
+        # 去掉markdown标题前缀（如 "# "）后再检查
+        title_content = content.lstrip('#').strip()
+        
         # 检查标题是否包含预期的标签前缀
-        if not (content.startswith("[解决方案]") or 
-                content.startswith("[新产品/新功能]") or 
-                content.startswith("[新产品]") or 
-                content.startswith("[新功能]") or
-                content.startswith("[产品更新]") or
-                content.startswith("[技术更新]") or
-                content.startswith("[案例分析]")):
-            result['is_valid'] = False
-            result['reason'] = "AI标题翻译缺少预期的标签前缀，如[解决方案]、[新功能]等"
-            return result
+        # 注意：月度更新汇总类文档（标题包含"月"或"更新"且为年月格式）不需要前缀
+        is_monthly_update = ("年" in title_content and "月" in title_content) or ("网络服务" in title_content and "更新" in title_content)
+        
+        if not is_monthly_update:
+            if not (title_content.startswith("[解决方案]") or 
+                    title_content.startswith("[新产品/新功能]") or 
+                    title_content.startswith("[新产品]") or 
+                    title_content.startswith("[新功能]") or
+                    title_content.startswith("[产品更新]") or
+                    title_content.startswith("[技术更新]") or
+                    title_content.startswith("[案例分析]")):
+                result['is_valid'] = False
+                result['reason'] = "AI标题翻译缺少预期的标签前缀，如[解决方案]、[新功能]等"
+                return result
             
         # 检查标题是否包含非中文内容（允许部分专有名词如AWS、Azure等）
         # 这里使用一个简单的启发式方法：如果非ASCII字符太少，可能没有正确翻译成中文
@@ -288,14 +295,22 @@ def validate_task_content(task_type: str, content: str) -> Dict[str, Any]:
     
     elif task_type == "AI竞争分析":
         # 检查竞争分析是否包含预期的章节
+        # 支持两种模板：产品功能分析模板 和 月度更新汇总模板
         expected_sections = ["概述", "方案", "价值", "产品", "评估"]
-        section_count = 0
+        monthly_sections = ["更新总览", "更新详情", "重点更新", "趋势", "概览"]
         
+        section_count = 0
         for section in expected_sections:
             if section in content:
                 section_count += 1
+        
+        monthly_section_count = 0
+        for section in monthly_sections:
+            if section in content:
+                monthly_section_count += 1
                 
-        if section_count < 3:  # 至少应包含3个预期章节
+        # 至少应满足其中一种模板的要求
+        if section_count < 3 and monthly_section_count < 2:
             result['is_valid'] = False
             result['reason'] = "AI竞争分析内容不完整，缺少关键章节"
             return result
