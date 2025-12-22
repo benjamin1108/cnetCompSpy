@@ -1,6 +1,7 @@
 import logging
 import os
 import glob
+import hashlib
 from typing import List, Dict, Any, Optional, Callable # Added Optional and Callable
 
 from ..pipeline_stage import PipelineStage
@@ -11,6 +12,19 @@ logger = logging.getLogger(__name__)
 class FileDiscoveryStage(PipelineStage):
     def __init__(self):
         super().__init__(stage_name="FileDiscovery")
+
+    def _compute_file_hash(self, file_path: str) -> str:
+        """
+        计算文件内容的SHA256 hash。
+        用于检测文件内容是否变更，以触发重新分析。
+        """
+        try:
+            with open(file_path, 'rb') as f:
+                content = f.read()
+                return hashlib.sha256(content).hexdigest()
+        except Exception as e:
+            self.logger.warning(f"计算文件 '{file_path}' 的hash时出错: {e}")
+            return ""
 
     def _normalize_path_for_metadata(self, file_path: str, context: AnalysisContext) -> str:
         """
@@ -147,6 +161,21 @@ class FileDiscoveryStage(PipelineStage):
                 return False
         
         self.logger.debug(f"文件 '{normalized_path_for_meta}' 所有已定义任务均已成功完成。")
+        
+        # 检查源文件内容是否变更（通过hash对比）
+        stored_hash = file_meta.get('source_hash', '')
+        if stored_hash:
+            current_hash = self._compute_file_hash(full_file_path)
+            if current_hash and current_hash != stored_hash:
+                self.logger.info(f"文件 '{normalized_path_for_meta}' 内容已变更（hash不匹配），需要重新分析。")
+                return False
+        else:
+            # 旧文件没有hash记录，计算并存储以供下次使用
+            current_hash = self._compute_file_hash(full_file_path)
+            if current_hash:
+                file_meta['source_hash'] = current_hash
+                self.logger.debug(f"为已分析文件 '{normalized_path_for_meta}' 补充source_hash。")
+        
         return True
 
     def execute(self, context: AnalysisContext) -> AnalysisContext:

@@ -167,3 +167,18 @@ echo -e "${BLUE}===================================================${NC}"
 echo -e "${GREEN}每日任务执行完成!${NC}"
 echo -e "${YELLOW}详细日志已保存到: ${LOG_FILE}${NC}"
 echo -e "${BLUE}===================================================${NC}"
+
+# 清理旧日志文件（7天前）
+LOG_RETENTION_DAYS=7
+echo -e "${BLUE}[$(date +%H:%M:%S)] 清理 ${LOG_RETENTION_DAYS} 天前的旧日志文件...${NC}"
+OLD_LOGS_COUNT=$(find "$ROOT_DIR/logs" -name "*.log" -mtime +${LOG_RETENTION_DAYS} -type f 2>/dev/null | wc -l)
+OLD_LOGS_COUNT_ROTATED=$(find "$ROOT_DIR/logs" -name "*.log.*" -mtime +${LOG_RETENTION_DAYS} -type f 2>/dev/null | wc -l)
+TOTAL_OLD=$((OLD_LOGS_COUNT + OLD_LOGS_COUNT_ROTATED))
+
+if [ "$TOTAL_OLD" -gt 0 ]; then
+    find "$ROOT_DIR/logs" -name "*.log" -mtime +${LOG_RETENTION_DAYS} -type f -delete 2>/dev/null
+    find "$ROOT_DIR/logs" -name "*.log.*" -mtime +${LOG_RETENTION_DAYS} -type f -delete 2>/dev/null
+    echo -e "${GREEN}[$(date +%H:%M:%S)] 已清理 ${TOTAL_OLD} 个旧日志文件${NC}"
+else
+    echo -e "${YELLOW}[$(date +%H:%M:%S)] 无需要清理的旧日志文件${NC}"
+fi

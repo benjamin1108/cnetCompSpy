@@ -4,6 +4,7 @@ import time
 import re
 import json # For potential use, though direct JSON operations might be minimal here
 import math # ADDED for math.floor
+import hashlib # ADDED for source file hash computation
 from typing import Dict, Any, List, Optional
 import threading # Added for threading.get_ident()
 from tqdm import tqdm # Added for progress bar
@@ -310,6 +311,15 @@ class AnalysisExecutionStage(PipelineStage):
                     context.metadata[normalized_path_key]['publish_date'] = embedded_meta['publish_date']
                 context.metadata[normalized_path_key]['tasks'] = current_file_tasks_status
                 context.metadata[normalized_path_key]['last_analyzed'] = time.strftime('%Y-%m-%d %H:%M:%S')
+                
+                # 计算并保存源文件的hash，用于检测文件内容变更
+                try:
+                    with open(file_path, 'rb') as f_hash:
+                        source_hash = hashlib.sha256(f_hash.read()).hexdigest()
+                    context.metadata[normalized_path_key]['source_hash'] = source_hash
+                except Exception as hash_err:
+                    self.logger.warning(f"计算文件 '{file_path}' 的source_hash时出错: {hash_err}")
+                
                 context.metadata[normalized_path_key].pop('last_error', None)
             file_summary['status'] = 'completed'
             file_summary['task_results'] = analysis_content_for_file

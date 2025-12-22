@@ -88,6 +88,21 @@ sources:
         url: "https://cloud.google.com/armor/docs/release-notes"
         type: "documentation"
         name: "Cloud Armor - Release Notes"
+      # Cloud Router
+      router:
+        url: "https://cloud.google.com/network-connectivity/docs/router/release-notes"
+        type: "documentation"
+        name: "Cloud Router - Release Notes"
+      # Network Service Tiers
+      network-tiers:
+        url: "https://cloud.google.com/network-tiers/docs/release-notes"
+        type: "documentation"
+        name: "Network Service Tiers - Release Notes"
+      # Cloud Service Mesh
+      service-mesh:
+        url: "https://cloud.google.com/service-mesh/docs/release-notes"
+        type: "documentation"
+        name: "Cloud Service Mesh - Release Notes"
     
   # tencent:
   #   blog:
