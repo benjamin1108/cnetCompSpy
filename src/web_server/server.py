@@ -19,6 +19,7 @@ from src.web_server.admin_manager import AdminManager
 from src.web_server.stats_manager import StatsManager
 from src.web_server.search_manager import SearchManager
 from src.web_server.route_manager import RouteManager
+from src.web_server.gcp_updates_manager import GcpUpdatesManager
 from src.utils.process_lock_manager import ProcessLockManager, ProcessType
 from src.web_server.socket_manager import SocketManager
 from src.utils.config_loader import get_config
@@ -94,6 +95,9 @@ class WebServer(BaseServer):
         # 初始化搜索管理器
         self.search_manager = SearchManager(self.raw_dir, self.analyzed_dir, self.document_manager)
         
+        # 初始化GCP更新管理器
+        self.gcp_updates_manager = GcpUpdatesManager(self.raw_dir)
+        
         return enable_access_log
     
     def _register_routes(self):
@@ -105,7 +109,8 @@ class WebServer(BaseServer):
             self.vendor_manager,
             self.admin_manager,
             self.stats_manager,
-            self.search_manager
+            self.search_manager,
+            self.gcp_updates_manager
         )
     
     def _release_lock(self):

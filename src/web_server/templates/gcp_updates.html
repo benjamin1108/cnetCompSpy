@@ -1,0 +1,523 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - 网络间谍{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+    .gcp-header {
+        margin-bottom: 1.5rem;
+        position: relative;
+        padding-bottom: 0.75rem;
+    }
+
+    .gcp-header:after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100px;
+        height: 3px;
+        background: linear-gradient(90deg, #ea4335, #4285f4);
+    }
+
+    .gcp-header h1 {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .gcp-header .gcp-icon {
+        color: #ea4335;
+        font-size: 1.8rem;
+    }
+
+    .filter-card {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 12px;
+        padding: 1.2rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid #dee2e6;
+    }
+
+    .filter-card .filter-title {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .filter-card .filter-title i {
+        color: #4285f4;
+    }
+
+    .filter-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        align-items: flex-end;
+    }
+
+    .filter-group {
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .filter-group label {
+        display: block;
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-bottom: 0.3rem;
+    }
+
+    .filter-group select {
+        width: 100%;
+        padding: 0.5rem;
+        border-radius: 6px;
+        border: 1px solid #ced4da;
+        background-color: white;
+    }
+
+    .filter-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .stats-bar {
+        display: flex;
+        gap: 1.5rem;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .stats-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+
+    .stats-item strong {
+        color: #4285f4;
+        font-size: 1.1rem;
+    }
+
+    .update-card {
+        background-color: #fff;
+        border-radius: 10px;
+        padding: 1.2rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        border-left: 4px solid #4285f4;
+        transition: all 0.2s ease;
+    }
+
+    .update-card:hover {
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .update-card.type-feature {
+        border-left-color: #34a853;
+    }
+
+    .update-card.type-security {
+        border-left-color: #ea4335;
+    }
+
+    .update-card.type-fix {
+        border-left-color: #fbbc04;
+    }
+
+    .update-card.type-deprecated {
+        border-left-color: #9e9e9e;
+    }
+
+    .update-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 0.8rem;
+        gap: 1rem;
+    }
+
+    .update-title {
+        font-weight: 600;
+        color: #202124;
+        font-size: 1rem;
+        flex: 1;
+        line-height: 1.4;
+    }
+
+    .update-meta {
+        display: flex;
+        gap: 0.8rem;
+        flex-wrap: wrap;
+        flex-shrink: 0;
+    }
+
+    .update-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.2rem 0.6rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .badge-product {
+        background-color: #e8f0fe;
+        color: #1a73e8;
+    }
+
+    .badge-date {
+        background-color: #e6f4ea;
+        color: #137333;
+    }
+
+    .badge-type {
+        background-color: #fce8e6;
+        color: #c5221f;
+    }
+
+    .badge-type.feature {
+        background-color: #e6f4ea;
+        color: #137333;
+    }
+
+    .badge-type.security {
+        background-color: #fce8e6;
+        color: #c5221f;
+    }
+
+    .badge-type.fix {
+        background-color: #fef7e0;
+        color: #b06000;
+    }
+
+    .update-description {
+        color: #5f6368;
+        font-size: 0.9rem;
+        line-height: 1.6;
+        margin-bottom: 0.8rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .update-description.expanded {
+        -webkit-line-clamp: unset;
+        overflow: visible;
+    }
+
+    .update-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .update-links a {
+        font-size: 0.8rem;
+        color: #1a73e8;
+        text-decoration: none;
+        padding: 0.2rem 0.5rem;
+        background-color: #e8f0fe;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+    }
+
+    .update-links a:hover {
+        background-color: #1a73e8;
+        color: white;
+    }
+
+    .expand-btn {
+        font-size: 0.8rem;
+        color: #1a73e8;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0;
+        margin-top: 0.3rem;
+    }
+
+    .expand-btn:hover {
+        text-decoration: underline;
+    }
+
+    .pagination-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 1rem;
+        margin-top: 2rem;
+        padding: 1rem 0;
+    }
+
+    .pagination-info {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #6c757d;
+        background-color: rgba(255, 255, 255, 0.7);
+        border-radius: 10px;
+    }
+
+    .empty-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        color: #dee2e6;
+    }
+
+    .view-toggle {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .view-toggle .btn {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.85rem;
+    }
+
+    .view-toggle .btn.active {
+        background-color: #4285f4;
+        color: white;
+    }
+
+    @media (max-width: 768px) {
+        .filter-row {
+            flex-direction: column;
+        }
+
+        .filter-group {
+            width: 100%;
+        }
+
+        .update-header {
+            flex-direction: column;
+        }
+
+        .update-meta {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="gcp-header">
+    <h1>
+        <i class="bi bi-cloud-fill gcp-icon"></i>
+        GCP What's New 浏览器
+    </h1>
+    <p class="text-muted mb-0">按产品或月份浏览 Google Cloud Platform 网络服务的功能更新</p>
+</div>
+
+<!-- 筛选器 -->
+<div class="filter-card">
+    <div class="filter-title">
+        <i class="bi bi-funnel"></i>
+        筛选条件
+    </div>
+    <form method="get" action="{{ url_for('gcp_updates') }}">
+        <div class="filter-row">
+            <div class="filter-group">
+                <label for="product">产品</label>
+                <select name="product" id="product">
+                    <option value="">全部产品</option>
+                    {% for p in products %}
+                    <option value="{{ p }}" {% if current_filter.product == p %}selected{% endif %}>{{ p }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="month">月份</label>
+                <select name="month" id="month">
+                    <option value="">全部月份</option>
+                    {% for m in months %}
+                    <option value="{{ m }}" {% if current_filter.month == m %}selected{% endif %}>{{ m }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="type">更新类型</label>
+                <select name="type" id="type">
+                    <option value="">全部类型</option>
+                    {% for t in update_types %}
+                    <option value="{{ t }}" {% if current_filter.update_type == t %}selected{% endif %}>{{ t }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="filter-buttons">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-search"></i> 筛选
+                </button>
+                <a href="{{ url_for('gcp_updates') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle"></i> 清除
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- 统计信息 -->
+<div class="stats-bar">
+    <div class="stats-item">
+        <i class="bi bi-list-check"></i>
+        共 <strong>{{ total }}</strong> 条更新
+    </div>
+    {% if current_filter.product %}
+    <div class="stats-item">
+        <i class="bi bi-box"></i>
+        产品: <strong>{{ current_filter.product }}</strong>
+    </div>
+    {% endif %}
+    {% if current_filter.month %}
+    <div class="stats-item">
+        <i class="bi bi-calendar3"></i>
+        月份: <strong>{{ current_filter.month }}</strong>
+    </div>
+    {% endif %}
+    {% if current_filter.update_type %}
+    <div class="stats-item">
+        <i class="bi bi-tag"></i>
+        类型: <strong>{{ current_filter.update_type }}</strong>
+    </div>
+    {% endif %}
+</div>
+
+<!-- 更新列表 -->
+{% if updates %}
+<div class="updates-list">
+    {% for update in updates %}
+    <div class="update-card type-{{ update.type|lower }}">
+        <div class="update-header">
+            <div class="update-title">{{ update.title }}</div>
+            <div class="update-meta">
+                <span class="update-badge badge-product">
+                    <i class="bi bi-box"></i> {{ update.product }}
+                </span>
+                <span class="update-badge badge-date">
+                    <i class="bi bi-calendar3"></i> {{ update.date }}
+                </span>
+                <span class="update-badge badge-type {{ update.type|lower }}">
+                    <i class="bi bi-tag"></i> {{ update.type }}
+                </span>
+            </div>
+        </div>
+        
+        {% if update.description %}
+        <div class="update-description" id="desc-{{ loop.index }}">
+            {{ update.description }}
+        </div>
+        {% if update.description|length > 200 %}
+        <button class="expand-btn" onclick="toggleDescription({{ loop.index }})">
+            <span id="expand-text-{{ loop.index }}">展开更多</span>
+        </button>
+        {% endif %}
+        {% endif %}
+        
+        {% if update.doc_links %}
+        <div class="update-links">
+            {% for link in update.doc_links %}
+            <a href="{{ link.url }}" target="_blank" rel="noopener">
+                <i class="bi bi-link-45deg"></i> {{ link.text }}
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+<!-- 分页 -->
+{% if total_pages > 1 %}
+<div class="pagination-container">
+    <nav aria-label="Page navigation">
+        <ul class="pagination mb-0">
+            {% if page > 1 %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('gcp_updates', product=current_filter.product, month=current_filter.month, type=current_filter.update_type, page=page-1) }}">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+            {% endif %}
+            
+            {% set start_page = [1, page - 2]|max %}
+            {% set end_page = [total_pages, page + 2]|min %}
+            
+            {% if start_page > 1 %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('gcp_updates', product=current_filter.product, month=current_filter.month, type=current_filter.update_type, page=1) }}">1</a>
+            </li>
+            {% if start_page > 2 %}
+            <li class="page-item disabled"><span class="page-link">...</span></li>
+            {% endif %}
+            {% endif %}
+            
+            {% for p in range(start_page, end_page + 1) %}
+            <li class="page-item {% if p == page %}active{% endif %}">
+                <a class="page-link" href="{{ url_for('gcp_updates', product=current_filter.product, month=current_filter.month, type=current_filter.update_type, page=p) }}">{{ p }}</a>
+            </li>
+            {% endfor %}
+            
+            {% if end_page < total_pages %}
+            {% if end_page < total_pages - 1 %}
+            <li class="page-item disabled"><span class="page-link">...</span></li>
+            {% endif %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('gcp_updates', product=current_filter.product, month=current_filter.month, type=current_filter.update_type, page=total_pages) }}">{{ total_pages }}</a>
+            </li>
+            {% endif %}
+            
+            {% if page < total_pages %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('gcp_updates', product=current_filter.product, month=current_filter.month, type=current_filter.update_type, page=page+1) }}">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    <div class="pagination-info">
+        第 {{ page }} / {{ total_pages }} 页
+    </div>
+</div>
+{% endif %}
+
+{% else %}
+<div class="empty-state">
+    <i class="bi bi-inbox empty-icon"></i>
+    <h4>没有找到更新</h4>
+    <p>请尝试调整筛选条件</p>
+</div>
+{% endif %}
+
+<script>
+function toggleDescription(index) {
+    const desc = document.getElementById('desc-' + index);
+    const btn = document.getElementById('expand-text-' + index);
+    
+    if (desc.classList.contains('expanded')) {
+        desc.classList.remove('expanded');
+        btn.textContent = '展开更多';
+    } else {
+        desc.classList.add('expanded');
+        btn.textContent = '收起';
+    }
+}
+</script>
+{% endblock %}

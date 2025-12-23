@@ -20,7 +20,8 @@ class RouteManager:
     """路由管理器类"""
     
     def __init__(self, app: Flask, document_manager: Any, vendor_manager: Any, 
-                 admin_manager: Any, stats_manager: Any, search_manager: Any = None):
+                 admin_manager: Any, stats_manager: Any, search_manager: Any = None,
+                 gcp_updates_manager: Any = None):
         """
         初始化路由管理器
         
@@ -31,6 +32,7 @@ class RouteManager:
             admin_manager: 管理员管理器实例
             stats_manager: 统计管理器实例
             search_manager: 搜索管理器实例
+            gcp_updates_manager: GCP更新管理器实例
         """
         self.logger = logging.getLogger(__name__)
         self.app = app
@@ -39,6 +41,7 @@ class RouteManager:
         self.admin_manager = admin_manager
         self.stats_manager = stats_manager
         self.search_manager = search_manager
+        self.gcp_updates_manager = gcp_updates_manager
         
         # 从配置中读取是否启用访问日志
         config = get_config()
@@ -53,6 +56,7 @@ class RouteManager:
         """注册所有路由"""
         self._register_template_context()
         self._register_public_routes()
+        self._register_gcp_updates_routes()
         self._register_document_routes()
         self._register_admin_routes()
         self._register_api_routes()
@@ -259,6 +263,99 @@ class RouteManager:
                 has_analysis=True,
                 view_type='analysis'
             )
+    
+    def _register_gcp_updates_routes(self):
+        """注册GCP更新相关路由"""
+        # GCP更新浏览器页面
+        @self.app.route('/gcp-updates')
+        def gcp_updates():
+            if not self.gcp_updates_manager:
+                abort(404)
+            
+            # 获取筛选参数
+            product = request.args.get('product', '').strip()
+            month = request.args.get('month', '').strip()
+            update_type = request.args.get('type', '').strip()
+            page = request.args.get('page', '1')
+            
+            try:
+                page = int(page)
+                if page < 1:
+                    page = 1
+            except ValueError:
+                page = 1
+            
+            # 获取过滤后的数据
+            data = self.gcp_updates_manager.get_filtered_updates(
+                product=product if product else None,
+                month=month if month else None,
+                update_type=update_type if update_type else None,
+                page=page,
+                per_page=20
+            )
+            
+            # 获取更新类型列表
+            update_types = self.gcp_updates_manager.get_update_types()
+            
+            return render_template(
+                'gcp_updates.html',
+                title='GCP What\'s New 浏览器',
+                updates=data['updates'],
+                products=data['products'],
+                months=data['months'],
+                update_types=update_types,
+                total=data['total'],
+                page=data['page'],
+                per_page=data['per_page'],
+                total_pages=data['total_pages'],
+                current_filter=data['filter']
+            )
+        
+        # GCP产品摘要API
+        @self.app.route('/api/gcp-updates/products')
+        def api_gcp_products():
+            if not self.gcp_updates_manager:
+                return jsonify({'error': 'GCP更新管理器未初始化'}), 500
+            
+            products = self.gcp_updates_manager.get_products_summary()
+            return jsonify(products)
+        
+        # GCP月份摘要API
+        @self.app.route('/api/gcp-updates/months')
+        def api_gcp_months():
+            if not self.gcp_updates_manager:
+                return jsonify({'error': 'GCP更新管理器未初始化'}), 500
+            
+            months = self.gcp_updates_manager.get_months_summary()
+            return jsonify(months)
+        
+        # GCP更新列表API
+        @self.app.route('/api/gcp-updates')
+        def api_gcp_updates():
+            if not self.gcp_updates_manager:
+                return jsonify({'error': 'GCP更新管理器未初始化'}), 500
+            
+            product = request.args.get('product', '').strip()
+            month = request.args.get('month', '').strip()
+            update_type = request.args.get('type', '').strip()
+            page = request.args.get('page', '1')
+            
+            try:
+                page = int(page)
+                if page < 1:
+                    page = 1
+            except ValueError:
+                page = 1
+            
+            data = self.gcp_updates_manager.get_filtered_updates(
+                product=product if product else None,
+                month=month if month else None,
+                update_type=update_type if update_type else None,
+                page=page,
+                per_page=20
+            )
+            
+            return jsonify(data)
     
     def _register_document_routes(self):
         """注册文档相关路由"""
