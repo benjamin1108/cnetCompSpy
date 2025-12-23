@@ -32,8 +32,67 @@ class AzureTechBlogCrawler(BaseCrawler):
         if not self.start_url:
             self.start_url = "https://techcommunity.microsoft.com/t5/azure-networking-blog/bg-p/AzureNetworkingBlog"
         
+        # 初始化代理配置
+        self._init_proxy_config()
+        
         # 设置HTML转Markdown转换器
         self._init_html_converter()
+    
+    def _init_proxy_config(self) -> None:
+        """初始化代理配置"""
+        self.proxy_config = self.source_config.get('proxy', {})
+        self.use_proxy = self.proxy_config.get('enabled', False)
+        
+        if self.use_proxy:
+            # 优先从 secret_key 指向的 config.secret.yaml 中读取代理配置
+            secret_key = self.proxy_config.get('secret_key', '')
+            if secret_key:
+                # 从 config.secret.yaml 的 proxy 节点读取
+                secret_proxy = self.config.get('proxy', {}).get(secret_key, {})
+                proxy_host = secret_proxy.get('host', '')
+                proxy_port = secret_proxy.get('port', '')
+                proxy_username = secret_proxy.get('username', '')
+                proxy_password = secret_proxy.get('password', '')
+            else:
+                # 兼容旧配置：直接从 proxy 节点读取
+                proxy_host = self.proxy_config.get('host', '')
+                proxy_port = self.proxy_config.get('port', '')
+                proxy_username = self.proxy_config.get('username', '')
+                proxy_password = self.proxy_config.get('password', '')
+            
+            if proxy_host and proxy_port:
+                # 构建代理URL (用于requests)
+                if proxy_username and proxy_password:
+                    self.proxy_url = f"http://{proxy_username}:{proxy_password}@{proxy_host}:{proxy_port}"
+                else:
+                    self.proxy_url = f"http://{proxy_host}:{proxy_port}"
+                
+                # 构建requests的proxies字典
+                self.proxies = {
+                    'http': self.proxy_url,
+                    'https': self.proxy_url
+                }
+                
+                # 保存Playwright代理配置
+                self.playwright_proxy = {
+                    'server': f"http://{proxy_host}:{proxy_port}"
+                }
+                if proxy_username and proxy_password:
+                    self.playwright_proxy['username'] = proxy_username
+                    self.playwright_proxy['password'] = proxy_password
+                
+                logger.info(f"已启用代理: {proxy_host}:{proxy_port}")
+            else:
+                self.use_proxy = False
+                self.proxy_url = None
+                self.proxies = None
+                self.playwright_proxy = None
+                logger.warning("代理配置不完整，已禁用代理")
+        else:
+            self.proxy_url = None
+            self.proxies = None
+            self.playwright_proxy = None
+            logger.debug("未启用代理，使用直连")
     
     def _init_html_converter(self) -> None:
         """初始化HTML到Markdown的转换器"""
@@ -138,9 +197,16 @@ class AzureTechBlogCrawler(BaseCrawler):
                     # 尝试获取文章内容 - 优先使用requests
                     article_html = None
                     try:
-                        logger.debug(f"使用requests库获取文章内容: {url}")
+                        if self.use_proxy:
+                            logger.debug(f"使用requests库获取文章内容(通过代理): {url}")
+                        else:
+                            logger.debug(f"使用requests库获取文章内容: {url}")
                         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
-                        response = requests.get(url, headers=headers, timeout=30)
+                        # 如果启用代理，传入proxies参数
+                        request_kwargs = {'headers': headers, 'timeout': 30}
+                        if self.use_proxy and self.proxies:
+                            request_kwargs['proxies'] = self.proxies
+                        response = requests.get(url, **request_kwargs)
                         if response.status_code == 200:
                             article_html = response.text
                             logger.debug("使用requests库成功获取到文章内容")
@@ -185,7 +251,7 @@ class AzureTechBlogCrawler(BaseCrawler):
             
     def _get_with_playwright(self, url: str) -> str:
         """
-        使用Playwright获取页面内容（带反检测）
+        使用Playwright获取页面内容（带反检测和代理支持）
         
         Args:
             url: 页面URL
@@ -196,12 +262,17 @@ class AzureTechBlogCrawler(BaseCrawler):
         from playwright.sync_api import sync_playwright
         
         try:
-            logger.debug(f"使用Playwright获取页面: {url}")
+            if self.use_proxy:
+                logger.debug(f"使用Playwright获取页面(通过代理): {url}")
+            else:
+                logger.debug(f"使用Playwright获取页面: {url}")
+            
             with sync_playwright() as p:
                 # 使用更真实的浏览器配置绕过反爬虫
-                browser = p.chromium.launch(
-                    headless=True,
-                    args=[
+                # 如果启用代理，在launch时配置代理
+                launch_args = {
+                    'headless': True,
+                    'args': [
                         '--no-sandbox',
                         '--disable-dev-shm-usage',
                         '--disable-blink-features=AutomationControlled',
@@ -211,7 +282,14 @@ class AzureTechBlogCrawler(BaseCrawler):
                         '--disable-plugins-discovery',
                         '--start-maximized'
                     ]
-                )
+                }
+                
+                # 添加代理配置
+                if self.use_proxy and self.playwright_proxy:
+                    launch_args['proxy'] = self.playwright_proxy
+                    logger.debug(f"Playwright代理配置: {self.playwright_proxy.get('server', '')}")
+                
+                browser = p.chromium.launch(**launch_args)
                 try:
                     # 创建带有真实浏览器指纹的上下文
                     context = browser.new_context(

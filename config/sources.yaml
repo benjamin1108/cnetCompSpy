@@ -20,6 +20,10 @@ sources:
       url: "https://techcommunity.microsoft.com/category/azure/blog/azurenetworkingblog"
       type: "tech-blog"
       analyze: true
+      # 代理配置 - 用于绕过IP封禁，密码等敏感信息从 config.secret.yaml 读取
+      proxy:
+        enabled: true
+        secret_key: "techblog"  # 对应 config.secret.yaml 中的 proxy.techblog
     
     # infra-blog:
     #   url: "https://techcommunity.microsoft.com/category/azure/blog/azureinfrastructureblog"
