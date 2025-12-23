@@ -54,6 +54,8 @@ class TencentcloudWhatsnewCrawler(BaseCrawler):
             return []
         
         saved_files = []
+        self._new_count = 0
+        self._existing_count = 0
         
         try:
             # 检查是否启用了强制模式
@@ -112,7 +114,7 @@ class TencentcloudWhatsnewCrawler(BaseCrawler):
                     file_path = self._save_monthly_updates(month_key, month_data)
                     if file_path:
                         saved_files.append(file_path)
-                        logger.debug(f"已保存月度更新汇总: {month_key} -> {file_path}")
+                        logger.info(f"保存月度汇总: {month_key}")
                 except Exception as e:
                     logger.error(f"保存月度更新汇总失败: {month_key} - {e}")
             
@@ -175,7 +177,7 @@ class TencentcloudWhatsnewCrawler(BaseCrawler):
             
             response = requests.get(url, headers=headers, timeout=30)
             if response.status_code == 200:
-                logger.debug(f"使用requests成功获取页面: {url}")
+                logger.info(f"获取页面成功: {url}")
                 return response.text
             else:
                 logger.warning(f"requests返回状态码 {response.status_code}: {url}")
@@ -469,6 +471,21 @@ class TencentcloudWhatsnewCrawler(BaseCrawler):
             filepath = os.path.join(self.output_dir, filename)
             
             markdown_content = self._generate_monthly_updates_content(month_key, month_data)
+            new_hash = hashlib.md5(markdown_content.encode('utf-8')).hexdigest()
+            
+            # 检查文件是否已存在且内容相同
+            if os.path.exists(filepath):
+                with open(filepath, 'r', encoding='utf-8') as f:
+                    existing_content = f.read()
+                existing_hash = hashlib.md5(existing_content.encode('utf-8')).hexdigest()
+                if existing_hash == new_hash:
+                    logger.info(f"月度汇总内容未变化，跳过: {month_key}")
+                    self._existing_count += 1
+                    return None  # 内容相同，不需要重写
+                else:
+                    self._existing_count += 1  # 更新已有文件
+            else:
+                self._new_count += 1  # 新文件
             
             with open(filepath, 'w', encoding='utf-8') as f:
                 f.write(markdown_content)
@@ -482,7 +499,7 @@ class TencentcloudWhatsnewCrawler(BaseCrawler):
                     'source_url': '',
                     'filepath': filepath,
                     'crawl_time': datetime.datetime.now().isoformat(),
-                    'file_hash': hashlib.md5(markdown_content.encode('utf-8')).hexdigest()
+                    'file_hash': new_hash
                 }
                 self.metadata_manager.update_crawler_metadata(self.vendor, self.source_type, self.metadata)
             
@@ -519,7 +536,7 @@ class TencentcloudWhatsnewCrawler(BaseCrawler):
             "|------|----------|--------------|"
         ]
         
-        for product_name, updates in month_data.items():
+        for product_name, updates in sorted(month_data.items()):
             main_updates = updates[:3]
             main_update_titles = [update.get('title', '')[:30] + ('...' if len(update.get('title', '')) > 30 else '') for update in main_updates]
             main_content = '; '.join(main_update_titles)
@@ -530,8 +547,8 @@ class TencentcloudWhatsnewCrawler(BaseCrawler):
         markdown_lines.extend(["", "---", ""])
         
         # 为每个产品生成详细更新内容
-        for product_name, updates in month_data.items():
-            updates.sort(key=lambda x: x.get('publish_date', ''), reverse=True)
+        for product_name, updates in sorted(month_data.items()):
+            updates.sort(key=lambda x: (x.get('publish_date', ''), x.get('title', '')), reverse=True)
             
             markdown_lines.extend([
                 f"## {product_name} 产品更新",
@@ -586,7 +603,7 @@ class TencentcloudWhatsnewCrawler(BaseCrawler):
         ])
         
         source_urls = set()
-        for updates in month_data.values():
+        for updates in sorted(month_data.values(), key=lambda x: x[0].get('service_name', '') if x else ''):
             for update in updates:
                 source_url = update.get('source_url', '')
                 if source_url:
@@ -595,10 +612,6 @@ class TencentcloudWhatsnewCrawler(BaseCrawler):
         for source_url in sorted(source_urls):
             markdown_lines.append(f"- {source_url}")
         
-        markdown_lines.extend([
-            "",
-            f"**生成时间:** {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
-            ""
-        ])
+        markdown_lines.append("")
         
         return "\n".join(markdown_lines)

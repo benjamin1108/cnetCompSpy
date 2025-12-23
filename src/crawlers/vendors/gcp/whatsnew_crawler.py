@@ -51,6 +51,8 @@ class GcpWhatsnewCrawler(BaseCrawler):
             return []
         
         saved_files = []
+        self._new_count = 0
+        self._existing_count = 0
         
         try:
             # 检查是否启用了强制模式
@@ -106,7 +108,7 @@ class GcpWhatsnewCrawler(BaseCrawler):
                     file_path = self._save_monthly_updates(month_key, month_data)
                     if file_path:
                         saved_files.append(file_path)
-                        logger.debug(f"已保存月度更新汇总: {month_key} -> {file_path}")
+                        logger.info(f"保存月度汇总: {month_key}")
                 except Exception as e:
                     logger.error(f"保存月度更新汇总失败: {month_key} - {e}")
             
@@ -116,8 +118,6 @@ class GcpWhatsnewCrawler(BaseCrawler):
         except Exception as e:
             logger.error(f"爬取GCP网络更新过程中发生错误: {e}")
             return saved_files
-        finally:
-            self._close_driver()
     
     def _crawl_single_source(self, source_name: str, source_config: Dict[str, Any], force_mode: bool) -> List[Dict[str, Any]]:
         """
@@ -161,7 +161,7 @@ class GcpWhatsnewCrawler(BaseCrawler):
     
     def _get_page_content(self, url: str) -> Optional[str]:
         """
-        使用Playwright获取GCP页面内容（GCP页面需要JS渲染）
+        使用requests获取GCP页面内容（GCP release-notes是服务端渲染）
         
         Args:
             url: 页面URL
@@ -169,77 +169,29 @@ class GcpWhatsnewCrawler(BaseCrawler):
         Returns:
             页面HTML内容
         """
-        return self._get_with_playwright(url)
-    
-    def _get_with_playwright(self, url: str) -> Optional[str]:
-        """
-        使用Playwright获取页面内容
-        
-        Args:
-            url: 页面URL
-            
-        Returns:
-            页面HTML内容
-        """
-        from playwright.sync_api import sync_playwright
+        import requests
         
         try:
-            logger.debug(f"使用Playwright获取GCP页面: {url}")
-            with sync_playwright() as p:
-                browser = p.chromium.launch(
-                    headless=True,
-                    args=[
-                        '--no-sandbox',
-                        '--disable-dev-shm-usage',
-                        '--disable-blink-features=AutomationControlled',
-                        '--disable-infobars',
-                        '--window-size=1920,1080'
-                    ]
-                )
-                try:
-                    context = browser.new_context(
-                        viewport={'width': 1920, 'height': 1080},
-                        user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                        locale='en-US',
-                        java_script_enabled=True,
-                        extra_http_headers={
-                            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                            'Accept-Language': 'en-US,en;q=0.9'
-                        }
-                    )
-                    
-                    page = context.new_page()
-                    
-                    # 访问页面，使用domcontentloaded而不是networkidle以避免超时
-                    page.goto(url, wait_until='domcontentloaded', timeout=60000)
-                    
-                    # 等待页面内容加载
-                    page.wait_for_timeout(3000)
-                    
-                    # 滚动页面触发懒加载
-                    page.evaluate('window.scrollTo(0, document.body.scrollHeight / 2)')
-                    page.wait_for_timeout(1000)
-                    page.evaluate('window.scrollTo(0, document.body.scrollHeight)')
-                    page.wait_for_timeout(1000)
-                    page.evaluate('window.scrollTo(0, 0)')
-                    page.wait_for_timeout(500)
-                    
-                    html = page.content()
-                    logger.info(f"Playwright成功获取GCP页面: {url}, 内容长度: {len(html)}")
-                    return html
-                finally:
-                    browser.close()
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9',
+            }
+            
+            response = requests.get(url, headers=headers, timeout=30, proxies=getattr(self, 'proxies', None))
+            response.raise_for_status()
+            
+            logger.info(f"获取GCP页面成功: {url}, 内容长度: {len(response.text)}")
+            return response.text
+            
         except Exception as e:
-            logger.error(f"Playwright获取GCP页面失败: {url} - {e}")
+            logger.error(f"获取GCP页面失败: {url} - {e}")
             return None
     
     def _parse_release_notes_page(self, html: str, source_name: str, url: str) -> List[Dict[str, Any]]:
         """
         解析GCP Release Notes页面，提取更新条目
-        
-        GCP Release Notes格式:
-        ## Month DD, YYYY
-        FeatureDescription...
+        直接遍历.devsite-release-note元素，通过find_previous_sibling找日期
         
         Args:
             html: 页面HTML
@@ -253,17 +205,26 @@ class GcpWhatsnewCrawler(BaseCrawler):
         updates = []
         
         try:
-            # GCP Release Notes 使用 h2 标题作为日期
-            # 格式: "## November 14, 2025"
-            date_headers = soup.find_all('h2')
+            # 直接查找所有.devsite-release-note元素
+            notes = soup.select('.devsite-release-note')
+            logger.debug(f"在 {source_name} 中找到 {len(notes)} 个更新条目")
             
-            logger.debug(f"在 {source_name} 中找到 {len(date_headers)} 个日期标题")
-            
-            for header in date_headers:
-                header_text = header.get_text(strip=True)
+            for note in notes:
+                # 找前一个兄弟节点作为标题（日期）
+                date_header = note.find_previous_sibling('h2')
+                if not date_header:
+                    # 尝试查找父元素中的h2
+                    parent = note.parent
+                    while parent and not date_header:
+                        date_header = parent.find_previous('h2')
+                        parent = parent.parent
                 
-                # 解析日期格式: "November 14,2025" 或 "November 14, 2025" 或 "Nov 14, 2025"
-                # 注意：GCP页面日期格式不一致，逗号后可能有空格也可能没有
+                if not date_header:
+                    continue
+                
+                header_text = date_header.get_text(strip=True)
+                
+                # 解析日期格式: "November 14, 2025"
                 date_match = re.search(
                     r'(January|February|March|April|May|June|July|August|September|October|November|December|'
                     r'Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2}),?\s*(\d{4})',
@@ -283,90 +244,54 @@ class GcpWhatsnewCrawler(BaseCrawler):
                     'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12
                 }
                 month_num = month_mapping.get(month_str, 1)
+                publish_date = f"{year}-{str(month_num).zfill(2)}-{day.zfill(2)}"
                 
-                try:
-                    publish_date = f"{year}-{str(month_num).zfill(2)}-{day.zfill(2)}"
-                except:
+                # 提取更新类型
+                label_elem = note.select_one('.devsite-label')
+                update_type = label_elem.get_text(strip=True) if label_elem else 'Feature'
+                
+                # 提取内容
+                content_elem = note.select_one('div > p')
+                if content_elem:
+                    description = content_elem.get_text(strip=True)
+                else:
+                    # 回退到获取整个div内容
+                    content_div = note.find('div')
+                    if content_div:
+                        description = content_div.get_text(strip=True)
+                    else:
+                        description = note.get_text(strip=True)
+                        if label_elem:
+                            description = description.replace(label_elem.get_text(strip=True), '', 1).strip()
+                
+                if not description:
                     continue
                 
-                # 查找该日期下的所有更新项
-                # GCP使用 div.devsite-release-note 结构，每个更新在一个div里
-                current = header.find_next_sibling()
-                current_updates = []
+                # 提取相关文档链接
+                doc_links = []
+                for link in note.find_all('a', href=True):
+                    href = link.get('href', '')
+                    link_text = link.get_text(strip=True)
+                    if href and link_text:
+                        if href.startswith('/'):
+                            href = f"https://cloud.google.com{href}"
+                        doc_links.append({'text': link_text, 'url': href})
                 
-                while current and current.name != 'h2':
-                    # GCP使用 div.devsite-release-note 包装每个更新
-                    if current.name == 'div' and 'devsite-release-note' in current.get('class', []):
-                        # 提取更新类型（从 span.devsite-label）
-                        label_span = current.find('span', class_=lambda x: x and 'devsite-label' in x)
-                        update_type = 'Feature'  # 默认类型
-                        if label_span:
-                            label_text = label_span.get_text(strip=True)
-                            # 映射标签类型
-                            type_mapping = {
-                                'feature': 'Feature',
-                                'fix': 'Fix', 
-                                'breaking': 'Breaking',
-                                'deprecated': 'Deprecated',
-                                'changed': 'Changed',
-                                'announcement': 'Announcement',
-                                'issue': 'Issue',
-                            }
-                            update_type = type_mapping.get(label_text.lower(), label_text)
-                        
-                        # 提取描述（从内部的 div 或 p）
-                        content_div = current.find('div')
-                        if content_div:
-                            description = content_div.get_text(strip=True)
-                        else:
-                            # 尝试直接获取文本
-                            description = current.get_text(strip=True)
-                            # 移除标签文本
-                            if label_span:
-                                description = description.replace(label_span.get_text(strip=True), '', 1).strip()
-                        
-                        if description:
-                            # 提取相关文档链接
-                            doc_links = []
-                            for link in current.find_all('a', href=True):
-                                href = link.get('href', '')
-                                link_text = link.get_text(strip=True)
-                                if href and link_text:
-                                    if href.startswith('/'):
-                                        href = f"https://cloud.google.com{href}"
-                                    doc_links.append({
-                                        'text': link_text,
-                                        'url': href
-                                    })
-                            
-                            current_updates.append({
-                                'type': update_type,
-                                'description': description,
-                                'doc_links': doc_links
-                            })
-                    
-                    current = current.find_next_sibling()
+                # 生成标题
+                title = description[:80] + '...' if len(description) > 80 else description
+                title = title.split('\n')[0]
                 
-                # 将收集的更新添加到结果中
-                for update_item in current_updates:
-                    # 生成标题：从描述中提取前50个字符
-                    desc = update_item['description']
-                    title = desc[:80] + '...' if len(desc) > 80 else desc
-                    title = title.split('\n')[0]  # 只取第一行
-                    
-                    update = {
-                        'title': title,
-                        'description': desc,
-                        'publish_date': publish_date,
-                        'service_name': source_name,
-                        'source_url': url,
-                        'content': desc,
-                        'stage': update_item['type'],
-                        'doc_links': update_item['doc_links']
-                    }
-                    
-                    updates.append(update)
-                    logger.debug(f"解析到更新: {title[:50]}... ({publish_date})")
+                update = {
+                    'title': title,
+                    'description': description,
+                    'publish_date': publish_date,
+                    'service_name': source_name,
+                    'source_url': url,
+                    'content': description,
+                    'stage': update_type,
+                    'doc_links': doc_links
+                }
+                updates.append(update)
             
             logger.info(f"从 {source_name} 解析到 {len(updates)} 条更新")
             return updates
@@ -426,6 +351,21 @@ class GcpWhatsnewCrawler(BaseCrawler):
             filepath = os.path.join(self.output_dir, filename)
             
             markdown_content = self._generate_monthly_updates_content(month_key, month_data)
+            new_hash = hashlib.md5(markdown_content.encode('utf-8')).hexdigest()
+            
+            # 检查文件是否已存在且内容相同
+            if os.path.exists(filepath):
+                with open(filepath, 'r', encoding='utf-8') as f:
+                    existing_content = f.read()
+                existing_hash = hashlib.md5(existing_content.encode('utf-8')).hexdigest()
+                if existing_hash == new_hash:
+                    logger.info(f"月度汇总内容未变化，跳过: {month_key}")
+                    self._existing_count += 1
+                    return None
+                else:
+                    self._existing_count += 1
+            else:
+                self._new_count += 1
             
             with open(filepath, 'w', encoding='utf-8') as f:
                 f.write(markdown_content)
@@ -439,7 +379,7 @@ class GcpWhatsnewCrawler(BaseCrawler):
                     'source_url': '',
                     'filepath': filepath,
                     'crawl_time': datetime.datetime.now().isoformat(),
-                    'file_hash': hashlib.md5(markdown_content.encode('utf-8')).hexdigest()
+                    'file_hash': new_hash
                 }
                 
                 self.metadata_manager.update_crawler_metadata(self.vendor, self.source_type, self.metadata)
@@ -477,7 +417,7 @@ class GcpWhatsnewCrawler(BaseCrawler):
             "|------|----------|--------------|"
         ]
         
-        for product_name, updates in month_data.items():
+        for product_name, updates in sorted(month_data.items()):
             main_updates = updates[:3]
             main_update_titles = [update.get('title', '')[:40] + ('...' if len(update.get('title', '')) > 40 else '') for update in main_updates]
             main_content = '; '.join(main_update_titles)
@@ -493,8 +433,8 @@ class GcpWhatsnewCrawler(BaseCrawler):
         ])
         
         # 为每个产品生成详细更新内容
-        for product_name, updates in month_data.items():
-            updates.sort(key=lambda x: x.get('publish_date', ''), reverse=True)
+        for product_name, updates in sorted(month_data.items()):
+            updates.sort(key=lambda x: (x.get('publish_date', ''), x.get('title', '')), reverse=True)
             
             markdown_lines.extend([
                 f"## {product_name} 产品更新",
@@ -563,7 +503,7 @@ class GcpWhatsnewCrawler(BaseCrawler):
         ])
         
         source_urls = set()
-        for updates in month_data.values():
+        for updates in sorted(month_data.values(), key=lambda x: x[0].get('service_name', '') if x else ''):
             for update in updates:
                 source_url = update.get('source_url', '')
                 if source_url:
@@ -572,10 +512,6 @@ class GcpWhatsnewCrawler(BaseCrawler):
         for source_url in sorted(source_urls):
             markdown_lines.append(f"- {source_url}")
         
-        markdown_lines.extend([
-            "",
-            f"**生成时间:** {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
-            ""
-        ])
+        markdown_lines.append("")
         
         return "\n".join(markdown_lines)

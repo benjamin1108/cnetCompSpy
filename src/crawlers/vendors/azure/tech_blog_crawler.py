@@ -44,21 +44,10 @@ class AzureTechBlogCrawler(BaseCrawler):
         self.use_proxy = self.proxy_config.get('enabled', False)
         
         if self.use_proxy:
-            # 优先从 secret_key 指向的 config.secret.yaml 中读取代理配置
-            secret_key = self.proxy_config.get('secret_key', '')
-            if secret_key:
-                # 从 config.secret.yaml 的 proxy 节点读取
-                secret_proxy = self.config.get('proxy', {}).get(secret_key, {})
-                proxy_host = secret_proxy.get('host', '')
-                proxy_port = secret_proxy.get('port', '')
-                proxy_username = secret_proxy.get('username', '')
-                proxy_password = secret_proxy.get('password', '')
-            else:
-                # 兼容旧配置：直接从 proxy 节点读取
-                proxy_host = self.proxy_config.get('host', '')
-                proxy_port = self.proxy_config.get('port', '')
-                proxy_username = self.proxy_config.get('username', '')
-                proxy_password = self.proxy_config.get('password', '')
+            proxy_host = self.proxy_config.get('host', '')
+            proxy_port = self.proxy_config.get('port', '')
+            proxy_username = self.proxy_config.get('username', '')
+            proxy_password = self.proxy_config.get('password', '')
             
             if proxy_host and proxy_port:
                 # 构建代理URL (用于requests)
@@ -197,16 +186,16 @@ class AzureTechBlogCrawler(BaseCrawler):
                     # 尝试获取文章内容 - 优先使用requests
                     article_html = None
                     try:
-                        if self.use_proxy:
+                        if self.use_proxy and self.proxies:
                             logger.debug(f"使用requests库获取文章内容(通过代理): {url}")
                         else:
                             logger.debug(f"使用requests库获取文章内容: {url}")
                         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
-                        # 如果启用代理，传入proxies参数
-                        request_kwargs = {'headers': headers, 'timeout': 30}
+                        # 如果启用代理，使用代理进行请求
                         if self.use_proxy and self.proxies:
-                            request_kwargs['proxies'] = self.proxies
-                        response = requests.get(url, **request_kwargs)
+                            response = requests.get(url, headers=headers, timeout=30, proxies=self.proxies)
+                        else:
+                            response = requests.get(url, headers=headers, timeout=30)
                         if response.status_code == 200:
                             article_html = response.text
                             logger.debug("使用requests库成功获取到文章内容")

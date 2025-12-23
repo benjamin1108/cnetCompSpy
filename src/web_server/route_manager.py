@@ -249,11 +249,45 @@ class RouteManager:
             if not self.vendor_manager.vendor_exists(vendor):
                 abort(404)
             
+            # 获取视图模式参数（仅GCP支持）
+            view_mode = request.args.get('view', 'default').strip()
+            
             analysis_docs = self.vendor_manager.get_vendor_analysis(vendor)
             if not analysis_docs:
                 self.logger.warning(f"厂商 {vendor} 没有分析文档")
                 # 如果没有分析文档，重定向到原始文档页面
                 return redirect(url_for('vendor_page', vendor=vendor))
+            
+            # GCP特有：获取What's New更新数据
+            gcp_updates_data = None
+            if vendor == 'gcp' and self.gcp_updates_manager:
+                product = request.args.get('product', '').strip()
+                month = request.args.get('month', '').strip()
+                page = request.args.get('page', '1')
+                try:
+                    page = int(page)
+                    if page < 1:
+                        page = 1
+                except ValueError:
+                    page = 1
+                
+                gcp_updates_data = {
+                    'view_mode': view_mode,
+                    'products_summary': self.gcp_updates_manager.get_products_summary(),
+                    'months_summary': self.gcp_updates_manager.get_months_summary(),
+                }
+                
+                # 如果是按产品或月份视图，获取筛选后的数据
+                if view_mode in ('product', 'month'):
+                    filtered = self.gcp_updates_manager.get_filtered_updates(
+                        product=product if product else None,
+                        month=month if month else None,
+                        page=page,
+                        per_page=20
+                    )
+                    gcp_updates_data['filtered'] = filtered
+                    gcp_updates_data['current_product'] = product
+                    gcp_updates_data['current_month'] = month
             
             return render_template(
                 'vendor.html',
@@ -261,7 +295,8 @@ class RouteManager:
                 vendor=vendor,
                 docs=analysis_docs,
                 has_analysis=True,
-                view_type='analysis'
+                view_type='analysis',
+                gcp_updates=gcp_updates_data
             )
     
     def _register_gcp_updates_routes(self):

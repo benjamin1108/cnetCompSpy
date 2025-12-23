@@ -53,6 +53,8 @@ class HuaweiWhatsnewCrawler(BaseCrawler):
             return []
         
         saved_files = []
+        self._new_count = 0
+        self._existing_count = 0
         
         try:
             # 检查是否启用了强制模式
@@ -120,7 +122,7 @@ class HuaweiWhatsnewCrawler(BaseCrawler):
                     file_path = self._save_monthly_updates(month_key, month_data)
                     if file_path:
                         saved_files.append(file_path)
-                        logger.debug(f"已保存月度更新汇总: {month_key} -> {file_path}")
+                        logger.info(f"保存月度汇总: {month_key}")
                 except Exception as e:
                     logger.error(f"保存月度更新汇总失败: {month_key} - {e}")
             
@@ -196,7 +198,7 @@ class HuaweiWhatsnewCrawler(BaseCrawler):
             
             response = requests.get(url, headers=headers, timeout=30)
             if response.status_code == 200:
-                logger.debug(f"使用requests成功获取页面: {url}")
+                logger.info(f"获取页面成功: {url}")
                 return response.text
             else:
                 logger.warning(f"requests返回状态码 {response.status_code}: {url}")
@@ -773,6 +775,21 @@ class HuaweiWhatsnewCrawler(BaseCrawler):
             
             # 生成Markdown内容
             markdown_content = self._generate_monthly_updates_content(month_key, month_data)
+            new_hash = hashlib.md5(markdown_content.encode('utf-8')).hexdigest()
+            
+            # 检查文件是否已存在且内容相同
+            if os.path.exists(filepath):
+                with open(filepath, 'r', encoding='utf-8') as f:
+                    existing_content = f.read()
+                existing_hash = hashlib.md5(existing_content.encode('utf-8')).hexdigest()
+                if existing_hash == new_hash:
+                    logger.info(f"月度汇总内容未变化，跳过: {month_key}")
+                    self._existing_count += 1
+                    return None
+                else:
+                    self._existing_count += 1
+            else:
+                self._new_count += 1
             
             # 写入文件
             with open(filepath, 'w', encoding='utf-8') as f:
@@ -789,7 +806,7 @@ class HuaweiWhatsnewCrawler(BaseCrawler):
                     'source_url': '',
                     'filepath': filepath,
                     'crawl_time': datetime.datetime.now().isoformat(),
-                    'file_hash': hashlib.md5(markdown_content.encode('utf-8')).hexdigest()
+                    'file_hash': new_hash
                 }
                 
                 # 更新元数据管理器
@@ -843,7 +860,7 @@ class HuaweiWhatsnewCrawler(BaseCrawler):
             "|------|----------|--------------|"
         ])
         
-        for product_name, updates in month_data.items():
+        for product_name, updates in sorted(month_data.items()):
             # 获取前3个主要更新作为概览
             main_updates = updates[:3]
             main_update_titles = [update.get('title', '')[:30] + ('...' if len(update.get('title', '')) > 30 else '') for update in main_updates]
@@ -860,9 +877,9 @@ class HuaweiWhatsnewCrawler(BaseCrawler):
         ])
         
         # 为每个产品生成详细更新内容
-        for product_name, updates in month_data.items():
+        for product_name, updates in sorted(month_data.items()):
             # 按发布日期排序更新（最新的在前）
-            updates.sort(key=lambda x: x.get('publish_date', ''), reverse=True)
+            updates.sort(key=lambda x: (x.get('publish_date', ''), x.get('title', '')), reverse=True)
             
             markdown_lines.extend([
                 f"## {product_name} 产品更新",
@@ -944,7 +961,7 @@ class HuaweiWhatsnewCrawler(BaseCrawler):
         
         # 添加所有源URL（去重）
         source_urls = set()
-        for updates in month_data.values():
+        for updates in sorted(month_data.values(), key=lambda x: x[0].get('service_name', '') if x else ''):
             for update in updates:
                 source_url = update.get('source_url', '')
                 if source_url:
@@ -953,10 +970,6 @@ class HuaweiWhatsnewCrawler(BaseCrawler):
         for source_url in sorted(source_urls):
             markdown_lines.append(f"- {source_url}")
         
-        markdown_lines.extend([
-            "",
-            f"**生成时间:** {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
-            ""
-        ])
+        markdown_lines.append("")
         
         return "\n".join(markdown_lines) 

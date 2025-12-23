@@ -6,6 +6,7 @@ import os
 import re
 import sys
 import time
+import json
 import hashlib
 import datetime
 import concurrent.futures
@@ -22,6 +23,19 @@ from src.crawlers.common.base_crawler import BaseCrawler
 from src.utils.thread_pool import get_thread_pool
 
 logger = logging.getLogger(__name__)
+
+# 直接从JS全局变量提取数据的脚本
+EXTRACT_ROUTER_DATA_SCRIPT = '''
+() => {
+    try {
+        if (window._ROUTER_DATA) return window._ROUTER_DATA;
+        if (window.__INITIAL_STATE__) return window.__INITIAL_STATE__;
+        return null;
+    } catch (e) {
+        return null;
+    }
+}
+'''
 
 
 class VolcengineWhatsnewCrawler(BaseCrawler):
@@ -55,6 +69,8 @@ class VolcengineWhatsnewCrawler(BaseCrawler):
             return []
         
         saved_files = []
+        self._new_count = 0
+        self._existing_count = 0
         
         try:
             force_mode = self.crawler_config.get('force', False)
@@ -65,12 +81,13 @@ class VolcengineWhatsnewCrawler(BaseCrawler):
             with sync_playwright() as p:
                 browser = p.chromium.launch(
                     headless=True,
-                    args=['--no-sandbox', '--disable-dev-shm-usage']
+                    args=['--no-sandbox', '--disable-dev-shm-usage'],
+                    proxy=getattr(self, 'playwright_proxy', None)
                 )
                 
                 try:
                     total_sources = len(self.sub_sources)
-                    for idx, (source_name, source_config) in enumerate(self.sub_sources.items()):
+                    for idx, (source_name, source_config) in enumerate(sorted(self.sub_sources.items())):
                         logger.info(f"正在处理: {source_name} ({idx + 1}/{total_sources})")
                         
                         try:
@@ -99,12 +116,12 @@ class VolcengineWhatsnewCrawler(BaseCrawler):
             logger.info(f"总共收集到 {total_updates} 条火山引擎网络更新，分为 {len(updates_by_month)} 个月份")
             
             # 为每个月份创建汇总文档
-            for month_key, month_data in updates_by_month.items():
+            for month_key, month_data in sorted(updates_by_month.items()):
                 try:
                     file_path = self._save_monthly_updates(month_key, month_data)
                     if file_path:
                         saved_files.append(file_path)
-                        logger.debug(f"已保存月度更新汇总: {month_key} -> {file_path}")
+                        logger.info(f"保存月度汇总: {month_key}")
                 except Exception as e:
                     logger.error(f"保存月度更新汇总失败: {month_key} - {e}")
             
@@ -118,36 +135,48 @@ class VolcengineWhatsnewCrawler(BaseCrawler):
     def _crawl_with_browser(self, browser, source_name: str, source_config: Dict[str, Any], force_mode: bool) -> List[Dict[str, Any]]:
         """
         使用已有浏览器实例爬取单个源
+        优化策略：屏蔽不必要资源，等待表格渲染后用HTML解析
         """
         url = source_config.get('url')
         if not url:
             return []
         
         try:
-            # 优先尝试requests
-            html = self._get_page_content_requests(url)
+            # 创建context并设置资源拦截以加速
+            context = browser.new_context()
             
-            if not (html and ('.ace-line' in html or 'ace-table' in html)):
-                # 使用Playwright
-                page = browser.new_page()
+            # 屏蔽不必要的资源：图片、CSS、字体、监控脚本
+            context.route("**/*.{png,jpg,jpeg,gif,webp,woff,woff2,ico,svg}", lambda route: route.abort())
+            context.route("**/*slardar*", lambda route: route.abort())  # 屏蔽slardar监控
+            context.route("**/*sentry*", lambda route: route.abort())   # 屏蔽sentry监控
+            context.route("**/*collect*", lambda route: route.abort())  # 屏蔽数据收集
+            context.route("**/*analytics*", lambda route: route.abort()) # 屏蔽分析脚本
+            
+            page = context.new_page()
+            updates = []
+            
+            try:
+                page.set_default_timeout(15000)
+                
+                # 加载页面
                 try:
-                    page.set_default_timeout(20000)
-                    page.goto(url, wait_until='domcontentloaded')
-                    
-                    try:
-                        page.wait_for_selector('.ace-line, .volc-doceditor-container', timeout=8000)
-                    except:
-                        pass
-                    
-                    page.wait_for_timeout(500)
-                    html = page.content()
-                finally:
-                    page.close()
-            
-            if not html:
-                return []
-            
-            updates = self._parse_whatsnew_page(html, source_name, url)
+                    page.goto(url, wait_until='domcontentloaded', timeout=15000)
+                except Exception as e:
+                    logger.warning(f"页面加载超时，尝试继续: {source_name} - {e}")
+                
+                # 智能等待表格渲染（最多1秒）
+                for _ in range(5):  # 最多等待1秒
+                    page.wait_for_timeout(200)
+                    # 检查页面是否包含表格结构
+                    html_check = page.content()
+                    if '.ace-line' in html_check or '.ace-table' in html_check or '<table' in html_check:
+                        break
+                
+                # 使用HTML解析（表格结构更可靠）
+                html = page.content()
+                updates = self._parse_whatsnew_page(html, source_name, url)
+            finally:
+                context.close()
             
             if not force_mode:
                 updates = self._filter_existing_updates(updates, source_name)
@@ -157,7 +186,6 @@ class VolcengineWhatsnewCrawler(BaseCrawler):
         except Exception as e:
             logger.error(f"爬取源 {source_name} 失败: {e}")
             return []
-            self._close_driver()
     
     def _crawl_with_playwright_context(self, browser, source_name: str, source_config: Dict[str, Any], force_mode: bool) -> List[Dict[str, Any]]:
         """
@@ -277,9 +305,10 @@ class VolcengineWhatsnewCrawler(BaseCrawler):
                 'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
             }
             
-            response = requests.get(url, headers=headers, timeout=30)
+            response = requests.get(url, headers=headers, timeout=30, proxies=getattr(self, 'proxies', None))
             response.raise_for_status()
             
+            logger.info(f"获取页面成功: {url}")
             return response.text
             
         except Exception as e:
@@ -300,7 +329,8 @@ class VolcengineWhatsnewCrawler(BaseCrawler):
                 # 使用Chromium无头模式
                 browser = p.chromium.launch(
                     headless=True,
-                    args=['--no-sandbox', '--disable-dev-shm-usage']
+                    args=['--no-sandbox', '--disable-dev-shm-usage'],
+                    proxy=getattr(self, 'playwright_proxy', None)
                 )
                 
                 try:
@@ -399,6 +429,249 @@ class VolcengineWhatsnewCrawler(BaseCrawler):
         except Exception as e:
             logger.error(f"解析 {source_name} 页面时发生错误: {e}")
             return []
+    
+    def _extract_doc_id(self, url: str) -> Optional[str]:
+        """
+        从URL中提取文档ID
+        例如: https://www.volcengine.com/docs/6401/67803 -> "67803"
+        """
+        try:
+            match = re.search(r'/docs/\d+/(\d+)', url)
+            if match:
+                return match.group(1)
+            # 备用方法：取URL最后一个数字段
+            parts = url.rstrip('/').split('/')
+            for part in reversed(parts):
+                if part.isdigit():
+                    return part
+        except Exception as e:
+            logger.debug(f"提取文档ID失败: {url} - {e}")
+        return None
+    
+    def _parse_router_data(self, data: Dict[str, Any], source_name: str, url: str, doc_id: Optional[str]) -> List[Dict[str, Any]]:
+        """
+        \u89e3\u6790\u4ece_ROUTER_DATA\u83b7\u53d6\u7684JSON\u6570\u636e
+        \u706b\u5c71\u5f15\u64ce\u7684Content\u662fQuill Delta\u683c\u5f0f\uff0c\u76f4\u63a5\u89e3\u6790ops\u6570\u636e
+        """
+        updates = []
+            
+        try:
+            # \u627e\u5230Content\u5b57\u6bb5
+            content_str = self._find_content_in_router_data(data, doc_id)
+                
+            if not content_str:
+                logger.debug(f"\u5728_ROUTER_DATA\u4e2d\u672a\u627e\u5230\u5185\u5bb9: {source_name}")
+                return []
+                
+            # Content\u662fJSON\u5b57\u7b26\u4e32\uff0c\u89e3\u6790\u5b83
+            try:
+                content_data = json.loads(content_str)
+            except:
+                # \u5982\u679c\u4e0d\u662fJSON\uff0c\u53ef\u80fd\u662fHTML\uff0c\u56de\u9000\u5230HTML\u89e3\u6790
+                logger.debug(f"Content\u4e0d\u662fJSON\u683c\u5f0f\uff0c\u5c1d\u8bd5HTML\u89e3\u6790: {source_name}")
+                return self._parse_whatsnew_page(content_str, source_name, url)
+                
+            # \u4eceDelta\u683c\u5f0f\u63d0\u53d6\u66f4\u65b0
+            updates = self._parse_delta_content(content_data, source_name, url)
+            logger.debug(f"\u4eceDelta\u6570\u636e\u89e3\u6790\u5230 {len(updates)} \u6761\u66f4\u65b0: {source_name}")
+                
+        except Exception as e:
+            logger.error(f"\u89e3\u6790_ROUTER_DATA\u65f6\u51fa\u9519: {source_name} - {e}")
+            
+        return updates
+        
+    def _parse_delta_content(self, content_data: Dict[str, Any], source_name: str, url: str) -> List[Dict[str, Any]]:
+        """
+        \u89e3\u6790Quill Delta\u683c\u5f0f\u7684\u5185\u5bb9
+        \u706b\u5c71\u5f15\u64ce\u7684\u8868\u683c\u6570\u636e\u5b58\u50a8\u5728xr\u524d\u7f00\u7684section\u4e2d
+        """
+        updates = []
+        current_month = datetime.date.today().strftime('%Y-%m')
+            
+        try:
+            data_section = content_data.get('data', {})
+                
+            # \u4ece\u4e3b\u5185\u5bb9(section 0)\u4e2d\u63d0\u53d6\u65f6\u95f4\u6807\u9898
+            time_marks = self._extract_time_marks_from_delta(data_section)
+            current_time = time_marks[0] if time_marks else current_month
+                
+            # \u6536\u96c6\u6240\u6709xr section\u7684\u5185\u5bb9 (\u8868\u683c\u5355\u5143\u683c)
+            cell_contents = {}
+            for sid, section in data_section.items():
+                if not sid.startswith('xr') or not isinstance(section, dict):
+                    continue
+                ops = section.get('ops', [])
+                texts = []
+                for op in ops:
+                    if isinstance(op, dict):
+                        insert = op.get('insert', '')
+                        if isinstance(insert, str):
+                            texts.append(insert)
+                content = ''.join(texts).strip()
+                if content:
+                    cell_contents[sid] = content
+                
+            # \u5c06\u5185\u5bb9\u7ec4\u7ec7\u6210\u66f4\u65b0\u6761\u76ee
+            # \u8868\u683c\u901a\u5e38\u662f: \u5e8f\u53f7 | \u529f\u80fd\u540d\u79f0 | \u529f\u80fd\u63cf\u8ff0 | \u9636\u6bb5 | \u6587\u6863
+            updates = self._group_cells_into_updates(cell_contents, source_name, url, current_time, time_marks)
+                
+        except Exception as e:
+            logger.error(f"\u89e3\u6790Delta\u5185\u5bb9\u65f6\u51fa\u9519: {source_name} - {e}")
+            
+        return updates
+        
+    def _extract_time_marks_from_delta(self, data_section: Dict) -> List[str]:
+        """
+        \u4ece\u4e3b\u5185\u5bb9section\u63d0\u53d6\u65f6\u95f4\u6807\u9898
+        """
+        time_marks = []
+        time_pattern = re.compile(r'^(20[1-2][0-9])\u5e74([0-1]?[0-9])\u6708')
+            
+        main_section = data_section.get('0', {})
+        if isinstance(main_section, dict):
+            ops = main_section.get('ops', [])
+            for op in ops:
+                if isinstance(op, dict):
+                    insert = op.get('insert', '')
+                    if isinstance(insert, str):
+                        for line in insert.split('\n'):
+                            line = line.strip().replace('\u200b', '').replace('\ufeff', '')
+                            match = time_pattern.match(line)
+                            if match:
+                                year, month = match.groups()
+                                time_marks.append(f"{year}-{month.zfill(2)}")
+            
+        return time_marks
+        
+    def _group_cells_into_updates(self, cell_contents: Dict[str, str], source_name: str, url: str, 
+                                  default_time: str, time_marks: List[str]) -> List[Dict[str, Any]]:
+        """
+        \u5c06\u5355\u5143\u683c\u5185\u5bb9\u7ec4\u7ec7\u6210\u66f4\u65b0\u6761\u76ee
+        \u901a\u8fc7\u5206\u6790\u5185\u5bb9\u7279\u5f81\u6765\u8bc6\u522b\u529f\u80fd\u540d\u79f0\u548c\u63cf\u8ff0
+        """
+        updates = []
+        current_time = default_time
+        time_idx = 0
+            
+        # \u5206\u7ec4:\u529f\u80fd\u540d\u79f0\u901a\u5e38\u8f83\u77ed\uff0c\u63cf\u8ff0\u8f83\u957f
+        # \u8fc7\u6ee4\u6389\u8868\u5934\u548c\u65e0\u6548\u5185\u5bb9
+        skip_keywords = ['\u529f\u80fd\u540d\u79f0', '\u529f\u80fd\u63cf\u8ff0', '\u53d1\u5e03\u9636\u6bb5', '\u76f8\u5173\u6587\u6863', '\u5e8f\u53f7', '\u540d\u79f0', '\u63cf\u8ff0', '\u9636\u6bb5', '\u6587\u6863']
+            
+        # \u6309section ID\u6392\u5e8f\u4fdd\u6301\u987a\u5e8f
+        sorted_cells = sorted(cell_contents.items(), key=lambda x: x[0])
+            
+        # \u5c1d\u8bd5\u8bc6\u522b\u529f\u80fd\u540d\u79f0\u548c\u63cf\u8ff0\u7684\u914d\u5bf9
+        i = 0
+        while i < len(sorted_cells):
+            sid, content = sorted_cells[i]
+                
+            # \u8df3\u8fc7\u8868\u5934
+            if any(kw in content for kw in skip_keywords) and len(content) < 20:
+                i += 1
+                continue
+                
+            # \u8df3\u8fc7\u7eaf\u6570\u5b57(\u5e8f\u53f7)
+            if content.isdigit():
+                i += 1
+                continue
+                
+            # \u68c0\u67e5\u662f\u5426\u662f\u529f\u80fd\u540d\u79f0(\u8f83\u77ed\uff0c\u4e0d\u5305\u542b\u53e5\u53f7)
+            if len(content) > 3 and len(content) < 50 and '\u3002' not in content:
+                function_name = content
+                function_desc = ''
+                stage = ''
+                    
+                # \u67e5\u627e\u540e\u7eed\u7684\u63cf\u8ff0\u548c\u9636\u6bb5
+                if i + 1 < len(sorted_cells):
+                    next_content = sorted_cells[i + 1][1]
+                    if len(next_content) > 20 or '\u3002' in next_content:
+                        function_desc = next_content
+                        i += 1
+                    
+                if i + 1 < len(sorted_cells):
+                    next_content = sorted_cells[i + 1][1]
+                    if next_content in ['\u90c0\u6d4b', '\u516c\u6d4b', '\u5546\u7528', 'GA', 'Preview', 'Beta', '\u5168\u91cf']:
+                        stage = next_content
+                        i += 1
+                    
+                update = {
+                    'title': function_name,
+                    'description': function_desc,
+                    'publish_date': current_time,
+                    'service_name': source_name,
+                    'source_url': url,
+                    'content': function_name + ('\n\n' + function_desc if function_desc else ''),
+                    'stage': stage,
+                    'doc_links': []
+                }
+                updates.append(update)
+                
+            i += 1
+            
+        return updates
+    
+    def _find_content_in_router_data(self, obj: Any, target_id: Optional[str] = None) -> Optional[str]:
+        """
+        在_ROUTER_DATA中递归查找文档内容
+        尝试多种数据结构模式
+        
+        Args:
+            obj: 要搜索的对象
+            target_id: 目标文档ID
+            
+        Returns:
+            找到的内容字符串，或None
+        """
+        if obj is None:
+            return None
+        
+        if isinstance(obj, dict):
+            # 模式1: 直接查找Content或MDContent字段
+            if 'Content' in obj and isinstance(obj['Content'], str) and len(obj['Content']) > 500:
+                return obj['Content']
+            if 'MDContent' in obj and isinstance(obj['MDContent'], str) and len(obj['MDContent']) > 500:
+                return obj['MDContent']
+            
+            # 模式2: loaderData -> [docId] -> value -> Content
+            if 'loaderData' in obj:
+                loader_data = obj['loaderData']
+                if isinstance(loader_data, dict):
+                    for key, value in loader_data.items():
+                        # 如果有目标ID，优先查找匹配的
+                        if target_id and target_id in key:
+                            result = self._find_content_in_router_data(value, target_id)
+                            if result:
+                                return result
+                        # 否则遍历所有
+                        result = self._find_content_in_router_data(value, target_id)
+                        if result:
+                            return result
+            
+            # 模式3: value -> Content
+            if 'value' in obj and isinstance(obj['value'], dict):
+                result = self._find_content_in_router_data(obj['value'], target_id)
+                if result:
+                    return result
+            
+            # 模式4: 如果有target_id，查找匹配的key
+            if target_id and target_id in obj:
+                result = self._find_content_in_router_data(obj[target_id], target_id)
+                if result:
+                    return result
+            
+            # 遍历所有键值
+            for key, value in obj.items():
+                result = self._find_content_in_router_data(value, target_id)
+                if result:
+                    return result
+        
+        elif isinstance(obj, list):
+            for item in obj:
+                result = self._find_content_in_router_data(item, target_id)
+                if result:
+                    return result
+        
+        return None
     
     def _convert_volcengine_links(self, content) -> None:
         """
@@ -603,6 +876,21 @@ class VolcengineWhatsnewCrawler(BaseCrawler):
             filepath = os.path.join(self.output_dir, filename)
             
             markdown_content = self._generate_monthly_updates_content(month_key, month_data)
+            new_hash = hashlib.md5(markdown_content.encode('utf-8')).hexdigest()
+            
+            # 检查文件是否已存在且内容相同
+            if os.path.exists(filepath):
+                with open(filepath, 'r', encoding='utf-8') as f:
+                    existing_content = f.read()
+                existing_hash = hashlib.md5(existing_content.encode('utf-8')).hexdigest()
+                if existing_hash == new_hash:
+                    logger.info(f"月度汇总内容未变化，跳过: {month_key}")
+                    self._existing_count += 1
+                    return None
+                else:
+                    self._existing_count += 1
+            else:
+                self._new_count += 1
             
             with open(filepath, 'w', encoding='utf-8') as f:
                 f.write(markdown_content)
@@ -616,7 +904,7 @@ class VolcengineWhatsnewCrawler(BaseCrawler):
                     'source_url': '',
                     'filepath': filepath,
                     'crawl_time': datetime.datetime.now().isoformat(),
-                    'file_hash': hashlib.md5(markdown_content.encode('utf-8')).hexdigest()
+                    'file_hash': new_hash
                 }
                 self.metadata_manager.update_crawler_metadata(self.vendor, self.source_type, self.metadata)
             
@@ -653,7 +941,7 @@ class VolcengineWhatsnewCrawler(BaseCrawler):
             "|------|----------|--------------|"
         ]
         
-        for product_name, updates in month_data.items():
+        for product_name, updates in sorted(month_data.items()):
             main_updates = updates[:3]
             main_update_titles = [update.get('title', '')[:30] + ('...' if len(update.get('title', '')) > 30 else '') for update in main_updates]
             main_content = '; '.join(main_update_titles)
@@ -664,8 +952,8 @@ class VolcengineWhatsnewCrawler(BaseCrawler):
         markdown_lines.extend(["", "---", ""])
         
         # 为每个产品生成详细更新内容
-        for product_name, updates in month_data.items():
-            updates.sort(key=lambda x: x.get('publish_date', ''), reverse=True)
+        for product_name, updates in sorted(month_data.items()):
+            updates.sort(key=lambda x: (x.get('publish_date', ''), x.get('title', '')), reverse=True)
             
             markdown_lines.extend([
                 f"## {product_name} 产品更新",
@@ -728,7 +1016,7 @@ class VolcengineWhatsnewCrawler(BaseCrawler):
         ])
         
         source_urls = set()
-        for updates in month_data.values():
+        for updates in sorted(month_data.values(), key=lambda x: x[0].get('service_name', '') if x else ''):
             for update in updates:
                 source_url = update.get('source_url', '')
                 if source_url:
@@ -737,10 +1025,6 @@ class VolcengineWhatsnewCrawler(BaseCrawler):
         for source_url in sorted(source_urls):
             markdown_lines.append(f"- {source_url}")
         
-        markdown_lines.extend([
-            "",
-            f"**生成时间:** {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
-            ""
-        ])
+        markdown_lines.append("")
         
         return "\n".join(markdown_lines)

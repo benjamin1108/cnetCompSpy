@@ -20,10 +20,13 @@ sources:
       url: "https://techcommunity.microsoft.com/category/azure/blog/azurenetworkingblog"
       type: "tech-blog"
       analyze: true
-      # 代理配置 - 用于绕过IP封禁，密码等敏感信息从 config.secret.yaml 读取
+      # 代理配置 - 用于绕过IP封禁
       proxy:
         enabled: true
-        secret_key: "techblog"  # 对应 config.secret.yaml 中的 proxy.techblog
+        host: "flow.ipest.info"
+        port: 14223
+        username: "672SXG3MOP____1_session1"
+        password: "11fi0L8C"
     
     # infra-blog:
     #   url: "https://techcommunity.microsoft.com/category/azure/blog/azureinfrastructureblog"

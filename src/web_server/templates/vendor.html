@@ -722,10 +722,194 @@
         技术文档与最新动态
     </p>
     
+    {% if vendor == 'gcp' and gcp_updates %}
+    <div class="view-options">
+        <a href="{{ url_for('analysis_page', vendor='gcp') }}" class="view-option {% if not gcp_updates.view_mode or gcp_updates.view_mode == 'default' %}active{% endif %}">
+            <i class="bi bi-grid-3x3-gap"></i> 默认视图
+        </a>
+        <a href="{{ url_for('analysis_page', vendor='gcp', view='month') }}" class="view-option {% if gcp_updates.view_mode == 'month' %}active{% endif %}">
+            <i class="bi bi-calendar-month"></i> 按月度
+        </a>
+        <a href="{{ url_for('analysis_page', vendor='gcp', view='product') }}" class="view-option {% if gcp_updates.view_mode == 'product' %}active{% endif %}">
+            <i class="bi bi-box-seam"></i> 按产品
+        </a>
+    </div>
+    {% endif %}
+    
     <div class="nav-links" style="margin-top: 15px; justify-content: center;">
         <a href="{{ url_for('index') }}">返回首页</a>
     </div>
 </header>
+
+{% if vendor == 'gcp' and gcp_updates and gcp_updates.view_mode in ('month', 'product') %}
+<!-- GCP What's New 按月度/产品视图 -->
+<div class="gcp-whatsnew-view">
+    <style>
+        .gcp-whatsnew-view { margin-top: 20px; }
+        .gcp-filter-bar {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+            border: 1px solid #dee2e6;
+        }
+        .gcp-filter-bar label { font-weight: 500; color: #495057; }
+        .gcp-filter-bar select {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #ced4da;
+            min-width: 180px;
+        }
+        .gcp-updates-list { display: flex; flex-direction: column; gap: 12px; }
+        .gcp-update-item {
+            background: #fff;
+            border-radius: 10px;
+            padding: 15px 20px;
+            border-left: 4px solid #ea4335;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            transition: all 0.2s ease;
+        }
+        .gcp-update-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .gcp-update-title { font-size: 1rem; font-weight: 600; color: #2c3e50; margin-bottom: 8px; }
+        .gcp-update-meta { display: flex; gap: 12px; font-size: 0.85rem; color: #6c757d; }
+        .gcp-update-meta span { background: #f1f3f4; padding: 3px 10px; border-radius: 15px; }
+        .gcp-update-meta .product { background: #e8f0fe; color: #1967d2; }
+        .gcp-update-meta .date { background: #fce8e6; color: #c5221f; }
+        .gcp-pagination { display: flex; justify-content: center; gap: 8px; margin-top: 20px; }
+        .gcp-pagination a, .gcp-pagination span {
+            padding: 8px 14px;
+            border-radius: 6px;
+            text-decoration: none;
+            border: 1px solid #dee2e6;
+        }
+        .gcp-pagination a { background: #fff; color: #495057; }
+        .gcp-pagination a:hover { background: #e9ecef; }
+        .gcp-pagination span.current { background: #ea4335; color: #fff; border-color: #ea4335; }
+        .gcp-summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .gcp-summary-card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 15px;
+            border: 1px solid #e9ecef;
+            text-align: center;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            color: inherit;
+        }
+        .gcp-summary-card:hover {
+            background: #f8f9fa;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        .gcp-summary-card.active {
+            border-color: #ea4335;
+            background: #fce8e6;
+        }
+        .gcp-summary-card .name { font-weight: 600; color: #2c3e50; margin-bottom: 5px; }
+        .gcp-summary-card .count { color: #ea4335; font-size: 1.2rem; font-weight: 700; }
+    </style>
+    
+    {% if gcp_updates.view_mode == 'month' %}
+    <!-- 按月度视图 -->
+    <h3 style="margin-bottom: 15px;"><i class="bi bi-calendar-month"></i> What's New 月度更新</h3>
+    <div class="gcp-summary-cards">
+        {% for m in gcp_updates.months_summary[:12] %}
+        <a href="{{ url_for('analysis_page', vendor='gcp', view='month', month=m.month) }}" 
+           class="gcp-summary-card {% if gcp_updates.current_month == m.month %}active{% endif %}">
+            <div class="name">{{ m.month }}</div>
+            <div class="count">{{ m.count }} 条更新</div>
+        </a>
+        {% endfor %}
+    </div>
+    
+    {% if gcp_updates.current_month and gcp_updates.filtered %}
+    <div class="gcp-filter-bar">
+        <span><i class="bi bi-funnel"></i> 当前筛选：<strong>{{ gcp_updates.current_month }}</strong></span>
+        <span>共 {{ gcp_updates.filtered.total }} 条更新</span>
+        <a href="{{ url_for('analysis_page', vendor='gcp', view='month') }}" style="margin-left: auto;">清除筛选</a>
+    </div>
+    <div class="gcp-updates-list">
+        {% for update in gcp_updates.filtered.updates %}
+        <div class="gcp-update-item">
+            <div class="gcp-update-title">{{ update.title }}</div>
+            <div class="gcp-update-meta">
+                <span class="product">{{ update.product }}</span>
+                <span class="date">{{ update.date }}</span>
+                {% if update.type %}<span>{{ update.type }}</span>{% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% if gcp_updates.filtered.total_pages > 1 %}
+    <div class="gcp-pagination">
+        {% if gcp_updates.filtered.page > 1 %}
+        <a href="{{ url_for('analysis_page', vendor='gcp', view='month', month=gcp_updates.current_month, page=gcp_updates.filtered.page-1) }}">上一页</a>
+        {% endif %}
+        <span class="current">{{ gcp_updates.filtered.page }} / {{ gcp_updates.filtered.total_pages }}</span>
+        {% if gcp_updates.filtered.page < gcp_updates.filtered.total_pages %}
+        <a href="{{ url_for('analysis_page', vendor='gcp', view='month', month=gcp_updates.current_month, page=gcp_updates.filtered.page+1) }}">下一页</a>
+        {% endif %}
+    </div>
+    {% endif %}
+    {% endif %}
+    
+    {% elif gcp_updates.view_mode == 'product' %}
+    <!-- 按产品视图 -->
+    <h3 style="margin-bottom: 15px;"><i class="bi bi-box-seam"></i> What's New 产品更新</h3>
+    <div class="gcp-summary-cards">
+        {% for p in gcp_updates.products_summary %}
+        <a href="{{ url_for('analysis_page', vendor='gcp', view='product', product=p.name) }}" 
+           class="gcp-summary-card {% if gcp_updates.current_product == p.name %}active{% endif %}">
+            <div class="name">{{ p.name }}</div>
+            <div class="count">{{ p.count }} 条更新</div>
+        </a>
+        {% endfor %}
+    </div>
+    
+    {% if gcp_updates.current_product and gcp_updates.filtered %}
+    <div class="gcp-filter-bar">
+        <span><i class="bi bi-funnel"></i> 当前筛选：<strong>{{ gcp_updates.current_product }}</strong></span>
+        <span>共 {{ gcp_updates.filtered.total }} 条更新</span>
+        <a href="{{ url_for('analysis_page', vendor='gcp', view='product') }}" style="margin-left: auto;">清除筛选</a>
+    </div>
+    <div class="gcp-updates-list">
+        {% for update in gcp_updates.filtered.updates %}
+        <div class="gcp-update-item">
+            <div class="gcp-update-title">{{ update.title }}</div>
+            <div class="gcp-update-meta">
+                <span class="date">{{ update.date }}</span>
+                {% if update.type %}<span>{{ update.type }}</span>{% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% if gcp_updates.filtered.total_pages > 1 %}
+    <div class="gcp-pagination">
+        {% if gcp_updates.filtered.page > 1 %}
+        <a href="{{ url_for('analysis_page', vendor='gcp', view='product', product=gcp_updates.current_product, page=gcp_updates.filtered.page-1) }}">上一页</a>
+        {% endif %}
+        <span class="current">{{ gcp_updates.filtered.page }} / {{ gcp_updates.filtered.total_pages }}</span>
+        {% if gcp_updates.filtered.page < gcp_updates.filtered.total_pages %}
+        <a href="{{ url_for('analysis_page', vendor='gcp', view='product', product=gcp_updates.current_product, page=gcp_updates.filtered.page+1) }}">下一页</a>
+        {% endif %}
+    </div>
+    {% endif %}
+    {% endif %}
+    {% endif %}
+</div>
+{% else %}
 
 {% if docs %}
     <div class="doc-tabs">
@@ -782,6 +966,7 @@
         <p>暂无可用的文档数据</p>
         <p>请先通过爬虫采集和分析数据</p>
     </div>
+{% endif %}
 {% endif %}
 {% endblock %}
 
