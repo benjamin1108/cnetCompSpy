@@ -713,74 +713,75 @@ validate_args() {
     return 0
 }
 
-# 检查是否安装了miniforge
-check_miniforge() {
-    echo -e "${BLUE}检查Miniforge是否已安装...${NC}"
+# 检查Python环境
+check_python() {
+    echo -e "${BLUE}检查Python环境...${NC}"
     
-    # 检查是否可以执行conda命令
-    if command -v conda >/dev/null 2>&1; then
-        echo -e "${GREEN}Miniforge已安装${NC}"
-        return 0
+    # 检查是否可以执行python3命令
+    if command -v python3 >/dev/null 2>&1; then
+        PYTHON_VERSION=$(python3 --version 2>&1 | awk '{print $2}')
+        echo -e "${GREEN}Python已安装: $PYTHON_VERSION${NC}"
+        
+        # 检查Python版本是否满足要求 (>= 3.8)
+        PYTHON_MAJOR=$(echo $PYTHON_VERSION | cut -d. -f1)
+        PYTHON_MINOR=$(echo $PYTHON_VERSION | cut -d. -f2)
+        
+        if [ "$PYTHON_MAJOR" -ge 3 ] && [ "$PYTHON_MINOR" -ge 8 ]; then
+            echo -e "${GREEN}Python版本满足要求 (>= 3.8)${NC}"
+            return 0
+        else
+            echo -e "${RED}Python版本过低,需要 >= 3.8${NC}"
+            return 1
+        fi
     else
-        echo -e "${RED}未检测到Miniforge${NC}"
-        echo -e "${YELLOW}请按照以下步骤安装Miniforge:${NC}"
+        echo -e "${RED}未检测到Python 3${NC}"
+        echo -e "${YELLOW}请按照以下步骤安装Python 3.8+:${NC}"
         echo -e ""
         
         # 根据系统类型显示不同的安装说明
         case "$(uname -s)" in
             Darwin*)    # macOS
                 echo -e "${BLUE}macOS安装步骤:${NC}"
-                echo -e "1. 执行以下命令下载安装脚本:"
-                echo -e "   ${GREEN}curl -L -O https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-x86_64.sh${NC}"
-                echo -e "   (对于M1/M2 Mac，请使用: ${GREEN}curl -L -O https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-arm64.sh${NC})"
-                echo -e "2. 执行安装脚本:"
-                echo -e "   ${GREEN}bash Miniforge3-MacOSX-x86_64.sh${NC}"
-                echo -e "   (或者 ${GREEN}bash Miniforge3-MacOSX-arm64.sh${NC} 如果是M1/M2 Mac)"
-                echo -e "3. 按照提示完成安装并初始化"
-                echo -e "4. 关闭并重新打开终端，或者执行 ${GREEN}source ~/.bashrc${NC} 或 ${GREEN}source ~/.zshrc${NC}"
+                echo -e "1. 使用Homebrew安装(推荐):"
+                echo -e "   ${GREEN}brew install python@3.10${NC}"
+                echo -e "2. 或从官网下载: ${GREEN}https://www.python.org/downloads/${NC}"
                 ;;
             Linux*)     # Linux
                 echo -e "${BLUE}Linux安装步骤:${NC}"
-                echo -e "1. 执行以下命令下载安装脚本:"
-                echo -e "   ${GREEN}wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh${NC}"
-                echo -e "2. 执行安装脚本:"
-                echo -e "   ${GREEN}bash Miniforge3-Linux-x86_64.sh${NC}"
-                echo -e "3. 按照提示完成安装并初始化"
-                echo -e "4. 关闭并重新打开终端，或者执行 ${GREEN}source ~/.bashrc${NC}"
+                echo -e "1. Ubuntu/Debian: ${GREEN}sudo apt update && sudo apt install python3 python3-venv python3-pip${NC}"
+                echo -e "2. CentOS/RHEL: ${GREEN}sudo yum install python3 python3-pip${NC}"
                 ;;
             CYGWIN*|MINGW*|MSYS*)  # Windows
                 echo -e "${BLUE}Windows安装步骤:${NC}"
-                echo -e "1. 下载安装程序: ${GREEN}https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Windows-x86_64.exe${NC}"
-                echo -e "2. 运行下载的安装程序并按照提示完成安装"
+                echo -e "1. 从官网下载: ${GREEN}https://www.python.org/downloads/${NC}"
+                echo -e "2. 安装时记得勾选'Add Python to PATH'"
                 ;;
             *)
                 echo -e "${BLUE}通用安装步骤:${NC}"
-                echo -e "1. 访问 ${GREEN}https://github.com/conda-forge/miniforge${NC} 获取最新的安装指南"
+                echo -e "1. 访问 ${GREEN}https://www.python.org/downloads/${NC} 获取最新的安装包"
                 ;;
         esac
         
         echo -e ""
-        echo -e "${BLUE}安装完成后，请再次运行本脚本${NC}"
+        echo -e "${BLUE}安装完成后,请再次运行本脚本${NC}"
         return 1
     fi
 }
 
 # 激活虚拟环境
 activate_venv() {
-    # 检查是否存在名为venv的conda环境
-    if conda env list | grep -q "^venv "; then
-        echo -e "${GREEN}找到venv环境，正在激活...${NC}"
-        eval "$(conda shell.bash hook)"
-        conda activate venv
+    # 检查是否存在venv目录
+    if [ -d "venv" ]; then
+        echo -e "${GREEN}找到venv环境,正在激活...${NC}"
+        source venv/bin/activate
     else
-        echo -e "${YELLOW}未找到venv环境，正在创建...${NC}"
-        eval "$(conda shell.bash hook)"
-        conda create -y -n venv python=3.11
+        echo -e "${YELLOW}未找到venv环境,正在创建...${NC}"
+        python3 -m venv venv
         if [ $? -eq 0 ]; then
-            echo -e "${GREEN}venv环境已创建，正在激活...${NC}"
-            conda activate venv
+            echo -e "${GREEN}venv环境已创建,正在激活...${NC}"
+            source venv/bin/activate
         else
-            echo -e "${RED}创建venv环境失败，请检查miniforge安装是否正确。${NC}"
+            echo -e "${RED}创建venv环境失败,请检查Python安装是否正确。${NC}"
             exit 1
         fi
     fi
@@ -815,8 +816,8 @@ install_dependencies() {
 setup_environment() {
     echo -e "${BLUE}设置环境...${NC}"
     
-    # 检查miniforge
-    check_miniforge || exit 1
+    # 检查Python
+    check_python || exit 1
     
     # 激活虚拟环境
     activate_venv

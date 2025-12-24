@@ -50,7 +50,7 @@ class GcpBlogCrawler(BaseCrawler):
             # 获取博客列表页
             logger.info(f"获取GCP博客列表页: {self.start_url}")
             
-            # 先尝试使用requests库获取页面内容(优先使用更稳定的方式)
+            # 使用requests库获取页面内容
             html = None
             try:
                 logger.debug("使用requests库获取页面内容")
@@ -70,11 +70,6 @@ class GcpBlogCrawler(BaseCrawler):
                     logger.error(f"请求返回非成功状态码: {response.status_code}")
             except Exception as e:
                 logger.error(f"使用requests库获取页面失败: {e}")
-            
-            # 只有在requests失败时才尝试使用Selenium
-            if not html:
-                logger.debug("requests获取失败，尝试使用Selenium")
-                html = self._get_selenium(self.start_url)
             
             if not html:
                 logger.error(f"获取博客列表页失败: {self.start_url}")
@@ -129,7 +124,7 @@ class GcpBlogCrawler(BaseCrawler):
                 logger.info(f"正在爬取第 {idx}/{len(filtered_article_links)} 篇文章: {title}")
                 
                 try:
-                    # 尝试获取文章内容 - 优先使用requests
+                    # 使用requests获取文章内容
                     article_html = None
                     try:
                         logger.debug(f"使用requests库获取文章内容: {url}")
@@ -142,11 +137,6 @@ class GcpBlogCrawler(BaseCrawler):
                             logger.error(f"请求返回非成功状态码: {response.status_code}")
                     except Exception as e:
                         logger.error(f"使用requests库获取文章失败: {e}")
-                    
-                    # 如果requests失败，才尝试Selenium
-                    if not article_html:
-                        logger.debug(f"尝试使用Selenium获取文章内容: {url}")
-                        article_html = self._get_selenium(url)
                     
                     if not article_html:
                         logger.warning(f"获取文章内容失败: {url}")
@@ -539,7 +529,8 @@ class GcpBlogCrawler(BaseCrawler):
                 # 根据提供的xpath定位日期元素
                 date_elements = html_tree.xpath('/html/body/c-wiz/div/div/article/section[1]/div/div[3]')
                 if date_elements:
-                    date_text = date_elements[0].text_content().strip()
+                    # lxml Element对象使用etree.tostring或者直接获取text
+                    date_text = ''.join(date_elements[0].itertext()).strip()
                     logger.info(f"通过XPath找到日期文本: {date_text}")
                     
                     # 尝试解析这个日期文本
